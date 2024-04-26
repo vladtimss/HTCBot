@@ -5,7 +5,7 @@ import dotenv                from 'dotenv';
 
 dotenv.config();
 
-const htcBot = new Bot(process.env.TOKEN); // Exclamation mark for non-null assertion
+const htcBot = new Bot(process.env.TOKEN);
 
 htcBot.use(loggingMiddleware);
 
