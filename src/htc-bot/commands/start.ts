@@ -1,5 +1,8 @@
-import { Context } from 'grammy';
+import { Context }        from 'grammy';
+import { welcomeMessage } from "../messages/welcome";
 
-export const startCommand = (ctx: Context) => {
-    return ctx.reply('Добро пожаловать в помощник Церкви Святой Троицы!');
+export const startCommand = async (ctx: Context) => {
+    await ctx.reply(
+        welcomeMessage(ctx.from.first_name ?? ctx.from.username),
+        {parse_mode: "MarkdownV2"});
 }
