@@ -5,12 +5,15 @@ import dotenv                          from 'dotenv';
 import { getUserFirstNameFrom }        from "./helpers/user-info.helpers";
 import { transformTextToItalicHelper } from "./helpers/markdown.helpers";
 import { getErrorHeler }               from "./helpers/errors-catch.helpers";
+import { htcBotCommands }              from "./constants/commands";
 
 dotenv.config();
 
 const htcBot = new Bot(process.env.TOKEN);
 
 htcBot.use(loggingMiddleware);
+
+htcBot.api.setMyCommands(htcBotCommands);
 
 htcBot.command('start', startCommand);
 
