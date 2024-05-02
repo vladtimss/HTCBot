@@ -3,7 +3,7 @@ import { BotError, Context, GrammyError, HttpError } from "grammy";
 /**
  *
  */
-export const getErrorHeler = (botError: BotError<Context>): string => {
+export const getErrorHelper = (botError: BotError<Context>): string => {
 	const {error} = botError;
 
 	if (error instanceof GrammyError) {

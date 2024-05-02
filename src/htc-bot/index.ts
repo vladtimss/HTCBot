@@ -4,7 +4,7 @@ import { startCommand }                from "./commands/start";
 import dotenv                          from 'dotenv';
 import { getUserFirstNameFrom }        from "./helpers/user-info.helpers";
 import { transformTextToItalicHelper } from "./helpers/markdown.helpers";
-import { getErrorHeler }               from "./helpers/errors-catch.helpers";
+import { getErrorHelper }              from "./helpers/errors-catch.helpers";
 import { htcBotCommands }              from "./constants/commands";
 
 dotenv.config();
@@ -30,7 +30,7 @@ htcBot.on("message", async (ctx) => {
 });
 
 htcBot.catch((botError) => {
-	const error = getErrorHeler(botError);
+	const error = getErrorHelper(botError);
 	console.error(error);
 })
 
