@@ -3,3 +3,7 @@ export enum ParseMode {
 	MarkdownV2 = "MarkdownV2",
 	HTML = "HTML"
 }
+
+export enum Command {
+	START = 'start',
+}
