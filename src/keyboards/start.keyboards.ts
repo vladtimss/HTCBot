@@ -3,4 +3,5 @@ import { START_KEYBOARD_TEXT } from "../strings/keyboards/start.keyboards.string
 
 export const startKeyboards = new Keyboard()
 	.text(START_KEYBOARD_TEXT)
+	.text('Узнать ближайшее событие')
 	.resized();

@@ -29,14 +29,21 @@ async function getAllEvents() {
 	const vevent = vcalendar.getFirstSubcomponent('vevent');
 	const eventDetails = new ICAL.Event(vevent);
 
-
 	log(JSON.stringify({
 		summary: eventDetails.summary,
 		startDate: eventDetails.startDate.toJSDate(),
 		endDate: eventDetails.endDate.toJSDate(),
 		location: eventDetails.location,
 		description: eventDetails.description,
-	}, null, 2));
+	}))
+
+	return {
+		summary: eventDetails.summary,
+		startDate: eventDetails.startDate.toJSDate(),
+		endDate: eventDetails.endDate.toJSDate(),
+		location: eventDetails.location,
+		description: eventDetails.description,
+	}
 }
 
 export { getAllEvents }

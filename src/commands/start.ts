@@ -1,7 +1,8 @@
 import { Composer, InlineKeyboard } from 'grammy';
 import { Command, ParseMode }       from "../enums/main.enums";
 import { startKeyboards }           from "../keyboards/start.keyboards";
-import { START_KEYBOARD_TEXT } from "../strings/keyboards/start.keyboards.strings";
+import { START_KEYBOARD_TEXT }      from "../strings/keyboards/start.keyboards.strings";
+import { getAllEvents }             from "../helpers/calendar.helpers";
 
 const composer = new Composer();
 
@@ -18,7 +19,7 @@ composer.command(Command.START, (ctx) => {
 	});
 });
 
-composer.on('message:text', (ctx) => {
+composer.on('message:text', async (ctx) => {
 	const { text } = ctx.message;
 
 	if (text === START_KEYBOARD_TEXT) {
@@ -28,6 +29,29 @@ composer.on('message:text', (ctx) => {
 				'https://t.me/troitskchurch'
 			),
 			parse_mode: ParseMode.HTML
+		})
+	} else if (text === 'Узнать ближайшее событие') {
+		const res = await getAllEvents();
+
+		return ctx.reply(JSON.stringify(res, null, 2).replace(/\_/g, '\\_')
+							 .replace(/\*/g, '\\*')
+							 .replace(/\[/g, '\\[')
+							 .replace(/\]/g, '\\]')
+							 .replace(/\(/g, '\\(')
+							 .replace(/\)/g, '\\)')
+							 .replace(/\~/g, '\\~')
+							 .replace(/\`/g, '\\`')
+							 .replace(/\>/g, '\\>')
+							 .replace(/\#/g, '\\#')
+							 .replace(/\+/g, '\\+')
+							 .replace(/\-/g, '\\-')
+							 .replace(/\=/g, '\\=')
+							 .replace(/\|/g, '\\|')
+							 .replace(/\{/g, '\\{')
+							 .replace(/\}/g, '\\}')
+							 .replace(/\./g, '\\.')
+							 .replace(/\!/g, '\\!'), {
+			parse_mode: ParseMode.MarkdownV2
 		})
 	}
 });
