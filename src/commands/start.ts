@@ -3,6 +3,8 @@ import { Command, ParseMode }       from "../enums/bot.enums";
 import { startKeyboards }           from "../keyboards/start.keyboards";
 import { START_KEYBOARD_TEXT }      from "../strings/keyboards/start.keyboards.strings";
 import { getAllEvents }             from "../helpers/calendar.helpers";
+import { log }                      from "../middlewares/logger";
+import { escape }                   from 'html-escaper';
 
 const composer = new Composer();
 
@@ -32,7 +34,7 @@ composer.on('message:text', async (ctx) => {
 		})
 	} else if (text === 'Узнать ближайшее событие') {
 		const res = await getAllEvents();
-		console.log(res);
+		void log(`<pre class="language-json"><code>${escape(JSON.stringify(res, null, 2))}</code></pre>`);
 	}
 });
 
