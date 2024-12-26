@@ -1,10 +1,11 @@
-import { Composer, InlineKeyboard } from 'grammy';
-import { Command, ParseMode }       from "../enums/bot.enums";
-import { startKeyboards }           from "../keyboards/start.keyboards";
-import { START_KEYBOARD_TEXT }      from "../strings/keyboards/start.keyboards.strings";
-import { log }                      from "../middlewares/logger";
-import { escape }                   from 'html-escaper';
-import { getAllEvents }             from "../helpers/calendar.helpers";
+import { Composer, InlineKeyboard }                                        from 'grammy';
+import { Command, ParseMode }                                              from "../enums/bot.enums";
+import { startKeyboards }                                                  from "../keyboards/start.keyboards";
+import {
+	START_KEYBOARD_TEXT
+}                                                                          from "../strings/keyboards/start.keyboards.strings";
+import { generateCalendarEventTemplateMessage, getUpcomingCalendarEvents } from "../helpers/calendar.helpers";
+import { log }                                                             from "../middlewares/logger";
 
 const composer = new Composer();
 
@@ -25,16 +26,25 @@ composer.on('message:text', async (ctx) => {
 	const { text } = ctx.message;
 
 	if (text === START_KEYBOARD_TEXT) {
-		return ctx.reply('Посетите канал церкви', {
+		return await ctx.reply('Посетите канал церкви', {
 			reply_markup: new InlineKeyboard().url(
 				'Перейти в канал',
 				'https://t.me/troitskchurch'
 			),
 			parse_mode: ParseMode.HTML
 		})
-	} else if (text === 'Узнать ближайшее событие') {
-		const res = await getAllEvents();
-		void log(`<pre class="language-json"><code>${escape(JSON.stringify(res, null, 2))}</code></pre>`);
+	} else if (text === 'Узнать ближайшие события') {
+		const upcomingCalendarEvents = await getUpcomingCalendarEvents(3);
+
+		const reply = upcomingCalendarEvents
+			.map(event => generateCalendarEventTemplateMessage(event))
+			.join(`━━━━━━━━━━━━\n`);
+		void log(reply);
+
+		return await ctx.reply(reply, { parse_mode: ParseMode.HTML })
+
+	} else {
+		return await ctx.reply('Я вас не понимаю...')
 	}
 });
 

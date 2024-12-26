@@ -3,6 +3,7 @@ import { DAVClient, DavClientParamSettings, FetchCalendarObjectsParams } from ".
 import { yaCalendarSettings }                                            from "../settings/ya.calendar.settings";
 import env                                                               from "../env";
 import { CalendarEvent }                                                 from "../models/calendar-event.model";
+import { formatDate }                                                    from "./date.helpers";
 
 /**
  * Подключение к клиенту DAV
@@ -32,18 +33,43 @@ const fetchCalendarObjects = async (client: DAVClient, params: FetchCalendarObje
 	return client.fetchCalendarObjects(params);
 }
 
-const getAllEvents = async () => {
-	const client = await connectToCalendar(yaCalendarSettings);
-	const calendar = await fetchCalendarByUrl(client, env.HTC_COMMON_CALENDAR_URL);
-	const calendarObjects = await fetchCalendarObjects(client, { calendar })
+const fetchAllCalendarEvents = async (): Promise<CalendarEvent[]> => {
+	try {
+		const client = await connectToCalendar(yaCalendarSettings);
+		const calendar = await fetchCalendarByUrl(client, env.HTC_COMMON_CALENDAR_URL);
+		const calendarObjects = await fetchCalendarObjects(client, { calendar })
 
-	return new CalendarEvent(calendarObjects[0]?.data ?? '')
+		return calendarObjects.map(calendarObject => new CalendarEvent(calendarObject?.data ?? ''))
+	} catch (e) {
+		throw new Error(e?.message ?? 'Something went wrong...');
+	}
+}
+
+const getUpcomingCalendarEvents = async (amount = 1): Promise<CalendarEvent[]> => {
+	const allEvents = await fetchAllCalendarEvents();
+	const upcomingEvents = allEvents.filter((event) => event.startDate > new Date());
+
+	return upcomingEvents
+		.sort((a, b) =>
+			a.startDate.getTime() - b.startDate.getTime()).slice(0, amount
+		);
+}
+
+const generateCalendarEventTemplateMessage = (event: CalendarEvent): string => {
+	return `
+	📅 <b>${event.summary}</b>\n
+	Дата: <b>${formatDate(event.startDate)}</b> — <b>${formatDate(event.endDate)}</b>${!!event?.location ? '\n' : ''}
+	${event?.location ? `📍 Место: <pre>${event.location}</pre>${event?.description ? '\n' : ''}` : ''}
+	${event?.description ? `📝 Описание: ${event.description}` : ''}
+	`;
 }
 
 export {
 	connectToCalendar,
 	fetchCalendarByUrl,
 	fetchCalendarObjects,
-	getAllEvents
+	fetchAllCalendarEvents,
+	getUpcomingCalendarEvents,
+	generateCalendarEventTemplateMessage
 }
 
