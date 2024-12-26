@@ -1,8 +1,9 @@
-import { ParseMode } from '@grammyjs/types';
-import env           from "../env";
-import bot           from "../bot";
+import { ParseMode }                  from '@grammyjs/types';
+import { ParseMode as ParseModeEnum } from '../enums/bot.enums';
+import env                            from "../env";
+import bot                            from "../bot";
 
-export const log = async (message: string, parse_mode: ParseMode = 'HTML') => {
+export const log = async (message: string, parse_mode: ParseMode = ParseModeEnum.HTML) => {
 	if (!env.LOG_CHANNEL) {
 		console.log(message);
 		return;

@@ -1,7 +1,7 @@
 import bot              from "./bot";
 import { errorHandler } from "./middlewares/error-handler";
-import { log }         from "./middlewares/logger";
-import { useCommands } from "./commands";
+import { log }          from "./middlewares/logger";
+import { useCommands }  from "./commands";
 
 (async () => {
 	useCommands()

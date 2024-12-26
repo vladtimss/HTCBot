@@ -1,7 +1,14 @@
-import { Composer, InlineKeyboard } from 'grammy';
-import { Command, ParseMode }       from "../enums/main.enums";
-import { startKeyboards }           from "../keyboards/start.keyboards";
-import { START_KEYBOARD_TEXT } from "../strings/keyboards/start.keyboards.strings";
+import { Composer, InlineKeyboard }                                        from 'grammy';
+import { Command, ParseMode }                                              from "../enums/bot.enums";
+import { startKeyboards }                                                  from "../keyboards/start.keyboards";
+import {
+	START_KEYBOARD_TEXT,
+	UPCOMING_CHURCH_EVENTS
+}                                                                          from "../strings/keyboards/start.keyboards.strings";
+import { generateCalendarEventTemplateMessage, getUpcomingCalendarEvents } from "../helpers/calendar.helpers";
+import { Divider }                                                         from "../ui-elements/html.elements";
+import { log }                                                             from "../middlewares/logger";
+import { HTC_TG_CHANNEL_LINK }                                             from "../constants/links.constants";
 
 const composer = new Composer();
 
@@ -18,18 +25,29 @@ composer.command(Command.START, (ctx) => {
 	});
 });
 
-composer.on('message:text', (ctx) => {
-	const { text } = ctx.message;
+composer.hears(START_KEYBOARD_TEXT, async (ctx) => {
+	return await ctx.reply('Посетите канал церкви', {
+		reply_markup: new InlineKeyboard().url(
+			'Перейти в канал',
+			HTC_TG_CHANNEL_LINK
+		),
+		parse_mode: ParseMode.HTML
+	})
+})
 
-	if (text === START_KEYBOARD_TEXT) {
-		return ctx.reply('Посетите канал церкви', {
-			reply_markup: new InlineKeyboard().url(
-				'Перейти в канал',
-				'https://t.me/troitskchurch'
-			),
-			parse_mode: ParseMode.HTML
-		})
-	}
+composer.hears(UPCOMING_CHURCH_EVENTS, async (ctx) => {
+	const upcomingCalendarEvents = await getUpcomingCalendarEvents(3);
+
+	const reply = upcomingCalendarEvents
+		.map(event => generateCalendarEventTemplateMessage(event))
+		.join(`${Divider}\n`);
+
+	return await ctx.reply(reply, { parse_mode: ParseMode.HTML })
+})
+
+composer.on('message:text', async (ctx) => {
+	log('some')
+	return ctx.reply(`${ctx.from.first_name} я не знаю, что ответить.`)
 });
 
 export default composer;
