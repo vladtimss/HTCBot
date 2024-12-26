@@ -1,0 +1,1 @@
+export const HTC_TG_CHANNEL_LINK = 'https://t.me/troitskchurch';
