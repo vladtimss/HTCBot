@@ -1,38 +1,49 @@
-import ICAL                               from "ical.js";
-import { createDAVClient }                from 'tsdav';
-import env                                from "../env";
-import { AuthMethod, DefaultAccountType } from "../enums/caldav.enums";
+import { createDAVClient, DAVCalendar, DAVObject }                       from 'tsdav';
+import { DAVClient, DavClientParamSettings, FetchCalendarObjectsParams } from "../types/calendar.types";
+import { yaCalendarSettings }                                            from "../settings/ya.calendar.settings";
+import env                                                               from "../env";
+import { CalendarEvent }                                                 from "../models/calendar-event.model";
 
-async function getAllEvents() {
-	const client = await createDAVClient({
-		serverUrl: env.CALDAV_URL,
-		credentials: {
-			username: env.CALDAV_USERNAME,
-			password: env.CALDAV_PASSWORD
-		},
-		authMethod: AuthMethod.Basic,
-		defaultAccountType: DefaultAccountType.CALDAV,
-	});
-
-	const calendars = await client.fetchCalendars();
-
-	const calendarObjects = await client.fetchCalendarObjects({
-		calendar: calendars[0],
-	});
-
-	const jcalData = ICAL.parse(calendarObjects[0]?.data);
-	const vcalendar = new ICAL.Component(jcalData);
-	const vevent = vcalendar.getFirstSubcomponent('vevent');
-	const eventDetails = new ICAL.Event(vevent);
-
-	return {
-		summary: eventDetails.summary,
-		startDate: eventDetails.startDate.toJSDate(),
-		endDate: eventDetails.endDate.toJSDate(),
-		location: eventDetails.location,
-		description: eventDetails.description,
-	}
+/**
+ * Подключение к клиенту DAV
+ * @param settings
+ */
+const connectToCalendar = async (settings: DavClientParamSettings): Promise<DAVClient> => {
+	return createDAVClient(settings);
 }
 
-export { getAllEvents }
+/**
+ * Получаем календарь по уникальному url
+ * @param url
+ * @param client
+ */
+const fetchCalendarByUrl = async (client: DAVClient, url: string): Promise<DAVCalendar | undefined> => {
+	const calendars = await client.fetchCalendars();
+
+	return calendars?.find(calendar => calendar.url === url);
+}
+
+/**
+ * Получаем события календаря
+ * @param client
+ * @param params
+ */
+const fetchCalendarObjects = async (client: DAVClient, params: FetchCalendarObjectsParams): Promise<DAVObject[]> => {
+	return client.fetchCalendarObjects(params);
+}
+
+const getAllEvents = async () => {
+	const client = await connectToCalendar(yaCalendarSettings);
+	const calendar = await fetchCalendarByUrl(client, env.HTC_COMMON_CALENDAR_URL);
+	const calendarObjects = await fetchCalendarObjects(client, { calendar })
+
+	return new CalendarEvent(calendarObjects[0]?.data ?? '')
+}
+
+export {
+	connectToCalendar,
+	fetchCalendarByUrl,
+	fetchCalendarObjects,
+	getAllEvents
+}
 

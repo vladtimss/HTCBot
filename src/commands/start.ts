@@ -2,9 +2,9 @@ import { Composer, InlineKeyboard } from 'grammy';
 import { Command, ParseMode }       from "../enums/bot.enums";
 import { startKeyboards }           from "../keyboards/start.keyboards";
 import { START_KEYBOARD_TEXT }      from "../strings/keyboards/start.keyboards.strings";
-import { getAllEvents }             from "../helpers/calendar.helpers";
 import { log }                      from "../middlewares/logger";
 import { escape }                   from 'html-escaper';
+import { getAllEvents }             from "../helpers/calendar.helpers";
 
 const composer = new Composer();
 
