@@ -3,7 +3,6 @@ import { DAVClient, DavClientParamSettings, FetchCalendarObjectsParams } from ".
 import { yaCalendarSettings }                                            from "../settings/ya.calendar.settings";
 import env                                                               from "../env";
 import { CalendarEvent }               from "../models/calendar-event.model";
-import { formatDateRange } from "./date.helpers";
 
 /**
  * Подключение к клиенту DAV
@@ -55,21 +54,11 @@ const getUpcomingCalendarEvents = async (amount = 1): Promise<CalendarEvent[]> =
 		);
 }
 
-const generateCalendarEventTemplateMessage = (event: CalendarEvent): string => {
-	return `
-	📅 <b>${event.summary}</b>\n
-	Дата: <b>${formatDateRange(event.startDate, event.endDate)}</b>${!!event?.location ? '\n' : ''}
-	${event?.location ? `📍 Место: <pre>${event.location}</pre>${event?.description ? '\n' : ''}` : ''}
-	${event?.description ? `📝 Описание: ${event.description}` : ''}
-	`;
-}
-
 export {
 	connectToCalendar,
 	fetchCalendarByUrl,
 	fetchCalendarObjects,
 	fetchAllCalendarEvents,
 	getUpcomingCalendarEvents,
-	generateCalendarEventTemplateMessage
 }
 
