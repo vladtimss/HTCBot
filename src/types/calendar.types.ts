@@ -4,14 +4,6 @@ import * as xml_js_types                  from "xml-js";
 
 export type DAVClient = Awaited<ReturnType<typeof createDAVClient>>;
 
-export type CalendarEvent = {
-	summary: string;
-	startDate: Date;
-	endDate: Date;
-	location?: string;
-	description?: string;
-};
-
 export type DavClientParamSettings = {
 	serverUrl: string,
 	credentials: {

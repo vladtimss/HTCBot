@@ -53,7 +53,7 @@ composer.hears([CHURCH_TG_CHANNEL, SUNDAY_WORSHIP_INFO, UPCOMING_CHURCH_EVENTS],
 })
 
 composer.on('message:text', async (ctx) => {
-	return ctx.reply(`${ctx.from.first_name}, я не знаю, что ответить.`)
+	 await ctx.reply(`${ctx.from.first_name}, я не знаю, что ответить.`)
 });
 
 export default composer;

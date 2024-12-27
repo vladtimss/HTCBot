@@ -16,13 +16,18 @@
     "typescript": "5.4.3"
   },
   "dependencies": {
-    "@types/dav": "^1.7.7",
+    "@types/dav": "1.7.7",
     "axios": "1.7.9",
+    "date-fns": "^4.1.0",
+    "date-fns-tz": "^3.2.0",
     "dotenv": "16.4.5",
     "envalid": "8.0.0",
     "grammy": "1.22.4",
     "html-escaper": "^3.0.3",
-    "ical.js": "^2.1.0",
+    "i": "0.3.7",
+    "ical.js": "2.1.0",
+    "node-schedule": "2.1.1",
+    "npm": "11.0.0",
     "tsdav": "^2.1.3"
   }
 }

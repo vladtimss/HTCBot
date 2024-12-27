@@ -2,7 +2,9 @@ import { createDAVClient, DAVCalendar, DAVObject }                       from 't
 import { DAVClient, DavClientParamSettings, FetchCalendarObjectsParams } from "../types/calendar.types";
 import { yaCalendarSettings }                                            from "../settings/ya.calendar.settings";
 import env                                                               from "../env";
-import { CalendarEvent }               from "../models/calendar-event.model";
+import { CalendarEvent }                                                 from "../models/calendar-event.model";
+import { toZonedTime }                                                   from "date-fns-tz";
+import { addDays }                                                       from "date-fns/addDays";
 
 /**
  * Подключение к клиенту DAV
@@ -38,7 +40,30 @@ const fetchAllCalendarEvents = async (): Promise<CalendarEvent[]> => {
 		const calendar = await fetchCalendarByUrl(client, env.HTC_COMMON_CALENDAR_URL);
 		const calendarObjects = await fetchCalendarObjects(client, { calendar })
 
-		return calendarObjects.map(calendarObject => new CalendarEvent(calendarObject?.data ?? ''))
+		return calendarObjects.map(calendarObject => new CalendarEvent(calendarObject))
+	} catch (e) {
+		throw new Error(e?.message ?? 'Something went wrong...');
+	}
+}
+
+const fetchTomorrowCalendarObject = async (): Promise<CalendarEvent[]> => {
+	const eventTimeInMoscow = toZonedTime(new Date(), "Europe/Moscow");
+	const oneDayAfter = addDays(eventTimeInMoscow, 1);
+	const sevenDaysAfter = addDays(eventTimeInMoscow, 7);
+
+	console.log({ oneDayAfter, sevenDaysAfter });
+
+	try {
+		const client = await connectToCalendar(yaCalendarSettings);
+		const calendar = await fetchCalendarByUrl(client, env.HTC_COMMON_CALENDAR_URL);
+		const calendarObjects = await fetchCalendarObjects(client, {
+			calendar,
+			timeRange: {
+				start: new Date().toISOString(),
+				end: sevenDaysAfter.toISOString()
+			}
+		})
+		return calendarObjects.map(calendarObject => new CalendarEvent(calendarObject))
 	} catch (e) {
 		throw new Error(e?.message ?? 'Something went wrong...');
 	}
