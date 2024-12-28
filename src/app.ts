@@ -8,7 +8,9 @@ import { caldavCalendarIntegrationServiceInstance } from "./services/caldav-cale
 	await caldavCalendarIntegrationServiceInstance.init();
 
 	useCommands()
+
 	bot.catch(errorHandler);
+
 	await bot.start({
 		drop_pending_updates: true,
 		onStart: async () => {

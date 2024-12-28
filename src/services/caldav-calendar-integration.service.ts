@@ -84,16 +84,16 @@ class CaldavCalendarIntegrationService {
 	/**
 	 * Получает события, которые будут завтра
 	 */
-	async fetchUpcomingTomorrowCalendarEvents(): Promise<CalendarEvent[]> {
+	async fetchUpcomingCalendarEventsByAfterDaysAmount(days: number): Promise<CalendarEvent[]> {
 		const now = toZonedTime(new Date(), CaldavCalendarIntegrationService.MOSCOW_TIMEZONE);
-		const oneDayAfterNow = addDays(now, 1);
+		const amountDaysAfterNow = addDays(now, days);
 
 		try {
 			const calendarObjects = await this.fetchCalendarObjects(this.client, {
 				calendar: this.calendar,
 				timeRange: {
 					start: now.toISOString(),
-					end: oneDayAfterNow.toISOString()
+					end: amountDaysAfterNow.toISOString()
 				}
 			})
 			return calendarObjects.map(calendarObject => new CalendarEvent(calendarObject))
