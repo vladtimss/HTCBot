@@ -9,7 +9,9 @@ const env = cleanEnv(process.env, {
 	CALDAV_USERNAME: str(),
 	CALDAV_PASSWORD: str(),
 	HTC_COMMON_CALENDAR_URL: str(),
-	HTC_PASTORS_CALENDAR_URL: str()
+	HTC_PASTORS_CALENDAR_URL: str(),
+	HTC_TG_CHANNEL_URL: str(),
+	YANDEX_MAP_URL: str()
 });
 
 export default env;

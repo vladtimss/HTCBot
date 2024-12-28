@@ -1,11 +1,12 @@
-import bot                        from "./bot";
-import { errorHandler }           from "./middlewares/error-handler";
-import { log }                    from "./middlewares/logger";
-import { useCommands }                                       from "./commands";
-import { startPeriodicCheck }            from "./middlewares/common-calendar-events-reminder";
+import bot                                          from "./bot";
+import { errorHandler }                             from "./middlewares/error-handler";
+import { log }                                      from "./middlewares/logger";
+import { useCommands }                              from "./commands";
+import { caldavCalendarIntegrationServiceInstance } from "./services/caldav-calendar-integration.service";
 
 (async () => {
-	// startPeriodicCheck();
+	await caldavCalendarIntegrationServiceInstance.init();
+
 	useCommands()
 	bot.catch(errorHandler);
 	await bot.start({

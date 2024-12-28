@@ -1,18 +1,16 @@
-import { CalendarEvent }                  from "../models/calendar-event.model";
-import bot                                from "../bot";
-import env                                from "../env";
-import { getUpcomingCalendarEvents }      from "../helpers/calendar.helpers";
-import { getTimezoneOffset, toZonedTime } from "date-fns-tz";
-import { format, isSameDay, subDays, addDays }     from "date-fns";
+import { CalendarEvent }                            from "../models/calendar-event.model";
+import bot                                          from "../bot";
+import env                                          from "../env";
+import { toZonedTime }                              from "date-fns-tz";
+import { format, isSameDay, subDays }               from "date-fns";
+import { caldavCalendarIntegrationServiceInstance } from "../services/caldav-calendar-integration.service";
 
 const MOSCOW_TIMEZONE = "Europe/Moscow";
-const FORMAT_STR_FULL = 'yyyy-MM-dd HH:mm';
-const FORMAT_STR_HOURS = 'HH';
 
 const sentReminders = new Set<string>();
 
 const processReminders = async () => {
-	const events = await getUpcomingCalendarEvents(3);
+	const events = await caldavCalendarIntegrationServiceInstance.fetchUpcomingCalendarEvents(3);
 
 	const now = new Date();
 	const moscowNow = toZonedTime(now, MOSCOW_TIMEZONE);
@@ -39,7 +37,7 @@ const processReminders = async () => {
 // Function to check if a reminder should be sent
 function shouldSendReminder(reminderTime: Date, currentTime: Date): boolean {
 	// Reminder should be sent at exactly 10:00 AM Moscow time
-	const isTenAM = reminderTime.getHours() === 10 && reminderTime.getMinutes() === 0;
+	// const isTenAM = reminderTime.getHours() === 10 && reminderTime.getMinutes() === 0;
 
 	return (
 		isSameDay(reminderTime, currentTime)

@@ -7,10 +7,12 @@ import {
 	UPCOMING_CHURCH_EVENTS
 }                                           from "../strings/keyboards/start.keyboards.strings";
 import { Divider }                          from "../ui-elements/html.elements";
-import { HTC_TG_CHANNEL_LINK }              from "../constants/links.constants";
 import { generateCalendarEventMessage }     from "../messages/calendar.messages";
-import { getUpcomingCalendarEvents }        from "../helpers/calendar.helpers";
 import { generateSundayWorshipInfoMessage } from "../messages/church-info.messages";
+import {
+	caldavCalendarIntegrationServiceInstance
+}                                           from "../services/caldav-calendar-integration.service";
+import env                                  from "../env";
 
 const composer = new Composer();
 
@@ -37,12 +39,12 @@ composer.hears([CHURCH_TG_CHANNEL, SUNDAY_WORSHIP_INFO, UPCOMING_CHURCH_EVENTS],
 			return await ctx.reply('Посетите канал церкви', {
 				reply_markup: new InlineKeyboard().url(
 					'Перейти в канал',
-					HTC_TG_CHANNEL_LINK
+					`${env.HTC_TG_CHANNEL_URL}`
 				),
 				parse_mode: ParseMode.HTML
 			});
 		case UPCOMING_CHURCH_EVENTS:
-			const upcomingCalendarEvents = await getUpcomingCalendarEvents(3);
+			const upcomingCalendarEvents = await caldavCalendarIntegrationServiceInstance.fetchUpcomingCalendarEvents(3);
 
 			const reply = upcomingCalendarEvents
 				.map(event => generateCalendarEventMessage(event))
@@ -53,7 +55,7 @@ composer.hears([CHURCH_TG_CHANNEL, SUNDAY_WORSHIP_INFO, UPCOMING_CHURCH_EVENTS],
 })
 
 composer.on('message:text', async (ctx) => {
-	 await ctx.reply(`${ctx.from.first_name}, я не знаю, что ответить.`)
+	await ctx.reply(`${ctx.from.first_name}, я не знаю, что ответить.`)
 });
 
 export default composer;
