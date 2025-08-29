@@ -7,7 +7,6 @@ export function withErrorBoundary() {
 			await next();
 		} catch (err: any) {
 			logger.error({ err }, "Bot error");
-
 			if (ctx.callbackQuery) {
 				await ctx
 					.answerCallbackQuery({

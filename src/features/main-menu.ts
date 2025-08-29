@@ -1,70 +1,59 @@
-import { Bot, InlineKeyboard } from "grammy";
+import { Bot } from "grammy";
 import { MyContext } from "../types/grammy-context";
+import { replyMainKeyboard } from "../utils/keyboards";
 import { fetchUpcomingEvents, formatEvent } from "../services/calendar";
 
-/** экспортируем генератор клавы, чтобы использовать в app.ts без динамических import().then */
-export function mainMenuKeyboard(ctx: MyContext) {
-	const kb = new InlineKeyboard()
-		.text("⛪ Воскресное богослужение", "nav:sunday")
-		.row()
-		.text("🙌 Кто мы", "nav:about")
-		.row()
-		.text("👥 Малые группы", "nav:groups")
-		.row()
-		.text("🗓️ Показать три ближайших события", "nav:next3")
-		.row();
+export const MENU_LABELS = {
+	SUNDAY: "⛪ Воскресное богослужение",
+	GROUPS: "👥 Малые группы",
+	NEXT3: "🗓️ Показать три ближайших события",
+	ABOUT: "🙌 Кто мы",
+	MAIN: "🏠 В главное меню",
+	ABOUT_BACK: "⬅️ В главное меню", // в about-меню
+	BACK: "⬅️ Назад", // общий «назад» внутри about
+	CHANNEL: "📣 Канал",
+	BELIEF: "🧭 Во что мы верим",
+	HISTORY: "📜 Наша история",
+};
 
-	if (ctx.canSeeFourthButton) {
-		kb.text("⭐ Расширенные функции", "nav:pro").row();
-	}
-	return kb;
+export async function renderMain(ctx: MyContext) {
+	ctx.session.lastSection = "main";
+	await ctx.reply("*Главное меню*", {
+		parse_mode: "Markdown",
+		reply_markup: replyMainKeyboard,
+	});
 }
 
 export function registerMainMenu(bot: Bot<MyContext>) {
+	// Переход в главное меню из inline «Начать» или из разделов
 	bot.callbackQuery("nav:main", async (ctx) => {
 		ctx.session.menuStack = ["main"];
-		await ctx.editMessageText("*Главное меню*", {
-			parse_mode: "Markdown",
-			reply_markup: mainMenuKeyboard(ctx),
-		});
-	});
-
-	// заглушка для "четвертой кнопки"
-	bot.callbackQuery("nav:pro", async (ctx) => {
-		if (!ctx.canSeeFourthButton) {
-			return ctx.answerCallbackQuery({ text: "Недоступно.", show_alert: true });
-		}
-		ctx.session.menuStack.push("pro");
-		const kb = new InlineKeyboard().text("⬅️ Назад", "nav:back").row().text("🏠 В главное меню", "nav:main");
-
-		await ctx.editMessageText("*Расширенные функции*\n\nЗдесь появятся инструменты для служителей.", {
-			parse_mode: "Markdown",
-			reply_markup: kb,
-		});
-	});
-
-	// НОВАЯ КНОПКА: показать 3 ближайших события из календаря
-	bot.callbackQuery("nav:next3", async (ctx) => {
-		// не ограничиваем по ролям — доступно всем
-		ctx.session.menuStack.push("next3");
-
-		// важно: ответить на коллбэк, чтобы Telegram не показывал «часики»
+		ctx.session.lastSection = "main";
 		await ctx.answerCallbackQuery().catch(() => {});
+		await renderMain(ctx);
+	});
 
+	// «🏠 В главное меню» как reply-кнопка
+	bot.hears(MENU_LABELS.MAIN, async (ctx) => {
+		ctx.session.lastSection = "main";
+		ctx.session.menuStack = ["main"];
+		await renderMain(ctx);
+	});
+
+	// Показать 3 ближайших события
+	bot.hears(MENU_LABELS.NEXT3, async (ctx) => {
+		ctx.session.lastSection = "next3";
 		const events = await fetchUpcomingEvents(3);
-		if (events.length === 0) {
-			return ctx.editMessageText("Ближайших событий не найдено.", {
-				reply_markup: new InlineKeyboard()
-					.text("⬅️ Назад", "nav:back")
-					.row()
-					.text("🏠 В главное меню", "nav:main"),
-			});
-		}
+		const text = events.length ? events.map(formatEvent).join("\n\n") : "Ближайших событий не найдено.";
 
-		const text = events.map(formatEvent).join("\n\n");
-		await ctx.editMessageText(`*Ближайшие события:*\n\n${text}`, {
+		// В этом экране только «🏠 В главное меню»
+		await ctx.reply(`*Ближайшие события:*\n\n${text}`, {
 			parse_mode: "Markdown",
-			reply_markup: new InlineKeyboard().text("⬅️ Назад", "nav:back").row().text("🏠 В главное меню", "nav:main"),
+			reply_markup: {
+				keyboard: [[{ text: MENU_LABELS.MAIN }]],
+				resize_keyboard: true,
+				is_persistent: true,
+			},
 		});
 	});
 }

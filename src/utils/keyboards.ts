@@ -1,20 +1,42 @@
-import { InlineKeyboard } from "grammy";
+import { Keyboard, InlineKeyboard } from "grammy";
 
-/**
- * Универсальные кнопки для любого экрана.
- * "Назад" возвращает на шаг назад (обрабатывается в menu.ts),
- * "В главное меню" — в корень (main).
- */
-export function commonNav(backPayload = "nav:back") {
-	return new InlineKeyboard().text("⬅️ Назад", backPayload).row().text("🏠 В главное меню", "nav:main");
+// Главное меню — широкие кнопки
+export const replyMainKeyboard = new Keyboard()
+	.text("⛪ Воскресное богослужение")
+	.text("👥 Малые группы")
+	.row()
+	.text("🗓️ Показать три ближайших события")
+	.row()
+	.text("🙌 Кто мы")
+	.resized();
+
+// Клавиатура «В главное меню»
+export const replyOnlyMain = new Keyboard().text("🏠 В главное меню").resized();
+
+// Клавиатура раздела «Кто мы»
+export const replyAboutMenu = new Keyboard()
+	.text("📣 Канал")
+	.row()
+	.text("🧭 Во что мы верим")
+	.row()
+	.text("📜 Наша история")
+	.row()
+	.text("⬅️ В главное меню")
+	.row()
+	.resized();
+
+// Клавиатура «Назад в «Кто мы» + главное меню» (для belief/history)
+export const replyBackToAbout = new Keyboard().text("⬅️ Назад").row().text("🏠 В главное меню").resized();
+
+// Общая inline-навигация для списка (малые группы)
+export function inlineBackToMain() {
+	return new InlineKeyboard().text("🏠 В главное меню", "nav:main");
 }
 
-/**
- * Помощник для URL-кнопок, чтобы не смешивать callback и url.
- */
-export function urlKeyboard(text: string, url: string) {
-	const kb = new InlineKeyboard();
-	kb.url(text, url);
-	kb.row().text("⬅️ Назад", "nav:back").row().text("🏠 В главное меню", "nav:main");
-	return kb;
+export function inlineGroupsRoot() {
+	return new InlineKeyboard()
+		.text("📅 По дням", "groups:byday")
+		.text("📍 По районам", "groups:bydistrict")
+		.row()
+		.text("🏠 В главное меню", "nav:main");
 }

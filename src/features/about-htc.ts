@@ -1,52 +1,93 @@
-import { Bot, InlineKeyboard } from "grammy";
+import { Bot } from "grammy";
 import { MyContext } from "../types/grammy-context";
 import { ABOUT } from "../services/texts";
 import { env } from "../config/env";
-import { urlKeyboard, commonNav } from "../utils/keyboards";
+import { MENU_LABELS } from "./main-menu";
+import { replyAboutMenu, replyBackToAbout } from "../utils/keyboards";
 
-export function renderAboutRoot(ctx: MyContext) {
-	const kb = new InlineKeyboard()
-		.text(ABOUT.channelButton, "about:channel")
-		.row()
-		.text(ABOUT.beliefButton, "about:belief")
-		.row()
-		.text(ABOUT.historyButton, "about:history")
-		.row()
-		.text(ABOUT.backButton, "nav:back")
-		.row()
-		.text(ABOUT.mainButton, "nav:main");
-
-	return ctx.editMessageText(`*${ABOUT.title}*`, {
+export async function renderAboutRoot(ctx: MyContext) {
+	ctx.session.lastSection = "about";
+	await ctx.reply(`*${ABOUT.title}*`, {
 		parse_mode: "Markdown",
-		reply_markup: kb,
+		reply_markup: replyAboutMenu,
+	});
+}
+
+export async function renderAboutBelief(ctx: MyContext) {
+	ctx.session.lastSection = "about/belief";
+	await ctx.reply(`*Во что мы верим*\n\n${ABOUT.belief}`, {
+		parse_mode: "Markdown",
+		reply_markup: replyBackToAbout,
+	});
+}
+
+export async function renderAboutHistory(ctx: MyContext) {
+	ctx.session.lastSection = "about/history";
+	await ctx.reply(`*Наша история*\n\n${ABOUT.history}`, {
+		parse_mode: "Markdown",
+		reply_markup: replyBackToAbout,
 	});
 }
 
 export function registerAbout(bot: Bot<MyContext>) {
-	bot.callbackQuery("nav:about", async (ctx) => {
-		ctx.session.menuStack.push("about");
+	// Вход в раздел из Reply-клавиатуры
+	bot.hears(MENU_LABELS.ABOUT, async (ctx) => {
 		await renderAboutRoot(ctx);
 	});
 
-	bot.callbackQuery("about:channel", async (ctx) => {
-		// Откроем URL через кнопку. Для этого используем клаву с url-кнопкой.
-		await ctx.editMessageText("*Канал нашей церкви:*", {
-			parse_mode: "Markdown",
-			reply_markup: urlKeyboard("Открыть канал", env.CHANNEL_URL),
+	// Кнопки внутри reply-меню «Кто мы»
+	bot.hears(MENU_LABELS.CHANNEL, async (ctx) => {
+		// открываем ссылку просто текстом, т.к. ReplyKeyboard не умеет url
+		await ctx.reply(`Наш канал: ${env.CHANNEL_URL}`, {
+			reply_markup: replyAboutMenu,
 		});
+		ctx.session.lastSection = "about";
 	});
 
-	bot.callbackQuery("about:belief", async (ctx) => {
-		await ctx.editMessageText(`*Во что мы верим*\n\n${ABOUT.belief}`, {
-			parse_mode: "Markdown",
-			reply_markup: commonNav(),
-		});
+	bot.hears(MENU_LABELS.BELIEF, async (ctx) => {
+		await renderAboutBelief(ctx);
 	});
 
-	bot.callbackQuery("about:history", async (ctx) => {
-		await ctx.editMessageText(`*Наша история*\n\n${ABOUT.history}`, {
-			parse_mode: "Markdown",
-			reply_markup: commonNav(),
+	bot.hears(MENU_LABELS.HISTORY, async (ctx) => {
+		await renderAboutHistory(ctx);
+	});
+
+	// «⬅️ Назад» из belief/history → в «Кто мы»
+	bot.hears(MENU_LABELS.BACK, async (ctx) => {
+		if (ctx.session.lastSection === "about/belief" || ctx.session.lastSection === "about/history") {
+			await renderAboutRoot(ctx);
+			return;
+		}
+		// иначе — в главное меню
+		await ctx.reply("Главное меню:", {
+			reply_markup: {
+				keyboard: [
+					[{ text: MENU_LABELS.SUNDAY }],
+					[{ text: MENU_LABELS.GROUPS }],
+					[{ text: MENU_LABELS.NEXT3 }],
+					[{ text: MENU_LABELS.ABOUT }],
+				],
+				resize_keyboard: true,
+				is_persistent: true,
+			},
 		});
+		ctx.session.lastSection = "main";
+	});
+
+	// «⬅️ В главное меню» из about-меню
+	bot.hears(MENU_LABELS.ABOUT_BACK, async (ctx) => {
+		await ctx.reply("Главное меню:", {
+			reply_markup: {
+				keyboard: [
+					[{ text: MENU_LABELS.SUNDAY }],
+					[{ text: MENU_LABELS.GROUPS }],
+					[{ text: MENU_LABELS.NEXT3 }],
+					[{ text: MENU_LABELS.ABOUT }],
+				],
+				resize_keyboard: true,
+				is_persistent: true,
+			},
+		});
+		ctx.session.lastSection = "main";
 	});
 }
