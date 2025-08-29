@@ -10,6 +10,7 @@
 /build
 
 # archive
+src/archive
 /archive
 
 # misc
