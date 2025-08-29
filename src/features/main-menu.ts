@@ -7,15 +7,14 @@ export function mainMenuKeyboard(ctx: MyContext) {
 	const kb = new InlineKeyboard()
 		.text("⛪ Воскресное богослужение", "nav:sunday")
 		.row()
-		.text("🙌 Кто мы", "nav:about")
-		.row()
 		.text("👥 Малые группы", "nav:groups")
 		.row()
 		.text("🗓️ Показать три ближайших события", "nav:next3")
-		.row();
+		.row()
+		.text("🙌 Кто мы", "nav:about");
 
 	if (ctx.canSeeFourthButton) {
-		kb.text("⭐ Расширенные функции", "nav:pro").row();
+		kb.row().text("⭐ Пресвитерский совет", "nav:pro");
 	}
 	return kb;
 }
@@ -35,7 +34,7 @@ export function registerMainMenu(bot: Bot<MyContext>) {
 			return ctx.answerCallbackQuery({ text: "Недоступно.", show_alert: true });
 		}
 		ctx.session.menuStack.push("pro");
-		const kb = new InlineKeyboard().text("⬅️ Назад", "nav:back").row().text("🏠 В главное меню", "nav:main");
+		const kb = new InlineKeyboard().text("⬅️ Назад", "nav:back").text("🏠 В главное меню", "nav:main");
 
 		await ctx.editMessageText("*Расширенные функции*\n\nЗдесь появятся инструменты для служителей.", {
 			parse_mode: "Markdown",
@@ -54,17 +53,14 @@ export function registerMainMenu(bot: Bot<MyContext>) {
 		const events = await fetchUpcomingEvents(3);
 		if (events.length === 0) {
 			return ctx.editMessageText("Ближайших событий не найдено.", {
-				reply_markup: new InlineKeyboard()
-					.text("⬅️ Назад", "nav:back")
-					.row()
-					.text("🏠 В главное меню", "nav:main"),
+				reply_markup: new InlineKeyboard().text("⬅️ Назад", "nav:back").text("🏠 В главное меню", "nav:main"),
 			});
 		}
 
 		const text = events.map(formatEvent).join("\n\n");
 		await ctx.editMessageText(`*Ближайшие события:*\n\n${text}`, {
 			parse_mode: "Markdown",
-			reply_markup: new InlineKeyboard().text("⬅️ Назад", "nav:back").row().text("🏠 В главное меню", "nav:main"),
+			reply_markup: new InlineKeyboard().text("⬅️ Назад", "nav:back").text("🏠 В главное меню", "nav:main"),
 		});
 	});
 }

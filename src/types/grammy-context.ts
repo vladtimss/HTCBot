@@ -1,25 +1,17 @@
 import { Context, SessionFlavor } from "grammy";
 
-/**
- * Состояние сессии хранит стек путей меню,
- * чтобы кнопка "Назад" всегда знала, куда вернуться.
- */
 export interface SessionData {
-	menuStack: string[]; // например: ["main", "groups", "byday", "MON"]
+	menuStack: string[]; // стек экранов для «Назад»
+	lastMessageId?: number; // можно хранить id сообщения, если нужно
 }
 
-/**
- * Данные о пользователе/ролях, которые мы подгружаем в миддлваре auth.
- */
 export interface AccessData {
-	isProUser: boolean; // имеет ли доступ к "четвёртой кнопке" + MG расширенные пункты
+	isPrivileged: boolean;
+	canSeeFourthButton: boolean;
 	username?: string;
 	telegramId?: number;
 }
 
-/**
- * Собираем свой контекст с добавлением session и access.
- */
 export type MyContext = Context &
 	SessionFlavor<SessionData> & {
 		access: AccessData;
