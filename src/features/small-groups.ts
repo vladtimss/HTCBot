@@ -1,21 +1,13 @@
 import { Bot, InlineKeyboard } from "grammy";
 import { MyContext } from "../types/grammy-context";
 import { GROUPS, WEEKDAYS_PRESENT, WEEKDAY_TITLE, DISTRICTS, Weekday } from "../data/small-groups";
+import { replyGroupsMenu, replyMainKeyboard, inlineBackToMain } from "../utils/keyboards";
 import { MENU_LABELS } from "./main-menu";
 
-function kbGroupsRoot() {
-	return new InlineKeyboard()
-		.text("📅 По дням", "groups:byday")
-		.text("📍 По районам", "groups:bydistrict")
-		.row()
-		.text("⬅️ Назад", "nav:back")
-		.row()
-		.text("🏠 В главное меню", "nav:main");
-}
-
-function formatGroupList(groups = GROUPS): string {
-	if (!groups.length) return "Группы не найдены.";
-	return groups
+// форматируем список групп
+function formatGroupList(list = GROUPS): string {
+	if (!list.length) return "Группы не найдены.";
+	return list
 		.map((g) => {
 			const leaders = g.leaders.map((l) => `• ${l.name} — ${l.phone}`).join("\n");
 			return `*${g.title}*\n📍 ${g.address} (${g.region})\n🗓 ${WEEKDAY_TITLE[g.weekday]} ${
@@ -25,94 +17,107 @@ function formatGroupList(groups = GROUPS): string {
 		.join("\n\n");
 }
 
-export async function renderGroupsRoot(ctx: MyContext) {
-	await ctx.reply("*Малые группы*", {
-		parse_mode: "Markdown",
-		reply_markup: kbGroupsRoot(),
-	});
-}
-
-export async function renderGroupsByDayIndex(ctx: MyContext) {
-	const kb = new InlineKeyboard();
-	WEEKDAYS_PRESENT.forEach((d) => kb.text(WEEKDAY_TITLE[d], `groups:day:${d}`).row());
-	kb.text("⬅️ Назад", "nav:back").row().text("🏠 В главное меню", "nav:main");
-
-	await ctx.editMessageText("*Выберите день:*", {
-		parse_mode: "Markdown",
-		reply_markup: kb,
-	});
-}
-
-export async function renderGroupsByDay(ctx: MyContext, day: Weekday) {
-	const list = GROUPS.filter((g) => g.weekday === day);
-	await ctx.editMessageText(`*${WEEKDAY_TITLE[day]} — группы:*\n` + "\n\n" + formatGroupList(list), {
-		parse_mode: "Markdown",
-		reply_markup: commonInlineNav(),
-	});
-}
-
-export async function renderGroupsByDistrictIndex(ctx: MyContext) {
-	const kb = new InlineKeyboard();
-	DISTRICTS.forEach((r) => kb.text(r, `groups:district:${encodeURIComponent(r)}`).row());
-	kb.text("⬅️ Назад", "nav:back").row().text("🏠 В главное меню", "nav:main");
-
-	await ctx.editMessageText("*Выберите район:*", {
-		parse_mode: "Markdown",
-		reply_markup: kb,
-	});
-}
-
-export async function renderGroupsByDistrict(ctx: MyContext, district: string) {
-	const list = GROUPS.filter((g) => g.region === district);
-	await ctx.editMessageText(`*${district} — группы:*\n` + "\n\n" + formatGroupList(list), {
-		parse_mode: "Markdown",
-		reply_markup: commonInlineNav(),
-	});
-}
-
 export function registerSmallGroups(bot: Bot<MyContext>) {
-	// Вход из Reply-клавиатуры
+	// Вход в раздел — широкие reply-кнопки
 	bot.hears(MENU_LABELS.GROUPS, async (ctx) => {
-		ctx.session.menuStack.push("groups");
-		await renderGroupsRoot(ctx);
-	});
-
-	// Навигация внутри раздела — Inline
-	bot.callbackQuery("nav:groups", async (ctx) => {
-		ctx.session.menuStack.push("groups");
-		await ctx.answerCallbackQuery().catch(() => {});
-		await ctx.editMessageText("*Малые группы*", {
+		await ctx.reply("*Малые группы*", {
 			parse_mode: "Markdown",
-			reply_markup: kbGroupsRoot(),
+			reply_markup: replyGroupsMenu,
 		});
 	});
 
-	bot.callbackQuery("groups:byday", async (ctx) => {
-		ctx.session.menuStack.push("groups/byday");
-		await ctx.answerCallbackQuery().catch(() => {});
-		await renderGroupsByDayIndex(ctx);
+	// Reply: «По дням» -> inline-список дней
+	bot.hears("📅 По дням", async (ctx) => {
+		const kb = new InlineKeyboard();
+		WEEKDAYS_PRESENT.forEach((d) => kb.text(WEEKDAY_TITLE[d], `groups:day:${d}`).row());
+		kb.text("⬅️ К разделу «Малые группы»", "groups:root").row().text("🏠 В главное меню", "nav:main");
+
+		await ctx.reply("*Выберите день:*", {
+			parse_mode: "Markdown",
+			reply_markup: kb,
+		});
 	});
 
+	// Reply: «По районам» -> inline-список районов
+	bot.hears("📍 По районам", async (ctx) => {
+		const kb = new InlineKeyboard();
+		DISTRICTS.forEach((r) => kb.text(r, `groups:district:${encodeURIComponent(r)}`).row());
+		kb.text("⬅️ К разделу «Малые группы»", "groups:root").row().text("🏠 В главное меню", "nav:main");
+
+		await ctx.reply("*Выберите район:*", {
+			parse_mode: "Markdown",
+			reply_markup: kb,
+		});
+	});
+
+	// Inline: выбор дня -> список групп
 	bot.callbackQuery(/groups:day:(MON|TUE|WED|THU|FRI|SAT|SUN)/, async (ctx) => {
 		const day = ctx.match![1] as Weekday;
-		ctx.session.menuStack.push(`groups/byday/${day}`);
 		await ctx.answerCallbackQuery().catch(() => {});
-		await renderGroupsByDay(ctx, day);
+		const list = GROUPS.filter((g) => g.weekday === day);
+
+		await ctx.editMessageText(`*${WEEKDAY_TITLE[day]} — группы:*\n\n${formatGroupList(list)}`, {
+			parse_mode: "Markdown",
+			reply_markup: new InlineKeyboard()
+				.text("⬅️ К дням", "groups:byday")
+				.row()
+				.text("🏠 В главное меню", "nav:main"),
+		});
 	});
 
-	bot.callbackQuery("groups:bydistrict", async (ctx) => {
-		ctx.session.menuStack.push("groups/bydistrict");
+	// Inline: вернуть к списку дней
+	bot.callbackQuery("groups:byday", async (ctx) => {
 		await ctx.answerCallbackQuery().catch(() => {});
-		await renderGroupsByDistrictIndex(ctx);
+		const kb = new InlineKeyboard();
+		WEEKDAYS_PRESENT.forEach((d) => kb.text(WEEKDAY_TITLE[d], `groups:day:${d}`).row());
+		kb.text("⬅️ К разделу «Малые группы»", "groups:root").row().text("🏠 В главное меню", "nav:main");
+
+		await ctx.editMessageText("*Выберите день:*", {
+			parse_mode: "Markdown",
+			reply_markup: kb,
+		});
 	});
 
+	// Inline: выбор района -> список групп
 	bot.callbackQuery(/groups:district:(.+)/, async (ctx) => {
 		const district = decodeURIComponent(ctx.match![1]);
-		ctx.session.menuStack.push(`groups/bydistrict/${district}`);
 		await ctx.answerCallbackQuery().catch(() => {});
-		await renderGroupsByDistrict(ctx, district);
+		const list = GROUPS.filter((g) => g.region === district);
+
+		await ctx.editMessageText(`*${district} — группы:*\n\n${formatGroupList(list)}`, {
+			parse_mode: "Markdown",
+			reply_markup: new InlineKeyboard()
+				.text("⬅️ К районам", "groups:bydistrict")
+				.row()
+				.text("🏠 В главное меню", "nav:main"),
+		});
 	});
-}
-function commonInlineNav(): import("@grammyjs/types").InlineKeyboardMarkup | undefined {
-	throw new Error("Function not implemented.");
+
+	// Inline: вернуть к списку районов
+	bot.callbackQuery("groups:bydistrict", async (ctx) => {
+		await ctx.answerCallbackQuery().catch(() => {});
+		const kb = new InlineKeyboard();
+		DISTRICTS.forEach((r) => kb.text(r, `groups:district:${encodeURIComponent(r)}`).row());
+		kb.text("⬅️ К разделу «Малые группы»", "groups:root").row().text("🏠 В главное меню", "nav:main");
+
+		await ctx.editMessageText("*Выберите район:*", {
+			parse_mode: "Markdown",
+			reply_markup: kb,
+		});
+	});
+
+	// Inline: «к разделу „Малые группы“» — вернём reply-клавиатуру
+	bot.callbackQuery("groups:root", async (ctx) => {
+		await ctx.answerCallbackQuery().catch(() => {});
+		await ctx.reply("*Малые группы*", {
+			parse_mode: "Markdown",
+			reply_markup: replyGroupsMenu,
+		});
+	});
+
+	// Inline: глобальный возврат в главное
+	bot.callbackQuery("nav:main", async (ctx) => {
+		await ctx.answerCallbackQuery().catch(() => {});
+		await ctx.reply("Главное меню:", { reply_markup: replyMainKeyboard });
+	});
 }
