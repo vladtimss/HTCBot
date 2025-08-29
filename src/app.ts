@@ -1,21 +1,55 @@
-import bot                                          from "./bot";
-import { errorHandler }                             from "./middlewares/error-handler";
-import { log }                                      from "./middlewares/logger";
-import { useCommands }                              from "./commands";
-import { caldavCalendarIntegrationServiceInstance } from "./services/caldav-calendar-integration.service";
+import { Bot } from "grammy";
+import { env } from "./config/env";
+import { MyContext } from "./types/grammy-context";
+import { logger } from "./utils/logger";
+import { withErrorBoundary } from "./middlewares/error";
+import { sessionMiddleware, authMiddleware } from "./middlewares/auth";
 
-(async () => {
-	await caldavCalendarIntegrationServiceInstance.init();
+// фичи
+import { registerStart } from "./features/start";
+import { registerMainMenu, mainMenuKeyboard } from "./features/main-menu";
+import { registerSunday } from "./features/sunday-service";
+import { registerAbout } from "./features/about-htc";
+import { registerSmallGroups } from "./features/small-groups";
 
-	useCommands()
+const bot = new Bot<MyContext>(env.BOT_TOKEN);
 
-	bot.catch(errorHandler);
+// middleware
+bot.use(withErrorBoundary());
+bot.use(sessionMiddleware);
+bot.use(authMiddleware());
 
-	await bot.start({
-		drop_pending_updates: true,
-		onStart: async () => {
-			await log('Bot is running @htchurch_bot');
+bot.use(async (ctx, next) => {
+	logger.info(
+		{
+			from: ctx.from?.username,
+			id: ctx.from?.id,
+			type: ctx.update.update_id,
+			msg: ctx.message?.text ?? ctx.callbackQuery?.data,
 		},
-		allowed_updates: ['message', 'callback_query', 'my_chat_member']
-	});
-})();
+		"update"
+	);
+	await next();
+});
+
+// фичи
+registerStart(bot);
+registerMainMenu(bot);
+registerSunday(bot);
+registerAbout(bot);
+registerSmallGroups(bot);
+
+// если пользователь напишет текстом в ЛС — покажем меню
+bot.on("message", async (ctx) => {
+	if (ctx.chat.type === "private") {
+		await ctx.reply("*Главное меню*", {
+			parse_mode: "Markdown",
+			reply_markup: mainMenuKeyboard(ctx),
+		});
+	}
+});
+
+// запуск
+bot.start({
+	onStart: (me) => logger.info(`Bot @${me.username} started`),
+});
