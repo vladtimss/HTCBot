@@ -5,9 +5,8 @@ import { MENU_LABELS } from "./main-menu";
 
 export async function renderSunday(ctx: MyContext) {
 	ctx.session.lastSection = "sunday";
-	await ctx.reply(`*${SUNDAY.title}*\n\n${SUNDAY.text}`, {
-		parse_mode: "Markdown",
-		// reply-клава только с «В главное меню»
+	await ctx.reply(`${SUNDAY.text}`, {
+		parse_mode: "HTML",
 		reply_markup: {
 			keyboard: [[{ text: MENU_LABELS.MAIN }]],
 			resize_keyboard: true,
