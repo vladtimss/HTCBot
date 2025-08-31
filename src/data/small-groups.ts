@@ -1,6 +1,8 @@
 import { env } from "../config/env";
 
+// День недели
 export type Weekday = "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN";
+
 export const WEEKDAY_TITLE: Record<Weekday, string> = {
 	MON: "Понедельник",
 	TUE: "Вторник",
@@ -11,8 +13,15 @@ export const WEEKDAY_TITLE: Record<Weekday, string> = {
 	SUN: "Воскресенье",
 };
 
-export type Leader = { id: string; name: string; phone: string };
-export type MgGroupRaw = {
+// Лидер малой группы
+export type SmallGroupLeader = {
+	id: string;
+	name: string;
+	phone: string;
+};
+
+// «Сырая» малая группа (только id лидеров)
+export type SmallGroupRaw = {
 	id: string;
 	title: string;
 	region: string;
@@ -22,10 +31,13 @@ export type MgGroupRaw = {
 	leaderIds: string[];
 };
 
-export type MgGroup = Omit<MgGroupRaw, "leaderIds"> & { leaders: Leader[] };
+// Готовая малая группа (с объектами лидеров)
+export type SmallGroup = Omit<SmallGroupRaw, "leaderIds"> & {
+	leaders: SmallGroupLeader[];
+};
 
-// 4 группы: 3 в пятницу и 1 в среду
-const RAW_GROUPS: MgGroupRaw[] = [
+// Базовый список групп (без лидеров)
+const RAW_GROUPS: SmallGroupRaw[] = [
 	{
 		id: "g1",
 		title: "МГ Центр #1",
@@ -64,18 +76,21 @@ const RAW_GROUPS: MgGroupRaw[] = [
 	},
 ];
 
-// Мёржим лидеров из .env (по id)
-export const GROUPS: MgGroup[] = RAW_GROUPS.map((g) => {
-	const leaders: Leader[] = (g.leaderIds || [])
+// Готовый список с подставленными лидерами
+export const GROUPS: SmallGroup[] = RAW_GROUPS.map((g) => {
+	const leaders: SmallGroupLeader[] = (g.leaderIds || [])
 		.map((id) => {
 			const src = env.LEADERS[id];
 			if (!src) return null;
 			return { id, name: src.name, phone: src.phone };
 		})
-		.filter(Boolean) as Leader[];
+		.filter(Boolean) as SmallGroupLeader[];
 
 	return { ...g, leaders };
 });
 
+// Все уникальные районы
 export const DISTRICTS = Array.from(new Set(GROUPS.map((g) => g.region)));
+
+// Все уникальные дни (с типом)
 export const WEEKDAYS_PRESENT = Array.from(new Set(GROUPS.map((g) => g.weekday))) as Weekday[];
