@@ -3,20 +3,19 @@ import { Keyboard, InlineKeyboard } from "grammy";
 // Главное меню — широкие кнопки (каждая в своей строке)
 export const replyMainKeyboard = new Keyboard()
 	.text("⛪ Воскресное богослужение")
-	.row()
 	.text("👥 Малые группы")
 	.row()
 	.text("🗓️ Показать три ближайших события")
 	.row()
 	.text("🙌 Кто мы")
-	.resized();
+	.resized()
+	.persistent();
 
 // Клавиатура «Кто мы»
 export const replyAboutMenu = new Keyboard()
 	.text("📣 Канал")
 	.row()
 	.text("🧭 Во что мы верим")
-	.row()
 	.text("📜 Наша история")
 	.row()
 	.text("⬅️ В главное меню")

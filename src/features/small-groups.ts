@@ -12,11 +12,10 @@ import {
 import { replyGroupsMenu, replyMainKeyboard } from "../utils/keyboards";
 import { MENU_LABELS } from "./main-menu";
 
-// форматируем одну группу
+// Форматируем одну группу
 function formatGroup(g: SmallGroup): string {
 	const leaders = g.leaders.map((l) => `👤 ${l.firstName} — ${l.phone}`).join("\n");
 	const addresses = g.addresses.map((a) => `📍 <a href="${a.mapUrl}">${a.address}</a>`).join("\n");
-
 	return `<b>${g.title}</b>\n🗓 ${WEEKDAY_TITLE[g.weekday]}, начало в ${g.time}\n${addresses}\n${leaders}`;
 }
 
@@ -33,7 +32,6 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 	bot.hears("📅 По дням", async (ctx) => {
 		const kb = new InlineKeyboard();
 		WEEKDAYS_PRESENT.forEach((d) => kb.text(WEEKDAY_TITLE[d], `groups:day:${d}`).row());
-		// kb.text("⬅️ К разделу «Малые группы»", "groups:root").row().text("🏠 В главное меню", "nav:main");
 
 		await ctx.reply("*Выберите день:*", {
 			parse_mode: "Markdown",
@@ -44,13 +42,10 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 	// Reply: «По районам» -> inline-список районов
 	bot.hears("📍 По районам", async (ctx) => {
 		const kb = new InlineKeyboard();
-
 		DISTRICTS.forEach((districtKey) => {
 			const districtName = DISTRICT_MAP[districtKey] ?? districtKey;
 			kb.text(districtName, `groups:district:${districtKey}`).row();
 		});
-
-		// kb.text("⬅️ К разделу «Малые группы»", "groups:root").row().text("🏠 В главное меню", "nav:main");
 
 		await ctx.reply("*Выберите район:*", {
 			parse_mode: "Markdown",
@@ -58,19 +53,19 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 		});
 	});
 
-	// Inline: выбор дня -> список групп
+	// Inline: выбор дня -> список групп (каждая группа отдельным сообщением)
 	bot.callbackQuery(/groups:day:(MON|TUE|WED|THU|FRI|SAT|SUN)/, async (ctx) => {
 		const day = ctx.match![1] as Weekday;
 		await ctx.answerCallbackQuery().catch(() => {});
 		const list = GROUPS.filter((g) => g.weekday === day);
 
-		// 1. Заголовок
+		// 1) Заголовок
 		await ctx.editMessageText(`<b>${WEEKDAY_TITLE[day]} — группы:</b>`, {
 			parse_mode: "HTML",
 			link_preview_options: { is_disabled: true },
 		});
 
-		// 2. Каждая группа отдельным сообщением
+		// 2) Каждая группа — отдельным сообщением; кнопки только к последнему
 		for (let i = 0; i < list.length; i++) {
 			const g = list[i];
 			const isLast = i === list.length - 1;
@@ -88,7 +83,6 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 		await ctx.answerCallbackQuery().catch(() => {});
 		const kb = new InlineKeyboard();
 		WEEKDAYS_PRESENT.forEach((d) => kb.text(WEEKDAY_TITLE[d], `groups:day:${d}`).row());
-		// kb.text("⬅️ К разделу «Малые группы»", "groups:root").row().text("🏠 В главное меню", "nav:main");
 
 		await ctx.editMessageText("*Выберите день:*", {
 			parse_mode: "HTML",
@@ -96,7 +90,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 		});
 	});
 
-	// Inline: выбор района -> список групп
+	// Inline: выбор района -> список групп (каждая группа отдельным сообщением)
 	bot.callbackQuery(/groups:district:(.+)/, async (ctx) => {
 		const districtKey = ctx.match![1];
 		const districtName = DISTRICT_MAP[districtKey] ?? districtKey;
@@ -104,13 +98,13 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 		await ctx.answerCallbackQuery().catch(() => {});
 		const list = GROUPS.filter((g) => g.region === districtKey);
 
-		// 1. Заголовок
+		// 1) Заголовок
 		await ctx.editMessageText(`<b>${districtName} — группы:</b>`, {
 			parse_mode: "HTML",
 			link_preview_options: { is_disabled: true },
 		});
 
-		// 2. Каждая группа отдельным сообщением
+		// 2) Каждая группа — отдельным сообщением; кнопки только к последнему
 		for (let i = 0; i < list.length; i++) {
 			const g = list[i];
 			const isLast = i === list.length - 1;
@@ -131,7 +125,6 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 			const districtName = DISTRICT_MAP[districtKey] ?? districtKey;
 			kb.text(districtName, `groups:district:${districtKey}`).row();
 		});
-		// kb.text("⬅️ К разделу «Малые группы»", "groups:root").row().text("🏠 В главное меню", "nav:main");
 
 		await ctx.editMessageText("*Выберите район:*", {
 			parse_mode: "HTML",
@@ -139,7 +132,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 		});
 	});
 
-	// Inline: «к разделу „Малые группы“» — вернём reply-клавиатуру
+	// Inline: «к разделу „Малые группы“» — вернём reply-клавиатуру раздела
 	bot.callbackQuery("groups:root", async (ctx) => {
 		await ctx.answerCallbackQuery().catch(() => {});
 		await ctx.reply("*Малые группы*", {

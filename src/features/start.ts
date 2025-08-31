@@ -10,6 +10,7 @@ export function registerStart(bot: Bot<MyContext>) {
 		ctx.session.lastSection = "main";
 
 		const kb = new InlineKeyboard().text(START.button, "nav:main");
+
 		try {
 			await ctx.replyWithPhoto(env.START_IMAGE, {
 				caption: `*${START.title}*\n\n${START.description}`,
