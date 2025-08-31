@@ -136,7 +136,10 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 	bot.callbackQuery("groups:bydistrict", async (ctx) => {
 		await ctx.answerCallbackQuery().catch(() => {});
 		const kb = new InlineKeyboard();
-		DISTRICTS.forEach((r) => kb.text(r, `groups:district:${encodeURIComponent(r)}`).row());
+		DISTRICTS.forEach((districtKey) => {
+			const districtName = DISTRICT_MAP[districtKey] ?? districtKey;
+			kb.text(districtName, `groups:district:${districtKey}`).row();
+		});
 		kb.text("⬅️ К разделу «Малые группы»", "groups:root").row().text("🏠 В главное меню", "nav:main");
 
 		await ctx.editMessageText("*Выберите район:*", {
