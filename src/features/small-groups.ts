@@ -11,6 +11,7 @@ import {
 } from "../data/small-groups";
 import { replyGroupsMenu, replyMainKeyboard } from "../utils/keyboards";
 import { MENU_LABELS } from "./main-menu";
+import { fetchUpcomingEvents, formatEvent } from "../services/calendar";
 
 // Форматируем одну группу
 function formatGroup(g: SmallGroup): string {
@@ -145,5 +146,22 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 	bot.callbackQuery("nav:main", async (ctx) => {
 		await ctx.answerCallbackQuery().catch(() => {});
 		await ctx.reply("Главное меню:", { reply_markup: replyMainKeyboard });
+	});
+
+	// Кнопка: когда следующая встреча ЛМ
+	bot.hears("📅 Когда следующая встреча ЛМГ", async (ctx) => {
+		console.log(1);
+
+		const events = await fetchUpcomingEvents(10); // возьмем 10 ближайших
+		console.log(events);
+		const lm = events.find((e) => e.title.toLowerCase().includes("лмг"));
+		console.log(lm);
+
+		if (!lm) {
+			await ctx.reply("😔 Ближайших встреч ЛМ в календаре не найдено.");
+			return;
+		}
+
+		await ctx.reply(formatEvent(lm), { parse_mode: "Markdown" });
 	});
 }

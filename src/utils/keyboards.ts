@@ -30,6 +30,7 @@ export const replyGroupsMenu = new Keyboard()
 	.text("📍 По районам")
 	.row()
 	.text("⬅️ В главное меню")
+	.text("📅 Когда следующая встреча ЛМГ")
 	.resized();
 
 // Общая inline-кнопка «В главное меню» (для сообщений со списками)
