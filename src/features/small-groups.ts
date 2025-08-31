@@ -9,8 +9,8 @@ function formatGroupList(list = GROUPS): string {
 	if (!list.length) return "Группы не найдены.";
 	return list
 		.map((g) => {
-			const leaders = g.leaders.map((l) => `• ${l.name} — ${l.phone}`).join("\n");
-			return `*${g.title}*\n📍 ${g.address} (${g.region})\n🗓 ${WEEKDAY_TITLE[g.weekday]} ${
+			const leaders = g.leaders.map((l) => `• ${l.firstName} — ${l.phone}`).join("\n");
+			return `*${g.title}*\n📍 ${g.addresses.join(",")} (${g.region})\n🗓 ${WEEKDAY_TITLE[g.weekday]} ${
 				g.time
 			}\n👥 Лидеры:\n${leaders}`;
 		})
