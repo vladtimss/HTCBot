@@ -45,12 +45,17 @@ export type SmallGroup = SmallGroupRaw & {
 	addresses: GroupAddress[];
 };
 
+// --- Районы (ключ -> отображаемое название)
+export const DISTRICT_MAP: Record<string, string> = {
+	"troick-pervomaiskoe": "Троицк-Первомайское",
+};
+
 // Базовый список (без адресов и лидеров) — 4 группы: 3 в пятницу и 1 в среду
 const RAW_GROUPS: SmallGroupRaw[] = [
 	{
 		id: "g1",
 		title: "Троицк-Первомайское",
-		region: "Центр",
+		region: "troick-pervomaiskoe",
 		weekday: "WED",
 		time: "19:00",
 		leaderIds: ["l1", "l2"],

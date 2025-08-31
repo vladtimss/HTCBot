@@ -1,6 +1,14 @@
 import { Bot, InlineKeyboard } from "grammy";
 import { MyContext } from "../types/grammy-context";
-import { GROUPS, WEEKDAYS_PRESENT, WEEKDAY_TITLE, DISTRICTS, Weekday, SmallGroup } from "../data/small-groups";
+import {
+	GROUPS,
+	WEEKDAYS_PRESENT,
+	WEEKDAY_TITLE,
+	DISTRICTS,
+	Weekday,
+	SmallGroup,
+	DISTRICT_MAP,
+} from "../data/small-groups";
 import { replyGroupsMenu, replyMainKeyboard } from "../utils/keyboards";
 import { MENU_LABELS } from "./main-menu";
 
@@ -36,7 +44,12 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 	// Reply: «По районам» -> inline-список районов
 	bot.hears("📍 По районам", async (ctx) => {
 		const kb = new InlineKeyboard();
-		DISTRICTS.forEach((r) => kb.text(r, `groups:district:${encodeURIComponent(r)}`).row());
+
+		DISTRICTS.forEach((districtKey) => {
+			const districtName = DISTRICT_MAP[districtKey] ?? districtKey;
+			kb.text(districtName, `groups:district:${districtKey}`).row();
+		});
+
 		kb.text("⬅️ К разделу «Малые группы»", "groups:root").row().text("🏠 В главное меню", "nav:main");
 
 		await ctx.reply("*Выберите район:*", {
@@ -89,12 +102,14 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 
 	// Inline: выбор района -> список групп
 	bot.callbackQuery(/groups:district:(.+)/, async (ctx) => {
-		const district = decodeURIComponent(ctx.match![1]);
+		const districtKey = ctx.match![1];
+		const districtName = DISTRICT_MAP[districtKey] ?? districtKey;
+
 		await ctx.answerCallbackQuery().catch(() => {});
-		const list = GROUPS.filter((g) => g.region === district);
+		const list = GROUPS.filter((g) => g.region === districtKey);
 
 		// 1. Заголовок
-		await ctx.editMessageText(`<b>${district} — группы:</b>`, {
+		await ctx.editMessageText(`<b>${districtName} — группы:</b>`, {
 			parse_mode: "HTML",
 			link_preview_options: { is_disabled: true },
 		});
