@@ -124,3 +124,20 @@ export function formatEvent(e: CalendarEvent): string {
 function escapeMd(s: string): string {
 	return s.replace(/([_*[\]()~`>#+\-=|{}.!\\])/g, "\\$1");
 }
+
+/**
+ * Получить все встречи ЛМГ до конца сезона (сегодня → 31 июля текущего или следующего года)
+ */
+export async function fetchLmEventsUntilSeasonEnd(): Promise<CalendarEvent[]> {
+	const objs = await fetchCalendarObjects();
+	const allEvents = objs.flatMap(parseDavObjectToEvents);
+
+	const now = new Date();
+	// если уже август, считаем до конца следующего сезона
+	const seasonYear = now.getMonth() >= 7 ? now.getFullYear() + 1 : now.getFullYear();
+	const seasonEnd = new Date(seasonYear, 6, 31, 23, 59, 59); // 31 июля
+
+	return allEvents
+		.filter((e) => e.title.toLowerCase().includes("лм") && isAfter(e.startsAt, now) && e.startsAt <= seasonEnd)
+		.sort((a, b) => compareAsc(a.startsAt, b.startsAt));
+}

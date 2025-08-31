@@ -11,7 +11,7 @@ import {
 } from "../data/small-groups";
 import { replyGroupsMenu, replyMainKeyboard } from "../utils/keyboards";
 import { MENU_LABELS } from "./main-menu";
-import { fetchUpcomingEvents, formatEvent } from "../services/calendar";
+import { fetchLmEventsUntilSeasonEnd, fetchUpcomingEvents, formatEvent } from "../services/calendar";
 
 // Форматируем одну группу
 function formatGroup(g: SmallGroup): string {
@@ -148,20 +148,31 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 		await ctx.reply("Главное меню:", { reply_markup: replyMainKeyboard });
 	});
 
-	// Кнопка: когда следующая встреча ЛМ
+	// Кнопка: когда следующая встреча ЛМГ
 	bot.hears("📅 Когда следующая встреча ЛМГ", async (ctx) => {
-		console.log(1);
+		const events = await fetchLmEventsUntilSeasonEnd();
+		const nextLm = events[0]; // первый в списке — ближайший
 
-		const events = await fetchUpcomingEvents(10); // возьмем 10 ближайших
-		console.log(events);
-		const lm = events.find((e) => e.title.toLowerCase().includes("лмг"));
-		console.log(lm);
-
-		if (!lm) {
-			await ctx.reply("😔 Ближайших встреч ЛМ в календаре не найдено.");
+		if (!nextLm) {
+			await ctx.reply("😔 Ближайших встреч ЛМГ в этом сезоне не найдено.");
 			return;
 		}
 
-		await ctx.reply(formatEvent(lm), { parse_mode: "Markdown" });
+		await ctx.reply(formatEvent(nextLm), { parse_mode: "Markdown" });
+	});
+
+	// Кнопка: все встречи ЛМГ до конца сезона
+	bot.hears("📖 Все встречи ЛМГ до конца сезона", async (ctx) => {
+		const lmEvents = await fetchLmEventsUntilSeasonEnd();
+
+		if (lmEvents.length === 0) {
+			await ctx.reply("😔 В этом сезоне встреч ЛМГ больше нет.");
+			return;
+		}
+
+		const list = lmEvents.map(formatEvent).join("\n\n");
+		await ctx.reply(`📖 *Список встреч ЛМГ до конца сезона:*\n\n${list}`, {
+			parse_mode: "Markdown",
+		});
 	});
 }
