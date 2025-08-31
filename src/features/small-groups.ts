@@ -33,7 +33,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 	bot.hears("📅 По дням", async (ctx) => {
 		const kb = new InlineKeyboard();
 		WEEKDAYS_PRESENT.forEach((d) => kb.text(WEEKDAY_TITLE[d], `groups:day:${d}`).row());
-		kb.text("⬅️ К разделу «Малые группы»", "groups:root").row().text("🏠 В главное меню", "nav:main");
+		// kb.text("⬅️ К разделу «Малые группы»", "groups:root").row().text("🏠 В главное меню", "nav:main");
 
 		await ctx.reply("*Выберите день:*", {
 			parse_mode: "Markdown",
@@ -50,7 +50,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 			kb.text(districtName, `groups:district:${districtKey}`).row();
 		});
 
-		kb.text("⬅️ К разделу «Малые группы»", "groups:root").row().text("🏠 В главное меню", "nav:main");
+		// kb.text("⬅️ К разделу «Малые группы»", "groups:root").row().text("🏠 В главное меню", "nav:main");
 
 		await ctx.reply("*Выберите район:*", {
 			parse_mode: "Markdown",
@@ -71,20 +71,16 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 		});
 
 		// 2. Каждая группа отдельным сообщением
-		for (const g of list) {
+		for (let i = 0; i < list.length; i++) {
+			const g = list[i];
+			const isLast = i === list.length - 1;
+
 			await ctx.reply(formatGroup(g), {
 				parse_mode: "HTML",
 				link_preview_options: { is_disabled: true },
+				reply_markup: isLast ? new InlineKeyboard().text("⬅️ К дням", "groups:byday") : undefined,
 			});
 		}
-
-		// 3. Кнопки навигации
-		await ctx.reply("Навигация:", {
-			reply_markup: new InlineKeyboard()
-				.text("⬅️ К дням", "groups:byday")
-				.row()
-				.text("🏠 В главное меню", "nav:main"),
-		});
 	});
 
 	// Inline: вернуть к списку дней
@@ -92,7 +88,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 		await ctx.answerCallbackQuery().catch(() => {});
 		const kb = new InlineKeyboard();
 		WEEKDAYS_PRESENT.forEach((d) => kb.text(WEEKDAY_TITLE[d], `groups:day:${d}`).row());
-		kb.text("⬅️ К разделу «Малые группы»", "groups:root").row().text("🏠 В главное меню", "nav:main");
+		// kb.text("⬅️ К разделу «Малые группы»", "groups:root").row().text("🏠 В главное меню", "nav:main");
 
 		await ctx.editMessageText("*Выберите день:*", {
 			parse_mode: "HTML",
@@ -122,12 +118,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 			await ctx.reply(formatGroup(g), {
 				parse_mode: "HTML",
 				link_preview_options: { is_disabled: true },
-				reply_markup: isLast
-					? new InlineKeyboard()
-							.text("⬅️ К районам", "groups:bydistrict")
-							.row()
-							.text("🏠 В главное меню", "nav:main")
-					: undefined,
+				reply_markup: isLast ? new InlineKeyboard().text("⬅️ К районам", "groups:bydistrict") : undefined,
 			});
 		}
 	});
@@ -140,7 +131,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 			const districtName = DISTRICT_MAP[districtKey] ?? districtKey;
 			kb.text(districtName, `groups:district:${districtKey}`).row();
 		});
-		kb.text("⬅️ К разделу «Малые группы»", "groups:root").row().text("🏠 В главное меню", "nav:main");
+		// kb.text("⬅️ К разделу «Малые группы»", "groups:root").row().text("🏠 В главное меню", "nav:main");
 
 		await ctx.editMessageText("*Выберите район:*", {
 			parse_mode: "HTML",
