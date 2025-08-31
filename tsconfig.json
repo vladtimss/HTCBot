@@ -10,5 +10,5 @@
 		"strict": true,
 		"skipLibCheck": true
 	},
-	"include": ["src", "archive"]
+	"include": ["src", "src/archive"]
 }
