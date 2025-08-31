@@ -1,20 +1,15 @@
 import { Bot, InlineKeyboard } from "grammy";
 import { MyContext } from "../types/grammy-context";
-import { GROUPS, WEEKDAYS_PRESENT, WEEKDAY_TITLE, DISTRICTS, Weekday } from "../data/small-groups";
-import { replyGroupsMenu, replyMainKeyboard, inlineBackToMain } from "../utils/keyboards";
+import { GROUPS, WEEKDAYS_PRESENT, WEEKDAY_TITLE, DISTRICTS, Weekday, SmallGroup } from "../data/small-groups";
+import { replyGroupsMenu, replyMainKeyboard } from "../utils/keyboards";
 import { MENU_LABELS } from "./main-menu";
 
-// форматируем список групп
-function formatGroupList(list = GROUPS): string {
-	if (!list.length) return "Группы не найдены.";
-	return list
-		.map((g) => {
-			const leaders = g.leaders.map((l) => `• ${l.firstName} — ${l.phone}`).join("\n");
-			return `*${g.title}*\n📍 ${g.addresses.join(",")} (${g.region})\n🗓 ${WEEKDAY_TITLE[g.weekday]} ${
-				g.time
-			}\n👥 Лидеры:\n${leaders}`;
-		})
-		.join("\n\n");
+// форматируем одну группу
+function formatGroup(g: SmallGroup): string {
+	const leaders = g.leaders.map((l) => `👤 ${l.firstName} — ${l.phone}`).join("\n");
+	const addresses = g.addresses.map((a) => `📍 <a href="${a.mapUrl}">${a.address}</a>`).join("\n");
+
+	return `<b>${g.title}</b>\n🗓 ${WEEKDAY_TITLE[g.weekday]}, начало в ${g.time}\n${addresses}\n${leaders}`;
 }
 
 export function registerSmallGroups(bot: Bot<MyContext>) {
@@ -56,8 +51,22 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 		await ctx.answerCallbackQuery().catch(() => {});
 		const list = GROUPS.filter((g) => g.weekday === day);
 
-		await ctx.editMessageText(`*${WEEKDAY_TITLE[day]} — группы:*\n\n${formatGroupList(list)}`, {
-			parse_mode: "Markdown",
+		// 1. Заголовок
+		await ctx.editMessageText(`<b>${WEEKDAY_TITLE[day]} — группы:</b>`, {
+			parse_mode: "HTML",
+			link_preview_options: { is_disabled: true },
+		});
+
+		// 2. Каждая группа отдельным сообщением
+		for (const g of list) {
+			await ctx.reply(formatGroup(g), {
+				parse_mode: "HTML",
+				link_preview_options: { is_disabled: true },
+			});
+		}
+
+		// 3. Кнопки навигации
+		await ctx.reply("Навигация:", {
 			reply_markup: new InlineKeyboard()
 				.text("⬅️ К дням", "groups:byday")
 				.row()
@@ -73,7 +82,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 		kb.text("⬅️ К разделу «Малые группы»", "groups:root").row().text("🏠 В главное меню", "nav:main");
 
 		await ctx.editMessageText("*Выберите день:*", {
-			parse_mode: "Markdown",
+			parse_mode: "HTML",
 			reply_markup: kb,
 		});
 	});
@@ -84,13 +93,28 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 		await ctx.answerCallbackQuery().catch(() => {});
 		const list = GROUPS.filter((g) => g.region === district);
 
-		await ctx.editMessageText(`*${district} — группы:*\n\n${formatGroupList(list)}`, {
-			parse_mode: "Markdown",
-			reply_markup: new InlineKeyboard()
-				.text("⬅️ К районам", "groups:bydistrict")
-				.row()
-				.text("🏠 В главное меню", "nav:main"),
+		// 1. Заголовок
+		await ctx.editMessageText(`<b>${district} — группы:</b>`, {
+			parse_mode: "HTML",
+			link_preview_options: { is_disabled: true },
 		});
+
+		// 2. Каждая группа отдельным сообщением
+		for (let i = 0; i < list.length; i++) {
+			const g = list[i];
+			const isLast = i === list.length - 1;
+
+			await ctx.reply(formatGroup(g), {
+				parse_mode: "HTML",
+				link_preview_options: { is_disabled: true },
+				reply_markup: isLast
+					? new InlineKeyboard()
+							.text("⬅️ К районам", "groups:bydistrict")
+							.row()
+							.text("🏠 В главное меню", "nav:main")
+					: undefined,
+			});
+		}
 	});
 
 	// Inline: вернуть к списку районов
@@ -101,7 +125,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 		kb.text("⬅️ К разделу «Малые группы»", "groups:root").row().text("🏠 В главное меню", "nav:main");
 
 		await ctx.editMessageText("*Выберите район:*", {
-			parse_mode: "Markdown",
+			parse_mode: "HTML",
 			reply_markup: kb,
 		});
 	});
@@ -110,7 +134,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 	bot.callbackQuery("groups:root", async (ctx) => {
 		await ctx.answerCallbackQuery().catch(() => {});
 		await ctx.reply("*Малые группы*", {
-			parse_mode: "Markdown",
+			parse_mode: "HTML",
 			reply_markup: replyGroupsMenu,
 		});
 	});

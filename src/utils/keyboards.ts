@@ -28,7 +28,6 @@ export const replyBackToAbout = new Keyboard().text("⬅️ Назад").row().t
 // Клавиатура «Малые группы» (reply — широкие)
 export const replyGroupsMenu = new Keyboard()
 	.text("📅 По дням")
-	.row()
 	.text("📍 По районам")
 	.row()
 	.text("⬅️ В главное меню")

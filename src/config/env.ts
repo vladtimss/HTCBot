@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+import { GroupAddress } from "../data/small-groups";
 dotenv.config();
 
 /** Берём обязательную переменную окружения, иначе бросаем ошибку */
@@ -63,5 +64,5 @@ export const env = {
 	// ✅ Конфиденциальные структуры в base64-JSON
 	//   Пример генерации см. scripts/encode-env.ts
 	LEADERS: parseBase64Json<Record<string, LeaderData>>("LEADERS_JSON_BASE64", {}),
-	GROUP_ADDRESSES: parseBase64Json<Record<string, string[]>>("GROUP_ADDRESSES_JSON_BASE64", {}),
+	GROUP_ADDRESSES: parseBase64Json<Record<string, GroupAddress[]>>("GROUP_ADDRESSES_JSON_BASE64", {}),
 };
