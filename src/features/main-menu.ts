@@ -9,7 +9,6 @@ export const MENU_LABELS = {
 	NEXT3: "🗓️ Показать три ближайших события",
 	ABOUT: "🙌 Кто мы",
 	MAIN: "🏠 В главное меню",
-	ABOUT_BACK: "⬅️ В главное меню", // в about-меню
 	BACK: "⬅️ Назад", // общий «назад» внутри about
 	CHANNEL: "📣 Канал",
 	BELIEF: "🧭 Во что мы верим",

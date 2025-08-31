@@ -73,21 +73,4 @@ export function registerAbout(bot: Bot<MyContext>) {
 		});
 		ctx.session.lastSection = "main";
 	});
-
-	// «⬅️ В главное меню» из about-меню
-	bot.hears(MENU_LABELS.ABOUT_BACK, async (ctx) => {
-		await ctx.reply("Главное меню:", {
-			reply_markup: {
-				keyboard: [
-					[{ text: MENU_LABELS.SUNDAY }],
-					[{ text: MENU_LABELS.GROUPS }],
-					[{ text: MENU_LABELS.NEXT3 }],
-					[{ text: MENU_LABELS.ABOUT }],
-				],
-				resize_keyboard: true,
-				is_persistent: true,
-			},
-		});
-		ctx.session.lastSection = "main";
-	});
 }
