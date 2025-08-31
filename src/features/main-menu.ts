@@ -6,10 +6,11 @@ import { fetchUpcomingEvents, formatEvent } from "../services/calendar";
 export const MENU_LABELS = {
 	SUNDAY: "⛪ Воскресное богослужение",
 	GROUPS: "👥 Малые группы",
+	NEXTLMG: "📅 Когда следующая встреча ЛМГ",
+	ALL_LMG: "📖 Все встречи ЛМГ до конца сезона",
 	NEXT3: "🗓️ Показать три ближайших события",
 	ABOUT: "🙌 Кто мы",
 	MAIN: "🏠 В главное меню",
-	ABOUT_BACK: "⬅️ В главное меню", // в about-меню
 	BACK: "⬅️ Назад", // общий «назад» внутри about
 	CHANNEL: "📣 Канал",
 	BELIEF: "🧭 Во что мы верим",
