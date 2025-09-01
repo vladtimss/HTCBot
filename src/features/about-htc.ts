@@ -73,22 +73,4 @@ export function registerAbout(bot: Bot<MyContext>) {
 	bot.hears(MENU_LABELS.HISTORY, async (ctx) => {
 		await renderAboutHistory(ctx);
 	});
-
-	/**
-	 * «⬅️ Назад»
-	 * - Если мы на подстранице раздела about — вернуться к корню раздела
-	 * - Иначе — в единое «Главное меню» (ОБЩИЙ helper replyMainKeyboard)
-	 *
-	 */
-	bot.hears(MENU_LABELS.BACK, async (ctx) => {
-		if (ctx.session.lastSection?.startsWith("about/")) {
-			await renderAboutRoot(ctx);
-			return;
-		}
-		// Единый вызов главного меню
-		await ctx.reply("Главное меню:", {
-			reply_markup: replyMainKeyboard,
-		});
-		ctx.session.lastSection = "main";
-	});
 }
