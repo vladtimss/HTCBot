@@ -160,7 +160,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 	/**
 	 * Когда следующая встреча ЛМГ
 	 */
-	bot.hears(MENU_LABELS.NEXTLMG, async (ctx) => {
+	bot.hears(MENU_LABELS.LMG_NEXT, async (ctx) => {
 		const nextLm = await fetchNextEventByTitle("Встреча ЛМГ"); // по умолчанию НЕстрого
 		if (!nextLm) {
 			await ctx.reply("😔 Ближайших встреч ЛМГ в этом сезоне не найдено.");
@@ -172,7 +172,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 	/**
 	 * Все встречи ЛМГ до конца сезона
 	 */
-	bot.hears(MENU_LABELS.ALL_LMG, async (ctx) => {
+	bot.hears(MENU_LABELS.LMG_ALL, async (ctx) => {
 		const lmEvents = await fetchAllFutureEventsByTitle("Встреча ЛМГ"); // по умолчанию НЕстрого
 		if (lmEvents.length === 0) {
 			await ctx.reply("😔 В этом сезоне встреч ЛМГ больше нет.");

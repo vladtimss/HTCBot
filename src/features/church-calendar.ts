@@ -1,9 +1,6 @@
-export const a = 2;
 // src/features/church-calendar.ts
 import { Bot } from "grammy";
 import { MyContext } from "../types/grammy-context";
-import { MENU_LABELS } from "../constants/button-lables";
-import { replyMainKeyboard } from "../utils/keyboards";
 import {
 	fetchUpcomingEvents,
 	fetchNextEventByTitle,
@@ -11,9 +8,10 @@ import {
 	fetchHolidayEvent,
 	formatEvent,
 } from "../services/calendar";
+import { MENU_LABELS } from "../constants/button-lables";
 
 /**
- * Рендер корня раздела «Церковный календарь»
+ * 📌 Отрисовка корня раздела «Церковный календарь»
  */
 export async function renderCalendarRoot(ctx: MyContext) {
 	ctx.session.lastSection = "calendar";
@@ -22,10 +20,9 @@ export async function renderCalendarRoot(ctx: MyContext) {
 	await ctx.reply("📅 Церковный календарь:", {
 		reply_markup: {
 			keyboard: [
-				["Членские собрания", "Молитвенные собрания"],
-				["ЛМГ", "Отцы и дети / Встреча сестер"],
-				["Большие праздники"],
-				["Показать ближайшие события"],
+				[MENU_LABELS.CALENDAR_MEMBERS, MENU_LABELS.CALENDAR_PRAYER],
+				[MENU_LABELS.CALENDAR_LMG, MENU_LABELS.CALENDAR_FAMILY],
+				[MENU_LABELS.CALENDAR_NEXT, MENU_LABELS.CALENDAR_HOLIDAYS],
 				[MENU_LABELS.BACK, MENU_LABELS.MAIN],
 			],
 			resize_keyboard: true,
@@ -34,136 +31,105 @@ export async function renderCalendarRoot(ctx: MyContext) {
 }
 
 /**
- * Регистрирует раздел «Церковный календарь»
+ * 📌 Регистрируем все обработчики для календаря
  */
 export function registerChurchCalendar(bot: Bot<MyContext>) {
-	// --- Меню календаря ---
+	// --- Корень календаря ---
 	bot.hears(MENU_LABELS.CALENDAR, async (ctx) => {
 		await renderCalendarRoot(ctx);
 	});
 
-	// --- 3 ближайших события ---
-	bot.hears("Показать ближайшие события", async (ctx) => {
+	// --- Ближайшие события ---
+	bot.hears(MENU_LABELS.CALENDAR_NEXT, async (ctx) => {
 		const events = await fetchUpcomingEvents(5);
 		if (events.length === 0) {
-			await ctx.reply("Нет запланированных событий.");
-			return;
+			return ctx.reply("Нет запланированных событий.");
 		}
 		await ctx.reply("*Ближайшие события:*\n\n" + events.map(formatEvent).join("\n\n"), {
 			parse_mode: "Markdown",
 		});
 	});
 
-	// --- ЛМГ ---
-	bot.hears("ЛМГ", async (ctx) => {
+	// === ЛМГ ===
+	bot.hears(MENU_LABELS.CALENDAR_LMG, async (ctx) => {
 		ctx.session.menuStack.push("lmg");
 		await ctx.reply("📖 ЛМГ:", {
 			reply_markup: {
-				keyboard: [
-					["Когда будет следующая встреча ЛМГ"],
-					["Получить список всех будущих встреч ЛМГ"],
-					[MENU_LABELS.BACK, MENU_LABELS.MAIN],
-				],
+				keyboard: [[MENU_LABELS.LMG_NEXT], [MENU_LABELS.LMG_ALL], [MENU_LABELS.BACK, MENU_LABELS.MAIN]],
 				resize_keyboard: true,
 			},
 		});
 	});
 
-	bot.hears("Когда будет следующая встреча ЛМГ", async (ctx) => {
+	bot.hears(MENU_LABELS.LMG_NEXT, async (ctx) => {
 		const ev = await fetchNextEventByTitle("лмг");
-		if (!ev) {
-			await ctx.reply("Следующей встречи ЛМГ пока нет.");
-			return;
-		}
+		if (!ev) return ctx.reply("Следующей встречи ЛМГ пока нет.");
 		await ctx.reply("*Следующая встреча ЛМГ:*\n\n" + formatEvent(ev), { parse_mode: "Markdown" });
 	});
 
-	bot.hears("Получить список всех будущих встреч ЛМГ", async (ctx) => {
+	bot.hears(MENU_LABELS.LMG_ALL, async (ctx) => {
 		const events = await fetchAllFutureEventsByTitle("лмг");
-		if (events.length === 0) {
-			await ctx.reply("Будущих встреч ЛМГ пока нет.");
-			return;
-		}
+		if (events.length === 0) return ctx.reply("Будущих встреч ЛМГ пока нет.");
 		await ctx.reply(events.map(formatEvent).join("\n\n"), { parse_mode: "Markdown" });
 	});
 
-	// --- Молитвенные собрания ---
-	bot.hears("Молитвенные собрания", async (ctx) => {
+	// === Молитвенные собрания ===
+	bot.hears(MENU_LABELS.CALENDAR_PRAYER, async (ctx) => {
 		ctx.session.menuStack.push("prayers");
 		await ctx.reply("🙏 Молитвенные собрания:", {
 			reply_markup: {
-				keyboard: [
-					["Когда будет следующее молитвенное"],
-					["Получить список всех будущих молитвенных"],
-					[MENU_LABELS.BACK, MENU_LABELS.MAIN],
-				],
+				keyboard: [[MENU_LABELS.PRAYER_NEXT], [MENU_LABELS.PRAYER_ALL], [MENU_LABELS.BACK, MENU_LABELS.MAIN]],
 				resize_keyboard: true,
 			},
 		});
 	});
 
-	bot.hears("Когда будет следующее молитвенное", async (ctx) => {
+	bot.hears(MENU_LABELS.PRAYER_NEXT, async (ctx) => {
 		const ev = await fetchNextEventByTitle("молитвенное собрание");
-		if (!ev) {
-			await ctx.reply("Следующее молитвенное собрание пока не запланировано.");
-			return;
-		}
+		if (!ev) return ctx.reply("Следующее молитвенное собрание пока не запланировано.");
 		await ctx.reply("*Следующее молитвенное собрание:*\n\n" + formatEvent(ev), {
 			parse_mode: "Markdown",
 		});
 	});
 
-	bot.hears("Получить список всех будущих молитвенных", async (ctx) => {
+	bot.hears(MENU_LABELS.PRAYER_ALL, async (ctx) => {
 		const events = await fetchAllFutureEventsByTitle("молитвенное собрание");
-		if (events.length === 0) {
-			await ctx.reply("Будущих молитвенных собраний пока нет.");
-			return;
-		}
+		if (events.length === 0) return ctx.reply("Будущих молитвенных собраний пока нет.");
 		await ctx.reply(events.map(formatEvent).join("\n\n"), { parse_mode: "Markdown" });
 	});
 
-	// --- Членские собрания ---
-	bot.hears("Членские собрания", async (ctx) => {
+	// === Членские собрания ===
+	bot.hears(MENU_LABELS.CALENDAR_MEMBERS, async (ctx) => {
 		ctx.session.menuStack.push("members");
 		await ctx.reply("👥 Членские собрания:", {
 			reply_markup: {
-				keyboard: [
-					["Когда будет следующее членское"],
-					["Получить список всех будущих членских"],
-					[MENU_LABELS.BACK, MENU_LABELS.MAIN],
-				],
+				keyboard: [[MENU_LABELS.MEMBERS_NEXT], [MENU_LABELS.MEMBERS_ALL], [MENU_LABELS.BACK, MENU_LABELS.MAIN]],
 				resize_keyboard: true,
 			},
 		});
 	});
 
-	bot.hears("Когда будет следующее членское", async (ctx) => {
+	bot.hears(MENU_LABELS.MEMBERS_NEXT, async (ctx) => {
 		const ev = await fetchNextEventByTitle("членское собрание");
-		if (!ev) {
-			await ctx.reply("Следующее членское собрание пока не запланировано.");
-			return;
-		}
+		if (!ev) return ctx.reply("Следующее членское собрание пока не запланировано.");
 		await ctx.reply("*Следующее членское собрание:*\n\n" + formatEvent(ev), {
 			parse_mode: "Markdown",
 		});
 	});
 
-	bot.hears("Получить список всех будущих членских", async (ctx) => {
+	bot.hears(MENU_LABELS.MEMBERS_ALL, async (ctx) => {
 		const events = await fetchAllFutureEventsByTitle("членское собрание");
-		if (events.length === 0) {
-			await ctx.reply("Будущих членских собраний пока нет.");
-			return;
-		}
+		if (events.length === 0) return ctx.reply("Будущих членских собраний пока нет.");
 		await ctx.reply(events.map(formatEvent).join("\n\n"), { parse_mode: "Markdown" });
 	});
 
-	// --- Большие праздники ---
-	bot.hears("Большие праздники", async (ctx) => {
+	// === Большие праздники ===
+	bot.hears(MENU_LABELS.CALENDAR_HOLIDAYS, async (ctx) => {
 		ctx.session.menuStack.push("holidays");
 		await ctx.reply("🎉 Большие праздники:", {
 			reply_markup: {
 				keyboard: [
-					["Узнать даты РВ", "Узнать когда будет Пасха"],
+					[MENU_LABELS.HOLIDAY_RV, MENU_LABELS.HOLIDAY_EASTER],
 					[MENU_LABELS.BACK, MENU_LABELS.MAIN],
 				],
 				resize_keyboard: true,
@@ -171,58 +137,40 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		});
 	});
 
-	bot.hears("Узнать даты РВ", async (ctx) => {
+	bot.hears(MENU_LABELS.HOLIDAY_RV, async (ctx) => {
 		const year = new Date().getFullYear();
 		const ev = await fetchHolidayEvent("Рождественский выезд", year);
-		if (!ev) {
-			await ctx.reply(`В ${year} году Рождественский выезд ещё не запланирован.`);
-			return;
-		}
+		if (!ev) return ctx.reply(`В ${year} году Рождественский выезд ещё не запланирован.`);
 		await ctx.reply("*Рождественский выезд:*\n\n" + formatEvent(ev), { parse_mode: "Markdown" });
 	});
 
-	bot.hears("Узнать когда будет Пасха", async (ctx) => {
+	bot.hears(MENU_LABELS.HOLIDAY_EASTER, async (ctx) => {
 		const year = new Date().getFullYear();
 		const ev = await fetchHolidayEvent("пасха", year);
-		if (!ev) {
-			await ctx.reply(`В ${year} году Пасха ещё не запланирована.`);
-			return;
-		}
+		if (!ev) return ctx.reply(`В ${year} году Пасха ещё не запланирована.`);
 		await ctx.reply("*Пасха:*\n\n" + formatEvent(ev), { parse_mode: "Markdown" });
 	});
 
-	// --- Отцы и дети / Встреча сестер ---
-	bot.hears("Отцы и дети / Встреча сестер", async (ctx) => {
+	// === Отцы и дети / Сёстры ===
+	bot.hears(MENU_LABELS.CALENDAR_FAMILY, async (ctx) => {
 		ctx.session.menuStack.push("family");
-		await ctx.reply("👨‍👩‍👧 Отцы и дети / Встреча сестер:", {
+		await ctx.reply("👨‍👩‍👧 Отцы и дети / Сёстры:", {
 			reply_markup: {
-				keyboard: [
-					["Когда будет следующая встреча Отцов и детей / сестер"],
-					["Получить список всех будущих встреч Отцов и детей / сестер"],
-					[MENU_LABELS.BACK, MENU_LABELS.MAIN],
-				],
+				keyboard: [[MENU_LABELS.FAMILY_NEXT], [MENU_LABELS.FAMILY_ALL], [MENU_LABELS.BACK, MENU_LABELS.MAIN]],
 				resize_keyboard: true,
 			},
 		});
 	});
 
-	bot.hears("Когда будет следующая встреча Отцов и детей / сестер", async (ctx) => {
+	bot.hears(MENU_LABELS.FAMILY_NEXT, async (ctx) => {
 		const ev = await fetchNextEventByTitle("отцы и дети");
-		if (!ev) {
-			await ctx.reply("Следующая встреча Отцов и детей / сестер пока не запланирована.");
-			return;
-		}
-		await ctx.reply("*Следующая встреча Отцов и детей / сестер:*\n\n" + formatEvent(ev), {
-			parse_mode: "Markdown",
-		});
+		if (!ev) return ctx.reply("Следующая встреча пока не запланирована.");
+		await ctx.reply("*Следующая встреча:*\n\n" + formatEvent(ev), { parse_mode: "Markdown" });
 	});
 
-	bot.hears("Получить список всех будущих встреч Отцов и детей / сестер", async (ctx) => {
+	bot.hears(MENU_LABELS.FAMILY_ALL, async (ctx) => {
 		const events = await fetchAllFutureEventsByTitle("отцы и дети");
-		if (events.length === 0) {
-			await ctx.reply("Будущих встреч Отцов и детей / сестер пока нет.");
-			return;
-		}
+		if (events.length === 0) return ctx.reply("Будущих встреч пока нет.");
 		await ctx.reply(events.map(formatEvent).join("\n\n"), { parse_mode: "Markdown" });
 	});
 }
