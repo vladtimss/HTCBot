@@ -6,10 +6,11 @@ import { withErrorBoundary } from "./middlewares/error";
 import { authMiddleware, sessionMiddleware } from "./middlewares/auth";
 
 import { registerStart } from "./features/start";
-import { registerMainMenu, renderMain, MENU_LABELS } from "./features/main-menu";
+import { registerMainMenu, renderMain } from "./features/main-menu";
 import { registerSunday, renderSunday } from "./features/sunday-service";
 import { registerAbout, renderAboutRoot, renderAboutBelief, renderAboutHistory } from "./features/about-htc";
 import { registerSmallGroups } from "./features/small-groups";
+import { MENU_LABELS } from "./constants/button-lables";
 
 const bot = new Bot<MyContext>(env.BOT_TOKEN);
 

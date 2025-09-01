@@ -10,8 +10,8 @@ import {
 	DISTRICT_MAP,
 } from "../data/small-groups";
 import { replyGroupsMenu, replyMainKeyboard } from "../utils/keyboards";
-import { MENU_LABELS } from "./main-menu";
 import { fetchLmEventsUntilSeasonEnd, fetchUpcomingEvents, formatEvent } from "../services/calendar";
+import { MENU_LABELS } from "../constants/button-lables";
 
 // Форматируем одну группу
 function formatGroup(g: SmallGroup): string {

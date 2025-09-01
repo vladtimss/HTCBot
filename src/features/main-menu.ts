@@ -2,20 +2,7 @@ import { Bot } from "grammy";
 import { MyContext } from "../types/grammy-context";
 import { replyMainKeyboard } from "../utils/keyboards";
 import { fetchUpcomingEvents, formatEvent } from "../services/calendar";
-
-export const MENU_LABELS = {
-	SUNDAY: "⛪ Воскресное богослужение",
-	GROUPS: "👥 Малые группы",
-	NEXTLMG: "📅 Когда следующая встреча ЛМГ",
-	ALL_LMG: "📖 Все встречи ЛМГ до конца сезона",
-	NEXT3: "🗓️ Показать три ближайших события",
-	ABOUT: "🙌 О нас",
-	MAIN: "🏠 В главное меню",
-	BACK: "⬅️ Назад", // общий «назад» внутри about
-	CHANNEL: "📣 Канал",
-	BELIEF: "🧭 Во что мы верим",
-	HISTORY: "📜 Наша история",
-};
+import { MENU_LABELS } from "../constants/button-lables";
 
 export async function renderMain(ctx: MyContext) {
 	ctx.session.lastSection = "main";

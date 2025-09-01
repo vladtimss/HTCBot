@@ -3,8 +3,8 @@ import { Bot } from "grammy";
 import { MyContext } from "../types/grammy-context";
 import { ABOUT } from "../services/texts";
 import { env } from "../config/env";
-import { MENU_LABELS } from "./main-menu";
 import { replyAboutMenu, replyBackToAbout, replyMainKeyboard } from "../utils/keyboards";
+import { MENU_LABELS } from "../constants/button-lables";
 
 /**
  * Рендер корня раздела О нас»
