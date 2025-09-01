@@ -13,7 +13,7 @@ import { renderCalendarRoot } from "./church-calendar";
  */
 export function registerNavigation(bot: Bot<MyContext>) {
 	bot.hears(MENU_LABELS.BACK, async (ctx) => {
-		console.log(1);
+		console.log(1, ctx.session.menuStack, ctx.session.lastSection);
 		// Если стека нет или в нём только один элемент → кидаем в главное меню
 		if (!ctx.session.menuStack || ctx.session.menuStack.length <= 1) {
 			await ctx.reply("Главное меню:", {
@@ -27,7 +27,7 @@ export function registerNavigation(bot: Bot<MyContext>) {
 		// Убираем текущий раздел
 		ctx.session.menuStack.pop();
 		const prev = ctx.session.menuStack[ctx.session.menuStack.length - 1];
-
+		console.log("prev", prev);
 		// Выбираем что отрендерить в зависимости от раздела
 		switch (prev) {
 			case "about":
