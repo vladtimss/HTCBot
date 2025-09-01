@@ -1,8 +1,13 @@
 // src/services/calendar.ts
 import { createDAVClient, DAVCalendar, DAVObject } from "tsdav";
 import ICAL from "ical.js";
-import { compareAsc, isAfter, isSameYear } from "date-fns";
+import { compareAsc, isAfter, isBefore, isSameYear } from "date-fns";
 import { env } from "../config/env";
+
+export type HolidayEventResult =
+	| { status: "future"; event: CalendarEvent } // ещё не было в этом году
+	| { status: "past"; event: CalendarEvent } // уже прошло в этом году
+	| { status: "not_found" }; // в этом году дат нет
 
 /** Нормализованное событие для бота */
 export interface CalendarEvent {
@@ -128,16 +133,40 @@ export async function fetchAllFutureEventsByTitle(title: string, strict = false)
 		.sort((a, b) => compareAsc(a.startsAt, b.startsAt));
 }
 
-/** Получить событие по имени в конкретном году (для Пасхи/РВ) */
-export async function fetchHolidayEvent(title: string, year: number): Promise<CalendarEvent | null> {
+/**
+ * Получить событие праздника по имени (например: Пасха, РВ).
+ * Возвращает статус:
+ * - future → событие ещё впереди в этом году
+ * - past → событие уже прошло в этом году
+ * - not_found → в этом году не найдено
+ */
+export async function fetchHolidayEvent(title: string): Promise<HolidayEventResult> {
 	const objs = await fetchCalendarObjects();
 	const allEvents = objs.flatMap(parseDavObjectToEvents);
 
-	const filtered = allEvents
-		.filter(
-			(e) => e.title.toLowerCase().includes(title.toLowerCase()) && isSameYear(e.startsAt, new Date(year, 0, 1))
-		)
+	const today = new Date();
+	const year = today.getFullYear();
+
+	// Все события нужного названия в этом году
+	const eventsThisYear = allEvents
+		.filter((e) => e.title.toLowerCase().includes(title.toLowerCase()) && isSameYear(e.startsAt, today))
 		.sort((a, b) => compareAsc(a.startsAt, b.startsAt));
 
-	return filtered[0] || null;
+	if (eventsThisYear.length === 0) {
+		return { status: "not_found" };
+	}
+
+	// ближайшее будущее событие в этом году
+	const future = eventsThisYear.find((e) => isAfter(e.startsAt, today));
+	if (future) {
+		return { status: "future", event: future };
+	}
+
+	// иначе берём последнее прошедшее событие в этом году
+	const past = [...eventsThisYear].reverse().find((e) => isBefore(e.startsAt, today));
+	if (past) {
+		return { status: "past", event: past };
+	}
+
+	return { status: "not_found" };
 }

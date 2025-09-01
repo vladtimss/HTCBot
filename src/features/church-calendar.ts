@@ -139,16 +139,50 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 
 	bot.hears(MENU_LABELS.HOLIDAY_RV, async (ctx) => {
 		const year = new Date().getFullYear();
-		const ev = await fetchHolidayEvent("Рождественский выезд", year);
-		if (!ev) return ctx.reply(`В ${year} году Рождественский выезд ещё не запланирован.`);
-		await ctx.reply("*Рождественский выезд:*\n\n" + formatEvent(ev), { parse_mode: "Markdown" });
+		const res = await fetchHolidayEvent("Рождественский выезд");
+
+		if (res.status === "not_found") {
+			return ctx.reply(`В ${year} году Рождественский выезд ещё не запланирован в церковном календаре.`);
+		}
+
+		if (res.status === "past") {
+			return ctx.reply(
+				`В следующем году Рождественский выезд ещё не запланирован в церковном календаре, а в ${year} году он проходил:\n\n${formatEvent(
+					res.event
+				)}`,
+				{ parse_mode: "Markdown" }
+			);
+		}
+
+		if (res.status === "future") {
+			return ctx.reply(`*Рождественский выезд:*\n\n${formatEvent(res.event)}`, {
+				parse_mode: "Markdown",
+			});
+		}
 	});
 
 	bot.hears(MENU_LABELS.HOLIDAY_EASTER, async (ctx) => {
 		const year = new Date().getFullYear();
-		const ev = await fetchHolidayEvent("пасха", year);
-		if (!ev) return ctx.reply(`В ${year} году Пасха ещё не запланирована.`);
-		await ctx.reply("*Пасха:*\n\n" + formatEvent(ev), { parse_mode: "Markdown" });
+		const res = await fetchHolidayEvent("пасха");
+
+		if (res.status === "not_found") {
+			return ctx.reply(`В ${year} году Пасха ещё не запланирована в церковном календаре.`);
+		}
+
+		if (res.status === "past") {
+			return ctx.reply(
+				`В следующем году Пасха ещё не запланирована в церковном календаре, а в ${year} году она проходила:\n\n${formatEvent(
+					res.event
+				)}`,
+				{ parse_mode: "Markdown" }
+			);
+		}
+
+		if (res.status === "future") {
+			return ctx.reply(`*Пасха:*\n\n${formatEvent(res.event)}`, {
+				parse_mode: "Markdown",
+			});
+		}
 	});
 
 	// === Отцы и дети / Сёстры ===
