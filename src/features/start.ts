@@ -7,7 +7,6 @@ import { replyMainKeyboard } from "../utils/keyboards";
 /**
  * Регистрирует обработчик команды /start.
  * Показывает приветственное сообщение с кнопкой
- * и широкое главное меню.
  */
 export function registerStart(bot: Bot<MyContext>) {
 	// Команда /start

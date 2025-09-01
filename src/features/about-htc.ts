@@ -35,11 +35,15 @@ async function renderAboutSubpage(ctx: MyContext, kind: "belief" | "history") {
 }
 
 /**
- * Явные хелперы, если удобно вызывать напрямую из других мест
+ * Хелпер для вызова рендера из других мест
  */
 export async function renderAboutBelief(ctx: MyContext) {
 	return renderAboutSubpage(ctx, "belief");
 }
+
+/**
+ * Хелпер для вызова рендера из других мест
+ */
 export async function renderAboutHistory(ctx: MyContext) {
 	return renderAboutSubpage(ctx, "history");
 }
@@ -75,8 +79,6 @@ export function registerAbout(bot: Bot<MyContext>) {
 	 * - Если мы на подстранице раздела about — вернуться к корню раздела
 	 * - Иначе — в единое «Главное меню» (ОБЩИЙ helper replyMainKeyboard)
 	 *
-	 * ВАЖНО: таким образом УБИРАЕМ дублирование разметки главного меню —
-	 * используем только replyMainKeyboard из utils/keyboards везде по проекту.
 	 */
 	bot.hears(MENU_LABELS.BACK, async (ctx) => {
 		if (ctx.session.lastSection?.startsWith("about/")) {

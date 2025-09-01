@@ -5,7 +5,7 @@ import { fetchUpcomingEvents, formatEvent } from "../services/calendar";
 import { MENU_LABELS } from "../constants/button-lables";
 
 /**
- * Рендер главного меню (универсальный метод, чтобы не дублировать код).
+ * Рендер главного меню
  */
 export async function renderMain(ctx: MyContext) {
 	ctx.session.lastSection = "main";
