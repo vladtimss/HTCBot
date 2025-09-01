@@ -1,4 +1,4 @@
-import { Bot } from "grammy";
+import { Api, Bot, RawApi } from "grammy";
 import { env } from "./config/env";
 import { MyContext } from "./types/grammy-context";
 import { logger } from "./utils/logger";
@@ -11,6 +11,8 @@ import { registerSunday } from "./features/sunday-service";
 import { registerAbout } from "./features/about-htc";
 import { registerSmallGroups } from "./features/small-groups";
 import { MENU_LABELS } from "./constants/button-lables";
+import { registerChurchCalendar } from "./features/church-calendar";
+import { registerNavigation } from "./features/navigation";
 
 /**
  * Инициализация Telegram-бота
@@ -64,6 +66,8 @@ registerMainMenu(bot); // Главное меню
 registerSunday(bot); // Воскресное богослужение
 registerAbout(bot); // Раздел "О нас"
 registerSmallGroups(bot); // Малые группы
+registerChurchCalendar(bot); // Церковный календарь
+registerNavigation(bot); // Навигация (кнопка назад)
 
 /**
  * ========================

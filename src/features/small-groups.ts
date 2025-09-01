@@ -10,7 +10,7 @@ import {
 	DISTRICT_MAP,
 } from "../data/small-groups";
 import { replyGroupsMenu } from "../utils/keyboards";
-import { fetchLmEventsUntilSeasonEnd, formatEvent } from "../services/calendar";
+import { fetchAllFutureEventsByTitle, fetchNextEventByTitle, formatEvent } from "../services/calendar";
 import { MENU_LABELS } from "../constants/button-lables";
 
 /**
@@ -160,10 +160,8 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 	/**
 	 * Когда следующая встреча ЛМГ
 	 */
-	bot.hears(MENU_LABELS.NEXTLMG, async (ctx) => {
-		const events = await fetchLmEventsUntilSeasonEnd();
-		const nextLm = events[0];
-
+	bot.hears(MENU_LABELS.LMG_NEXT, async (ctx) => {
+		const nextLm = await fetchNextEventByTitle("Встреча ЛМГ"); // по умолчанию НЕстрого
 		if (!nextLm) {
 			await ctx.reply("😔 Ближайших встреч ЛМГ в этом сезоне не найдено.");
 			return;
@@ -174,14 +172,12 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 	/**
 	 * Все встречи ЛМГ до конца сезона
 	 */
-	bot.hears(MENU_LABELS.ALL_LMG, async (ctx) => {
-		const lmEvents = await fetchLmEventsUntilSeasonEnd();
-
+	bot.hears(MENU_LABELS.LMG_ALL, async (ctx) => {
+		const lmEvents = await fetchAllFutureEventsByTitle("Встреча ЛМГ"); // по умолчанию НЕстрого
 		if (lmEvents.length === 0) {
 			await ctx.reply("😔 В этом сезоне встреч ЛМГ больше нет.");
 			return;
 		}
-
 		const list = lmEvents.map(formatEvent).join("\n\n");
 		await ctx.reply(`📖 *Список встреч ЛМГ до конца сезона:*\n\n${list}`, {
 			parse_mode: "Markdown",

@@ -35,24 +35,4 @@ export function registerMainMenu(bot: Bot<MyContext>) {
 	bot.hears(MENU_LABELS.MAIN, async (ctx) => {
 		await renderMain(ctx);
 	});
-
-	/**
-	 * Кнопка: «🗓️ Показать три ближайших события».
-	 */
-	bot.hears(MENU_LABELS.NEXT3, async (ctx) => {
-		ctx.session.lastSection = "next3";
-
-		const events = await fetchUpcomingEvents(3);
-		const text = events.length ? events.map(formatEvent).join("\n\n") : "Ближайших событий не найдено.";
-
-		await ctx.reply(`*Ближайшие события:*\n\n${text}`, {
-			parse_mode: "Markdown",
-			reply_markup: {
-				// здесь показываем только возврат в главное меню
-				keyboard: [[{ text: MENU_LABELS.MAIN }]],
-				resize_keyboard: true,
-				is_persistent: true,
-			},
-		});
-	});
 }
