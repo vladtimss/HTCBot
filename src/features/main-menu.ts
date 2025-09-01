@@ -11,7 +11,7 @@ export async function renderMain(ctx: MyContext) {
 	ctx.session.lastSection = "main";
 	ctx.session.menuStack = ["main"];
 
-	await ctx.reply("*Главное меню*", {
+	await ctx.reply(`*Главное меню*\n_(Воспользуйтесь кнопками внизу)_`, {
 		parse_mode: "Markdown",
 		reply_markup: replyMainKeyboard,
 	});
