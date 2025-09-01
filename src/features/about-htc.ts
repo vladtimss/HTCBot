@@ -1,10 +1,16 @@
+// src/features/about-htc.ts
 import { Bot } from "grammy";
 import { MyContext } from "../types/grammy-context";
 import { ABOUT } from "../services/texts";
 import { env } from "../config/env";
 import { MENU_LABELS } from "./main-menu";
-import { replyAboutMenu, replyBackToAbout } from "../utils/keyboards";
+import { replyAboutMenu, replyBackToAbout, replyMainKeyboard } from "../utils/keyboards";
 
+/**
+ * Рендер корня раздела О нас»
+ * - Запоминаем, что мы в разделе about
+ * - Показываем меню раздела (reply-клавиатура)
+ */
 export async function renderAboutRoot(ctx: MyContext) {
 	ctx.session.lastSection = "about";
 	await ctx.reply(`*${ABOUT.title}*`, {
@@ -13,31 +19,43 @@ export async function renderAboutRoot(ctx: MyContext) {
 	});
 }
 
+/**
+ * Универсальный рендер страницы внутри «О нас»
+ * kind: 'belief' | 'history'
+ */
+async function renderAboutSubpage(ctx: MyContext, kind: "belief" | "history") {
+	const title = kind === "belief" ? "Во что мы верим" : "Наша история";
+	const body = kind === "belief" ? ABOUT.belief : ABOUT.history;
+
+	ctx.session.lastSection = `about/${kind}`;
+	await ctx.reply(`*${title}*\n\n${body}`, {
+		parse_mode: "Markdown",
+		reply_markup: replyBackToAbout, // «⬅️ Назад» к корню раздела
+	});
+}
+
+/**
+ * Явные хелперы, если удобно вызывать напрямую из других мест
+ */
 export async function renderAboutBelief(ctx: MyContext) {
-	ctx.session.lastSection = "about/belief";
-	await ctx.reply(`*Во что мы верим*\n\n${ABOUT.belief}`, {
-		parse_mode: "Markdown",
-		reply_markup: replyBackToAbout,
-	});
+	return renderAboutSubpage(ctx, "belief");
 }
-
 export async function renderAboutHistory(ctx: MyContext) {
-	ctx.session.lastSection = "about/history";
-	await ctx.reply(`*Наша история*\n\n${ABOUT.history}`, {
-		parse_mode: "Markdown",
-		reply_markup: replyBackToAbout,
-	});
+	return renderAboutSubpage(ctx, "history");
 }
 
+/**
+ * Регистрация хендлеров раздела «О нас»
+ */
 export function registerAbout(bot: Bot<MyContext>) {
 	// Вход в раздел из Reply-клавиатуры
 	bot.hears(MENU_LABELS.ABOUT, async (ctx) => {
 		await renderAboutRoot(ctx);
 	});
 
-	// Кнопки внутри reply-меню «Кто мы»
+	// Кнопки внутри reply-меню «О нас»
 	bot.hears(MENU_LABELS.CHANNEL, async (ctx) => {
-		// открываем ссылку просто текстом, т.к. ReplyKeyboard не умеет url
+		// Reply-клавиатура не поддерживает URL-кнопки, шлём ссылку текстом
 		await ctx.reply(`Наш канал: ${env.CHANNEL_URL}`, {
 			reply_markup: replyAboutMenu,
 		});
@@ -52,23 +70,22 @@ export function registerAbout(bot: Bot<MyContext>) {
 		await renderAboutHistory(ctx);
 	});
 
-	// «⬅️ Назад» из belief/history → в «Кто мы»
+	/**
+	 * «⬅️ Назад»
+	 * - Если мы на подстранице раздела about — вернуться к корню раздела
+	 * - Иначе — в единое «Главное меню» (ОБЩИЙ helper replyMainKeyboard)
+	 *
+	 * ВАЖНО: таким образом УБИРАЕМ дублирование разметки главного меню —
+	 * используем только replyMainKeyboard из utils/keyboards везде по проекту.
+	 */
 	bot.hears(MENU_LABELS.BACK, async (ctx) => {
-		if (ctx.session.lastSection === "about/belief" || ctx.session.lastSection === "about/history") {
+		if (ctx.session.lastSection?.startsWith("about/")) {
 			await renderAboutRoot(ctx);
 			return;
 		}
-		// иначе — в главное меню
+		// Единый вызов главного меню
 		await ctx.reply("Главное меню:", {
-			reply_markup: {
-				keyboard: [
-					[{ text: MENU_LABELS.SUNDAY }, { text: MENU_LABELS.GROUPS }],
-					[{ text: MENU_LABELS.NEXT3 }],
-					[{ text: MENU_LABELS.ABOUT }],
-				],
-				resize_keyboard: true,
-				is_persistent: true,
-			},
+			reply_markup: replyMainKeyboard,
 		});
 		ctx.session.lastSection = "main";
 	});
