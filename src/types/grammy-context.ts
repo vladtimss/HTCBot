@@ -4,7 +4,7 @@ export interface SessionData {
 	// Стек для inline-навигации (малые группы и др.)
 	menuStack: string[];
 
-	// Для Reply-навигации по разделу «Кто мы»:
+	// Для Reply-навигации по разделу «О нас»:
 	// lastSection: "main" | "about" | "about/belief" | "about/history" | "sunday" | "next3" | ...
 	lastSection: string;
 }

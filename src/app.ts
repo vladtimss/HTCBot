@@ -6,44 +6,78 @@ import { withErrorBoundary } from "./middlewares/error";
 import { authMiddleware, sessionMiddleware } from "./middlewares/auth";
 
 import { registerStart } from "./features/start";
-import { registerMainMenu, renderMain, MENU_LABELS } from "./features/main-menu";
-import { registerSunday, renderSunday } from "./features/sunday-service";
-import { registerAbout, renderAboutRoot, renderAboutBelief, renderAboutHistory } from "./features/about-htc";
+import { registerMainMenu, renderMain } from "./features/main-menu";
+import { registerSunday } from "./features/sunday-service";
+import { registerAbout } from "./features/about-htc";
 import { registerSmallGroups } from "./features/small-groups";
+import { MENU_LABELS } from "./constants/button-lables";
 
+/**
+ * Инициализация Telegram-бота
+ */
 const bot = new Bot<MyContext>(env.BOT_TOKEN);
 
-// middlewares
+/**
+ * ========================
+ *   Подключаем middlewares
+ * ========================
+ */
+
+// Глобальная «обёртка» для ошибок — перехватывает и логирует все ошибки
 bot.use(withErrorBoundary());
+
+// Храним данные о пользователе в сессии (например, текущий раздел меню)
 bot.use(sessionMiddleware);
+
+// Проверяем авторизацию (например, доступ к закрытым функциям)
 bot.use(authMiddleware());
 
-// лог каждого апдейта
+/**
+ * ========================
+ *   Логирование апдейтов
+ * ========================
+ */
 bot.use(async (ctx, next) => {
+	// Формируем объект для логов
 	logger.info(
 		{
-			from: ctx.from?.username,
-			id: ctx.from?.id,
-			type: Object.keys(ctx.update)[1] ?? "unknown",
-			payload: ctx.message?.text ?? ctx.callbackQuery?.data,
+			from: ctx.from?.username, // ник юзера (если есть)
+			id: ctx.from?.id, // id пользователя
+			type: Object.keys(ctx.update)[1] ?? "unknown", // тип апдейта (message, callback_query и т.п.)
+			payload: ctx.message?.text ?? ctx.callbackQuery?.data, // текст сообщения или data из кнопки
 		},
 		"update"
 	);
+
+	// Передаём управление дальше по цепочке middlewares
 	await next();
 });
 
-// регистрация фич
-registerStart(bot);
-registerMainMenu(bot);
-registerSunday(bot);
-registerAbout(bot);
-registerSmallGroups(bot);
+/**
+ * ========================
+ *   Регистрация фич
+ * ========================
+ * Каждая "фича" — отдельный модуль с собственными командами/обработчиками.
+ */
+registerStart(bot); // Команда /start
+registerMainMenu(bot); // Главное меню
+registerSunday(bot); // Воскресное богослужение
+registerAbout(bot); // Раздел "О нас"
+registerSmallGroups(bot); // Малые группы
 
-// Если юзер пишет текстом в ЛС — просто показываем актуальное верхнее меню
+/**
+ * ========================
+ *   Общий обработчик сообщений
+ * ========================
+ * Если пользователь пишет текстом в ЛС, а не через кнопки —
+ * проверяем, что это не одна из «известных» кнопок.
+ * Если неизвестно → показываем главное меню.
+ */
 bot.on("message", async (ctx) => {
+	// Игнорируем групповые чаты
 	if (ctx.chat.type !== "private") return;
 
-	// Если это не одна из известных кнопок — покажем главное меню
+	// Набор всех допустимых кнопок (reply-клавиатуры)
 	const known = new Set([
 		MENU_LABELS.SUNDAY,
 		MENU_LABELS.GROUPS,
@@ -61,7 +95,11 @@ bot.on("message", async (ctx) => {
 	}
 });
 
-// запуск
+/**
+ * ========================
+ *   Запуск бота
+ * ========================
+ */
 bot.start({
 	onStart: (me) => logger.info(`Bot @${me.username} started`),
 });
