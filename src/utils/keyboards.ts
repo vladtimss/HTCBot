@@ -10,7 +10,6 @@ export const replyMainKeyboard = new Keyboard()
 	.text(MENU_LABELS.GROUPS) // 👥 Малые группы
 	.row()
 	.text(MENU_LABELS.CALENDAR) // 📅 Церковный календарь
-	.row()
 	.text(MENU_LABELS.ABOUT) // 🙌 О нас
 	.resized()
 	.persistent();
