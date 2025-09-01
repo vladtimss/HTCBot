@@ -25,7 +25,7 @@ export async function renderCalendarRoot(ctx: MyContext) {
 				["Членские собрания", "Молитвенные собрания"],
 				["ЛМГ", "Отцы и дети / Встреча сестер"],
 				["Большие праздники"],
-				["Показать три ближайших события"],
+				["Показать ближайшие события"],
 				[MENU_LABELS.BACK, MENU_LABELS.MAIN],
 			],
 			resize_keyboard: true,
@@ -43,8 +43,8 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 	});
 
 	// --- 3 ближайших события ---
-	bot.hears("Показать три ближайших события", async (ctx) => {
-		const events = await fetchUpcomingEvents(3);
+	bot.hears("Показать ближайшие события", async (ctx) => {
+		const events = await fetchUpcomingEvents(5);
 		if (events.length === 0) {
 			await ctx.reply("Нет запланированных событий.");
 			return;
