@@ -89,3 +89,7 @@ export const CALENDAR = {
 	familyNone: "Следующая встреча пока не запланирована.",
 	familyNoneAll: "Будущих встреч пока нет.",
 };
+
+export const MAIN = {
+	title: "*Главное меню*\n_(Воспользуйтесь кнопками внизу)_",
+};

@@ -3,6 +3,7 @@ import { Bot } from "grammy";
 import { MyContext } from "../types/grammy-context";
 import { replyMainKeyboard } from "../utils/keyboards";
 import { MENU_LABELS } from "../constants/button-lables";
+import { MAIN } from "../services/texts"; // добавили texts
 
 /**
  * 📌 Рендер главного меню
@@ -13,7 +14,7 @@ export async function renderMain(ctx: MyContext) {
 	ctx.session.lastSection = "main";
 	ctx.session.menuStack = ["main"];
 
-	await ctx.reply(`*Главное меню*\n_(Воспользуйтесь кнопками внизу)_`, {
+	await ctx.reply(MAIN.title, {
 		parse_mode: "Markdown",
 		reply_markup: replyMainKeyboard,
 	});
