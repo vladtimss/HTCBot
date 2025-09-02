@@ -3,7 +3,7 @@ import { Bot } from "grammy";
 import { MyContext } from "../types/grammy-context";
 import { ABOUT } from "../services/texts";
 import { env } from "../config/env";
-import { replyAboutMenu, replyBackToAbout } from "../utils/keyboards";
+import { replyAboutMenu } from "../utils/keyboards";
 import { MENU_LABELS } from "../constants/button-lables";
 
 /**
@@ -36,7 +36,7 @@ async function renderAboutSubpage(ctx: MyContext, kind: "belief" | "history") {
 
 	await ctx.reply(`*${title}*\n\n${body}`, {
 		parse_mode: "Markdown",
-		reply_markup: replyBackToAbout, // «⬅️ Назад» вернёт к renderAboutRoot
+		reply_markup: replyAboutMenu, // <-- универсальное меню
 	});
 }
 
@@ -63,14 +63,11 @@ export function registerAbout(bot: Bot<MyContext>) {
 		await renderAboutRoot(ctx);
 	});
 
-	// Кнопки внутри reply-меню «О нас»
+	// Канал
 	bot.hears(MENU_LABELS.CHANNEL, async (ctx) => {
-		// Reply-клавиатура не поддерживает URL-кнопки, шлём ссылку текстом
 		await ctx.reply(`Наш канал: ${env.CHANNEL_URL}`, {
 			reply_markup: replyAboutMenu,
 		});
-		ctx.session.menuStack = ["about"];
-		ctx.session.lastSection = "about";
 	});
 
 	bot.hears(MENU_LABELS.BELIEF, async (ctx) => {
