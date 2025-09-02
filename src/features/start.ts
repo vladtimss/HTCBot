@@ -1,6 +1,6 @@
 import { Bot, InlineKeyboard } from "grammy";
 import { MyContext } from "../types/grammy-context";
-import { START } from "../services/texts";
+import { START, COMMON } from "../services/texts";
 import { env } from "../config/env";
 import { replyMainKeyboard } from "../utils/keyboards";
 
@@ -34,6 +34,6 @@ export function registerStart(bot: Bot<MyContext>) {
 		}
 
 		// Отправляем клавиатуру главного меню
-		await ctx.reply("Главное меню:", { reply_markup: replyMainKeyboard });
+		await ctx.reply(COMMON.mainMenuTitle, { reply_markup: replyMainKeyboard });
 	});
 }

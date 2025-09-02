@@ -9,7 +9,7 @@ import { MENU_LABELS } from "../constants/button-lables";
 export async function renderSunday(ctx: MyContext) {
 	ctx.session.lastSection = "sunday";
 
-	// Клавиатура: только кнопка «🏠 В главное меню»
+	// Клавиатура: только кнопка «⬅️ Назад»
 	const backToMainKeyboard = {
 		keyboard: [[{ text: MENU_LABELS.BACK }]],
 		resize_keyboard: true,

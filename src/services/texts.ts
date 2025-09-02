@@ -110,3 +110,7 @@ export const SERMONS = {
 		`- [Яндекс.Музыка](${yandexUrl})\n` +
 		`- [Podster.fm](${podsterUrl})`,
 };
+
+export const COMMON = {
+	mainMenuTitle: "Главное меню:",
+};
