@@ -8,11 +8,12 @@ import { authMiddleware, sessionMiddleware } from "./middlewares/auth";
 import { registerStart } from "./features/start";
 import { registerMainMenu, renderMain } from "./features/main-menu";
 import { registerSunday } from "./features/sunday-service";
-import { registerAbout } from "./features/about-htc";
 import { registerSmallGroups } from "./features/small-groups";
 import { MENU_LABELS } from "./constants/button-lables";
 import { registerChurchCalendar } from "./features/church-calendar";
 import { registerNavigation } from "./features/navigation";
+import { registerSermons } from "./features/sermons";
+import { registerAboutHTC } from "./features/about-htc";
 
 /**
  * Инициализация Telegram-бота
@@ -64,9 +65,10 @@ bot.use(async (ctx, next) => {
 registerStart(bot); // Команда /start
 registerMainMenu(bot); // Главное меню
 registerSunday(bot); // Воскресное богослужение
-registerAbout(bot); // Раздел "О нас"
+registerAboutHTC(bot); // Раздел "О нас"
 registerSmallGroups(bot); // Малые группы
 registerChurchCalendar(bot); // Церковный календарь
+registerSermons(bot); // Проповеди
 registerNavigation(bot); // Навигация (кнопка назад)
 
 /**

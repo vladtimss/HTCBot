@@ -1,7 +1,7 @@
 import { Bot, InlineKeyboard } from "grammy";
 import { MyContext } from "../types/grammy-context";
 import {
-	GROUPS,
+	GROUPS as GROUPS_DATA,
 	WEEKDAYS_PRESENT,
 	WEEKDAY_TITLE,
 	DISTRICTS,
@@ -9,6 +9,7 @@ import {
 	SmallGroup,
 	DISTRICT_MAP,
 } from "../data/small-groups";
+import { GROUPS as GROUPS_TEXTS } from "../services/texts";
 import { replyGroupsMenu } from "../utils/keyboards";
 import { fetchAllFutureEventsByTitle, fetchNextEventByTitle, formatEvent } from "../services/calendar";
 import { MENU_LABELS } from "../constants/button-lables";
@@ -44,54 +45,63 @@ function makeDistrictsKeyboard() {
 }
 
 /**
+ * Рендер корня раздела «Малые группы»
+ */
+async function renderGroupsRoot(ctx: MyContext) {
+	ctx.session.menuStack = ["groups"];
+	ctx.session.lastSection = "groups";
+
+	await ctx.reply(`*${GROUPS_TEXTS.title}*`, {
+		parse_mode: "Markdown",
+		reply_markup: replyGroupsMenu,
+	});
+}
+
+/**
  * Регистрирует обработчики для раздела "Малые группы"
  */
 export function registerSmallGroups(bot: Bot<MyContext>) {
-	/**
-	 * Вход в раздел «Малые группы» (reply-кнопка)
-	 */
+	// Вход в раздел «Малые группы»
 	bot.hears(MENU_LABELS.GROUPS, async (ctx) => {
-		await ctx.reply("*Малые группы*", {
-			parse_mode: "Markdown",
-			reply_markup: replyGroupsMenu,
-		});
+		await renderGroupsRoot(ctx);
 	});
 
-	/**
-	 * «📅 По дням» → список доступных дней (inline-клавиатура)
-	 */
-	bot.hears("📅 По дням", async (ctx) => {
-		await ctx.reply("*Выберите день:*", {
+	// «📅 По дням»
+	bot.hears(GROUPS_TEXTS.byDay, async (ctx) => {
+		if (!ctx.session.menuStack) ctx.session.menuStack = ["groups"];
+		ctx.session.menuStack.push("groups/byday");
+		ctx.session.lastSection = "groups/byday";
+
+		await ctx.reply(`*${GROUPS_TEXTS.chooseDay}*`, {
 			parse_mode: "Markdown",
 			reply_markup: makeWeekdaysKeyboard(),
 		});
 	});
 
-	/**
-	 * «📍 По районам» → список доступных районов (inline-клавиатура)
-	 */
-	bot.hears("📍 По районам", async (ctx) => {
-		await ctx.reply("*Выберите район:*", {
+	// «📍 По районам»
+	bot.hears(GROUPS_TEXTS.byDistrict, async (ctx) => {
+		if (!ctx.session.menuStack) ctx.session.menuStack = ["groups"];
+		ctx.session.menuStack.push("groups/bydistrict");
+		ctx.session.lastSection = "groups/bydistrict";
+
+		await ctx.reply(`*${GROUPS_TEXTS.chooseDistrict}*`, {
 			parse_mode: "Markdown",
 			reply_markup: makeDistrictsKeyboard(),
 		});
 	});
 
-	/**
-	 * Выбор дня → вывод списка групп в этот день
-	 */
+	// Выбор дня → список групп
 	bot.callbackQuery(/groups:day:(MON|TUE|WED|THU|FRI|SAT|SUN)/, async (ctx) => {
 		const day = ctx.match![1] as Weekday;
 		await ctx.answerCallbackQuery().catch(() => {});
-		const list = GROUPS.filter((g) => g.weekday === day);
 
-		// Заголовок выбранного дня
+		const list = GROUPS_DATA.filter((g) => g.weekday === day);
+
 		await ctx.reply(`<b>${WEEKDAY_TITLE[day]} — группы:</b>`, {
 			parse_mode: "HTML",
 			link_preview_options: { is_disabled: true },
 		});
 
-		// Каждая группа отдельным сообщением
 		for (let i = 0; i < list.length; i++) {
 			const g = list[i];
 			const isLast = i === list.length - 1;
@@ -99,40 +109,34 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 			await ctx.reply(formatGroup(g), {
 				parse_mode: "HTML",
 				link_preview_options: { is_disabled: true },
-				// Кнопка возврата "К дням" внизу последнего сообщения
 				reply_markup: isLast ? new InlineKeyboard().text("⬅️ К дням", "groups:byday") : undefined,
 			});
 		}
 	});
 
-	/**
-	 * Возврат к списку дней
-	 */
+	// Возврат к списку дней
 	bot.callbackQuery("groups:byday", async (ctx) => {
 		await ctx.answerCallbackQuery().catch(() => {});
-		await ctx.reply("*Выберите день:*", {
+		await ctx.reply(`*${GROUPS_TEXTS.chooseDay}*`, {
 			parse_mode: "Markdown",
 			reply_markup: makeWeekdaysKeyboard(),
 		});
 	});
 
-	/**
-	 * Выбор района → вывод списка групп в этом районе
-	 */
+	// Выбор района → список групп
 	bot.callbackQuery(/groups:district:(.+)/, async (ctx) => {
 		const districtKey = ctx.match![1];
 		const districtName = DISTRICT_MAP[districtKey] ?? districtKey;
 
 		await ctx.answerCallbackQuery().catch(() => {});
-		const list = GROUPS.filter((g) => g.region === districtKey);
 
-		// Заголовок выбранного района
+		const list = GROUPS_DATA.filter((g) => g.region === districtKey);
+
 		await ctx.reply(`<b>${districtName} — группы:</b>`, {
 			parse_mode: "HTML",
 			link_preview_options: { is_disabled: true },
 		});
 
-		// Каждая группа отдельным сообщением
 		for (let i = 0; i < list.length; i++) {
 			const g = list[i];
 			const isLast = i === list.length - 1;
@@ -140,46 +144,39 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 			await ctx.reply(formatGroup(g), {
 				parse_mode: "HTML",
 				link_preview_options: { is_disabled: true },
-				// Кнопка возврата "К районам" только у последнего сообщения
 				reply_markup: isLast ? new InlineKeyboard().text("⬅️ К районам", "groups:bydistrict") : undefined,
 			});
 		}
 	});
 
-	/**
-	 * Возврат к списку районов
-	 */
+	// Возврат к списку районов
 	bot.callbackQuery("groups:bydistrict", async (ctx) => {
 		await ctx.answerCallbackQuery().catch(() => {});
-		await ctx.reply("*Выберите район:*", {
+		await ctx.reply(`*${GROUPS_TEXTS.chooseDistrict}*`, {
 			parse_mode: "Markdown",
 			reply_markup: makeDistrictsKeyboard(),
 		});
 	});
 
-	/**
-	 * Когда следующая встреча ЛМГ
-	 */
+	// Когда следующая встреча ЛМГ
 	bot.hears(MENU_LABELS.LMG_NEXT, async (ctx) => {
-		const nextLm = await fetchNextEventByTitle("Встреча ЛМГ"); // по умолчанию НЕстрого
+		const nextLm = await fetchNextEventByTitle("Встреча ЛМГ");
 		if (!nextLm) {
-			await ctx.reply("😔 Ближайших встреч ЛМГ в этом сезоне не найдено.");
+			await ctx.reply(GROUPS_TEXTS.noNextLmg);
 			return;
 		}
 		await ctx.reply(formatEvent(nextLm), { parse_mode: "Markdown" });
 	});
 
-	/**
-	 * Все встречи ЛМГ до конца сезона
-	 */
+	// Все встречи ЛМГ до конца сезона
 	bot.hears(MENU_LABELS.LMG_ALL, async (ctx) => {
-		const lmEvents = await fetchAllFutureEventsByTitle("Встреча ЛМГ"); // по умолчанию НЕстрого
+		const lmEvents = await fetchAllFutureEventsByTitle("Встреча ЛМГ");
 		if (lmEvents.length === 0) {
-			await ctx.reply("😔 В этом сезоне встреч ЛМГ больше нет.");
+			await ctx.reply(GROUPS_TEXTS.noFutureLmg);
 			return;
 		}
 		const list = lmEvents.map(formatEvent).join("\n\n");
-		await ctx.reply(`📖 *Список встреч ЛМГ до конца сезона:*\n\n${list}`, {
+		await ctx.reply(`${GROUPS_TEXTS.lmgSeasonList}\n\n${list}`, {
 			parse_mode: "Markdown",
 		});
 	});

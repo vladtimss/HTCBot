@@ -1,27 +1,25 @@
 import { Bot, InlineKeyboard } from "grammy";
 import { MyContext } from "../types/grammy-context";
-import { START } from "../services/texts";
+import { START, COMMON } from "../services/texts";
 import { env } from "../config/env";
 import { replyMainKeyboard } from "../utils/keyboards";
 
 /**
  * Регистрирует обработчик команды /start.
- * Показывает приветственное сообщение с кнопкой
+ * Показывает приветственное сообщение с кнопкой перехода в главное меню.
  */
 export function registerStart(bot: Bot<MyContext>) {
-	// Команда /start
 	bot.command("start", async (ctx) => {
 		// Инициализируем состояние меню в сессии
 		ctx.session.menuStack = ["main"];
 		ctx.session.lastSection = "main";
 
-		// Кнопка перехода в главное меню
+		// Кнопка «🏠 Главное меню»
 		const kb = new InlineKeyboard().text(START.button, "nav:main");
 
 		// Текст приветствия
 		const welcomeText = `*${START.title}*\n\n${START.description}`;
 
-		// Пытаемся отправить картинку + текст, если картинка не доступна — отправляем только текст
 		try {
 			await ctx.replyWithPhoto(env.START_IMAGE, {
 				caption: welcomeText,
@@ -35,7 +33,7 @@ export function registerStart(bot: Bot<MyContext>) {
 			});
 		}
 
-		// Отправляем широкую клавиатуру главного меню
-		await ctx.reply("Главное меню:", { reply_markup: replyMainKeyboard });
+		// Отправляем клавиатуру главного меню
+		await ctx.reply(COMMON.mainMenuTitle, { reply_markup: replyMainKeyboard });
 	});
 }
