@@ -51,6 +51,8 @@ export const env = {
 	CALDAV_USERNAME: required("CALDAV_USERNAME"),
 	CALDAV_PASSWORD: required("CALDAV_PASSWORD"),
 	HTC_COMMON_CALENDAR_URL: required("HTC_COMMON_CALENDAR_URL"),
+	SERMONS_PODSTER_URL: required("SERMONS_PODSTER_URL"),
+	SERMONS_YANDEX_URL: required("SERMONS_YANDEX_URL"),
 
 	// ⚙️ Опциональные переменные
 	START_IMAGE: optional("START_IMAGE", "assets/start.jpg"),

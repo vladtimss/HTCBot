@@ -7,9 +7,11 @@ import { MENU_LABELS } from "../constants/button-lables";
  */
 export const replyMainKeyboard = new Keyboard()
 	.text(MENU_LABELS.SUNDAY) // ⛪ Воскресное богослужение
-	.text(MENU_LABELS.GROUPS) // 👥 Малые группы
+	.text(MENU_LABELS.SERMONS) // 👥 Малые группы
 	.row()
+	.text(MENU_LABELS.GROUPS) // 👥 Малые группы
 	.text(MENU_LABELS.CALENDAR) // 📅 Церковный календарь
+	.row()
 	.text(MENU_LABELS.ABOUT) // 🙌 О нас
 	.resized()
 	.persistent();
@@ -49,3 +51,6 @@ export const replyGroupsMenu = new Keyboard()
  * Общая inline-кнопка «В главное меню» (для сообщений со списками)
  */
 export const inlineBackToMain = () => new InlineKeyboard().text(MENU_LABELS.MAIN, "nav:main");
+
+// Клавиатура «Проповеди»
+export const replySermonsMenu = new Keyboard().text("🎧 Подкасты").row().text("⬅️ Назад").resized();

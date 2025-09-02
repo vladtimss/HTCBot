@@ -13,6 +13,7 @@ import { registerSmallGroups } from "./features/small-groups";
 import { MENU_LABELS } from "./constants/button-lables";
 import { registerChurchCalendar } from "./features/church-calendar";
 import { registerNavigation } from "./features/navigation";
+import { registerSermons } from "./features/sermons";
 
 /**
  * Инициализация Telegram-бота
@@ -67,6 +68,7 @@ registerSunday(bot); // Воскресное богослужение
 registerAbout(bot); // Раздел "О нас"
 registerSmallGroups(bot); // Малые группы
 registerChurchCalendar(bot); // Церковный календарь
+registerSermons(bot); // Проповеди
 registerNavigation(bot); // Навигация (кнопка назад)
 
 /**
