@@ -13,7 +13,7 @@ export async function renderSunday(ctx: MyContext) {
 
 	// Клавиатура: только кнопка "🏠 В главное меню"
 	const backToMainKeyboard = {
-		keyboard: [[{ text: MENU_LABELS.MAIN }]],
+		keyboard: [[{ text: MENU_LABELS.BACK }]],
 		resize_keyboard: true,
 		is_persistent: true,
 	};

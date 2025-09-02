@@ -25,7 +25,7 @@ export const replyAboutMenu = new Keyboard()
 	.text(MENU_LABELS.BELIEF) // 🧭 Во что мы верим
 	.text(MENU_LABELS.HISTORY) // 📜 Наша история
 	.row()
-	.text(MENU_LABELS.MAIN) // 🏠 В главное меню
+	.text(MENU_LABELS.BACK) // 🏠 В главное меню
 	.resized();
 
 /**
@@ -44,7 +44,7 @@ export const replyGroupsMenu = new Keyboard()
 	.text(MENU_LABELS.LMG_NEXT) // 📅 Когда следующая встреча ЛМГ
 	.text(MENU_LABELS.LMG_ALL) // 📖 Все встречи ЛМГ до конца сезона
 	.row()
-	.text(MENU_LABELS.MAIN) // 🏠 В главное меню
+	.text(MENU_LABELS.BACK) // 🏠 В главное меню
 	.resized();
 
 /**
