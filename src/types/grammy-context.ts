@@ -11,7 +11,6 @@ export interface SessionData {
 
 export interface AccessData {
 	isPrivileged: boolean;
-	canSeeFourthButton: boolean;
 	username?: string;
 	telegramId?: number;
 }

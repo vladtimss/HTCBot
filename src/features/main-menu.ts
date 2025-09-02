@@ -16,7 +16,7 @@ export async function renderMain(ctx: MyContext) {
 
 	await ctx.reply(MAIN.title, {
 		parse_mode: "Markdown",
-		reply_markup: replyMainKeyboard,
+		reply_markup: replyMainKeyboard(ctx),
 	});
 }
 

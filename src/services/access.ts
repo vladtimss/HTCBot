@@ -1,12 +1,18 @@
+// src/services/access.ts
 import { MyContext } from "../types/grammy-context";
 import { env } from "../config/env";
 
-export function isPrivileged(ctx: MyContext): boolean {
-	const uid = ctx.from?.id;
-	return uid ? env.PRIVILEGED_USER_IDS.includes(uid) : false;
+// нормализуем username: убираем @ и приводим к lower-case
+function normalizeUsername(u?: string | null): string | null {
+	if (!u) return null;
+	return u.replace(/^@/, "").toLowerCase();
 }
 
-export function canSeeFourthButton(ctx: MyContext): boolean {
-	const uid = ctx.from?.id;
-	return uid ? env.FOURTH_BUTTON_USER_IDS.includes(uid) || isPrivileged(ctx) : false;
+/**
+ * Привилегирован ли пользователь (по username из ENV)
+ */
+export function isPrivileged(ctx: MyContext): boolean {
+	const uname = normalizeUsername(ctx.from?.username);
+	if (!uname) return false;
+	return env.AUTHORIZED_USERNAMES.includes(uname);
 }

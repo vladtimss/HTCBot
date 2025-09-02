@@ -35,6 +35,18 @@ function parseBase64Json<T>(name: string, fallback: T): T {
 	}
 }
 
+/**
+ * Парсер username телеграмма
+ * @param v
+ * @returns
+ */
+const parseUsernames = (v?: string): string[] =>
+	(v ?? "")
+		.split(",")
+		.map((s) => s.trim())
+		.filter(Boolean)
+		.map((s) => s.replace(/^@/, "").toLowerCase());
+
 /** Локальный тип данных лидера, хранящийся в ENV (ключом выступает id) */
 type LeaderData = {
 	firstName: string;
@@ -60,8 +72,7 @@ export const env = {
 	YANDEX_MAP_URL: optional("YANDEX_MAP_URL", ""),
 
 	// 👥 Списки и структуры
-	PRIVILEGED_USER_IDS: parseNumberList("PRIVILEGED_USER_IDS"),
-	FOURTH_BUTTON_USER_IDS: parseNumberList("FOURTH_BUTTON_USER_IDS"),
+	AUTHORIZED_USERNAMES: parseUsernames(process.env.AUTHORIZED_USERNAMES),
 
 	// ✅ Конфиденциальные структуры в base64-JSON
 	//   Пример генерации см. scripts/encode-env.ts

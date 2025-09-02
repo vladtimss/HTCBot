@@ -17,6 +17,7 @@ import {
 	replyCalendarHolidaysMenu,
 	replyCalendarFamilyMenu,
 } from "../utils/keyboards";
+import { requirePrivileged } from "../utils/guards";
 
 /**
  * 📌 Отрисовка корня раздела «Церковный календарь»
@@ -36,11 +37,15 @@ export async function renderCalendarRoot(ctx: MyContext) {
 export function registerChurchCalendar(bot: Bot<MyContext>) {
 	// --- Корень календаря ---
 	bot.hears(MENU_LABELS.CALENDAR, async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+
 		await renderCalendarRoot(ctx);
 	});
 
 	// --- Ближайшие события ---
 	bot.hears(MENU_LABELS.CALENDAR_NEXT, async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+
 		const events = await fetchUpcomingEvents(5);
 		if (events.length === 0) {
 			return ctx.reply(CALENDAR.noEvents);
@@ -52,6 +57,8 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 
 	// === ЛМГ ===
 	bot.hears(MENU_LABELS.CALENDAR_LMG, async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+
 		ctx.session.menuStack.push("lmg");
 		await ctx.reply(CALENDAR.lmgTitle, {
 			reply_markup: replyCalendarLmgMenu,
@@ -59,12 +66,16 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 	});
 
 	bot.hears(MENU_LABELS.LMG_NEXT, async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+
 		const ev = await fetchNextEventByTitle("лмг");
 		if (!ev) return ctx.reply(CALENDAR.lmgNone);
 		await ctx.reply(CALENDAR.lmgNext + "\n\n" + formatEvent(ev), { parse_mode: "Markdown" });
 	});
 
 	bot.hears(MENU_LABELS.LMG_ALL, async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+
 		const events = await fetchAllFutureEventsByTitle("лмг");
 		if (events.length === 0) return ctx.reply(CALENDAR.lmgNoneAll);
 		await ctx.reply(events.map(formatEvent).join("\n\n"), { parse_mode: "Markdown" });
@@ -72,6 +83,8 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 
 	// === Молитвенные собрания ===
 	bot.hears(MENU_LABELS.CALENDAR_PRAYER, async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+
 		ctx.session.menuStack.push("prayers");
 		await ctx.reply(CALENDAR.prayersTitle, {
 			reply_markup: replyCalendarPrayerMenu,
@@ -79,6 +92,8 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 	});
 
 	bot.hears(MENU_LABELS.PRAYER_NEXT, async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+
 		const ev = await fetchNextEventByTitle("молитвенное собрание");
 		if (!ev) return ctx.reply(CALENDAR.prayersNone);
 		await ctx.reply(CALENDAR.prayersNext + "\n\n" + formatEvent(ev), {
@@ -87,6 +102,8 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 	});
 
 	bot.hears(MENU_LABELS.PRAYER_ALL, async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+
 		const events = await fetchAllFutureEventsByTitle("молитвенное собрание");
 		if (events.length === 0) return ctx.reply(CALENDAR.prayersNoneAll);
 		await ctx.reply(events.map(formatEvent).join("\n\n"), { parse_mode: "Markdown" });
@@ -94,6 +111,8 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 
 	// === Членские собрания ===
 	bot.hears(MENU_LABELS.CALENDAR_MEMBERS, async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+
 		ctx.session.menuStack.push("members");
 		await ctx.reply(CALENDAR.membersTitle, {
 			reply_markup: replyCalendarMembersMenu,
@@ -101,6 +120,8 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 	});
 
 	bot.hears(MENU_LABELS.MEMBERS_NEXT, async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+
 		const ev = await fetchNextEventByTitle("членское собрание");
 		if (!ev) return ctx.reply(CALENDAR.membersNone);
 		await ctx.reply(CALENDAR.membersNext + "\n\n" + formatEvent(ev), {
@@ -109,6 +130,8 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 	});
 
 	bot.hears(MENU_LABELS.MEMBERS_ALL, async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+
 		const events = await fetchAllFutureEventsByTitle("членское собрание");
 		if (events.length === 0) return ctx.reply(CALENDAR.membersNoneAll);
 		await ctx.reply(events.map(formatEvent).join("\n\n"), { parse_mode: "Markdown" });
@@ -116,6 +139,8 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 
 	// === Большие праздники ===
 	bot.hears(MENU_LABELS.CALENDAR_HOLIDAYS, async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+
 		ctx.session.menuStack.push("holidays");
 		await ctx.reply(CALENDAR.holidaysTitle, {
 			reply_markup: replyCalendarHolidaysMenu,
@@ -123,6 +148,8 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 	});
 
 	bot.hears(MENU_LABELS.HOLIDAY_RV, async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+
 		const year = new Date().getFullYear();
 		const res = await fetchHolidayEvent("Рождественский выезд");
 
@@ -140,6 +167,8 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 	});
 
 	bot.hears(MENU_LABELS.HOLIDAY_EASTER, async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+
 		const year = new Date().getFullYear();
 		const res = await fetchHolidayEvent("пасха");
 
@@ -160,6 +189,8 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 
 	// === Отцы и дети / Сёстры ===
 	bot.hears(MENU_LABELS.CALENDAR_FAMILY, async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+
 		ctx.session.menuStack.push("family");
 		await ctx.reply(CALENDAR.familyTitle, {
 			reply_markup: replyCalendarFamilyMenu,
@@ -167,12 +198,16 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 	});
 
 	bot.hears(MENU_LABELS.FAMILY_NEXT, async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+
 		const ev = await fetchNextEventByTitle("отцы и дети");
 		if (!ev) return ctx.reply(CALENDAR.familyNone);
 		await ctx.reply(CALENDAR.familyNext + "\n\n" + formatEvent(ev), { parse_mode: "Markdown" });
 	});
 
 	bot.hears(MENU_LABELS.FAMILY_ALL, async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+
 		const events = await fetchAllFutureEventsByTitle("отцы и дети");
 		if (events.length === 0) return ctx.reply(CALENDAR.familyNoneAll);
 		await ctx.reply(events.map(formatEvent).join("\n\n"), { parse_mode: "Markdown" });

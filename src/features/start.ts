@@ -34,6 +34,6 @@ export function registerStart(bot: Bot<MyContext>) {
 		}
 
 		// Отправляем клавиатуру главного меню
-		await ctx.reply(COMMON.mainMenuTitle, { reply_markup: replyMainKeyboard });
+		await ctx.reply(COMMON.mainMenuTitle, { reply_markup: replyMainKeyboard(ctx) });
 	});
 }
