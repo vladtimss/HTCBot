@@ -55,7 +55,10 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		ctx.session.menuStack.push("lmg");
 		await ctx.reply("📖 ЛМГ:", {
 			reply_markup: {
-				keyboard: [[MENU_LABELS.LMG_NEXT], [MENU_LABELS.LMG_ALL], [MENU_LABELS.BACK, MENU_LABELS.MAIN]],
+				keyboard: [
+					[MENU_LABELS.LMG_NEXT, MENU_LABELS.LMG_ALL],
+					[MENU_LABELS.BACK, MENU_LABELS.MAIN],
+				],
 				resize_keyboard: true,
 			},
 		});
@@ -78,7 +81,10 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		ctx.session.menuStack.push("prayers");
 		await ctx.reply("🙏 Молитвенные собрания:", {
 			reply_markup: {
-				keyboard: [[MENU_LABELS.PRAYER_NEXT], [MENU_LABELS.PRAYER_ALL], [MENU_LABELS.BACK, MENU_LABELS.MAIN]],
+				keyboard: [
+					[MENU_LABELS.PRAYER_NEXT, MENU_LABELS.PRAYER_ALL],
+					[MENU_LABELS.BACK, MENU_LABELS.MAIN],
+				],
 				resize_keyboard: true,
 			},
 		});
@@ -103,7 +109,10 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		ctx.session.menuStack.push("members");
 		await ctx.reply("👥 Членские собрания:", {
 			reply_markup: {
-				keyboard: [[MENU_LABELS.MEMBERS_NEXT], [MENU_LABELS.MEMBERS_ALL], [MENU_LABELS.BACK, MENU_LABELS.MAIN]],
+				keyboard: [
+					[MENU_LABELS.MEMBERS_NEXT, MENU_LABELS.MEMBERS_ALL],
+					[MENU_LABELS.BACK, MENU_LABELS.MAIN],
+				],
 				resize_keyboard: true,
 			},
 		});
@@ -190,7 +199,10 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		ctx.session.menuStack.push("family");
 		await ctx.reply("👨‍👩‍👧 Отцы и дети / Сёстры:", {
 			reply_markup: {
-				keyboard: [[MENU_LABELS.FAMILY_NEXT], [MENU_LABELS.FAMILY_ALL], [MENU_LABELS.BACK, MENU_LABELS.MAIN]],
+				keyboard: [
+					[MENU_LABELS.FAMILY_NEXT, MENU_LABELS.FAMILY_ALL],
+					[MENU_LABELS.BACK, MENU_LABELS.MAIN],
+				],
 				resize_keyboard: true,
 			},
 		});
