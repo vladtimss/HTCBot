@@ -22,35 +22,40 @@ export async function renderAboutRoot(ctx: MyContext) {
 /**
  * Регистрация хендлеров раздела «О нас»
  */
-export function registerAbout(bot: Bot<MyContext>) {
+export function registerAboutHTC(bot: Bot<MyContext>) {
 	// Вход в раздел
 	bot.hears(MENU_LABELS.ABOUT, async (ctx) => {
 		await renderAboutRoot(ctx);
 	});
 
-	// Канал
+	// Канал — отправляем ссылку из env
 	bot.hears(MENU_LABELS.CHANNEL, async (ctx) => {
 		await ctx.reply(`Наш канал: ${env.CHANNEL_URL}`, {
 			reply_markup: replyAboutMenu,
+			// если нужно без превью, раскомментируй:
+			// link_preview_options: { is_disabled: true },
 		});
+		ctx.session.menuStack = ["about"];
 		ctx.session.lastSection = "about";
 	});
 
-	// Во что мы верим
+	// Во что мы верим — просто информационное сообщение внутри раздела
 	bot.hears(MENU_LABELS.BELIEF, async (ctx) => {
 		await ctx.reply(`*${ABOUT.beliefButton}*\n\n${ABOUT.belief}`, {
 			parse_mode: "Markdown",
 			reply_markup: replyAboutMenu,
 		});
+		ctx.session.menuStack = ["about"];
 		ctx.session.lastSection = "about";
 	});
 
-	// Наша история
+	// Наша история — аналогично
 	bot.hears(MENU_LABELS.HISTORY, async (ctx) => {
 		await ctx.reply(`*${ABOUT.historyButton}*\n\n${ABOUT.history}`, {
 			parse_mode: "Markdown",
 			reply_markup: replyAboutMenu,
 		});
+		ctx.session.menuStack = ["about"];
 		ctx.session.lastSection = "about";
 	});
 }
