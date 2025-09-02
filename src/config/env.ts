@@ -11,6 +11,7 @@ function required(name: string): string {
 
 /** Опциональная переменная с фолбэком */
 function optional(key: string, fallback: string): string {
+	console.log(process.env[key] ?? fallback);
 	return process.env[key] ?? fallback;
 }
 
@@ -67,7 +68,7 @@ export const env = {
 	SERMONS_YANDEX_URL: required("SERMONS_YANDEX_URL"),
 
 	// ⚙️ Опциональные переменные
-	START_IMAGE: optional("START_IMAGE", "assets/start.jpg"),
+	START_IMAGE: optional("START_IMAGE", "assets/main.png"),
 	CHANNEL_URL: optional("CHANNEL_URL", "https://t.me/"),
 	YANDEX_MAP_URL: optional("YANDEX_MAP_URL", ""),
 
