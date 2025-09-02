@@ -1,10 +1,13 @@
+/**
+ * Все клавиатуры бота собраны в одном месте.
+ * Разбито по разделам главного меню для удобства.
+ */
+
 import { Keyboard, InlineKeyboard } from "grammy";
 import { MENU_LABELS } from "../constants/button-lables";
 import { GROUPS as GROUPS_TEXTS } from "../services/texts";
 
-/**
- * Главное меню — широкие кнопки (каждая в своей строке)
- */
+/* -------------------- Главное меню -------------------- */
 export const replyMainKeyboard = new Keyboard()
 	.text(MENU_LABELS.SUNDAY) // ⛪ Воскресное богослужение
 	.text(MENU_LABELS.SERMONS) // 🎧 Проповеди
@@ -16,9 +19,7 @@ export const replyMainKeyboard = new Keyboard()
 	.resized()
 	.persistent();
 
-/**
- * Клавиатура раздела «О нас»
- */
+/* -------------------- О нас -------------------- */
 export const replyAboutMenu = new Keyboard()
 	.text(MENU_LABELS.CHANNEL) // 📣 Канал
 	.row()
@@ -28,39 +29,28 @@ export const replyAboutMenu = new Keyboard()
 	.text(MENU_LABELS.BACK) // ⬅️ Назад
 	.resized();
 
-/**
- * Клавиатура «Назад к О нас» + «Главное меню»
- */
+/** 🔙 Назад к «О нас» + 🏠 Главное меню */
 export const replyBackToAbout = new Keyboard()
 	.text(MENU_LABELS.BACK) // ⬅️ Назад
 	.row()
 	.text(MENU_LABELS.MAIN) // 🏠 В главное меню
 	.resized();
 
-/**
- * Клавиатура «Малые группы»
- * Первые две кнопки (По дням/По районам) берём из texts.ts,
- * чтобы их же использовать в bot.hears().
- */
+/* -------------------- Малые группы -------------------- */
 export const replyGroupsMenu = new Keyboard()
 	.text(GROUPS_TEXTS.byDay) // 📅 По дням
 	.text(GROUPS_TEXTS.byDistrict) // 📍 По районам
 	.row()
-	.text(MENU_LABELS.LMG_NEXT) // Когда следующая встреча ЛМГ
-	.text(MENU_LABELS.LMG_ALL) // Все встречи ЛМГ до конца сезона
+	.text(MENU_LABELS.LMG_NEXT) // ⏱️ Следующая встреча ЛМГ
+	.text(MENU_LABELS.LMG_ALL) // 🗓️ Все встречи ЛМГ
 	.row()
 	.text(MENU_LABELS.BACK) // ⬅️ Назад
 	.resized();
 
-/**
- * Общая inline-кнопка «В главное меню» (для сообщений со списками)
- */
-export const inlineBackToMain = () => new InlineKeyboard().text(MENU_LABELS.MAIN, "nav:main");
-
-// Клавиатура «Проповеди»
+/* -------------------- Проповеди -------------------- */
 export const replySermonsMenu = new Keyboard().text("🎧 Подкасты").row().text("⬅️ Назад").resized();
 
-// Ниже — календарные клавиатуры (как были)
+/* -------------------- Церковный календарь -------------------- */
 export const replyCalendarMenu = {
 	keyboard: [
 		[MENU_LABELS.CALENDAR_MEMBERS, MENU_LABELS.CALENDAR_PRAYER],
@@ -110,3 +100,7 @@ export const replyCalendarFamilyMenu = {
 	],
 	resize_keyboard: true,
 };
+
+/* -------------------- Общие inline-кнопки -------------------- */
+/** 🏠 В главное меню (используется в списках и сообщениях) */
+export const inlineBackToMain = () => new InlineKeyboard().text(MENU_LABELS.MAIN, "nav:main");
