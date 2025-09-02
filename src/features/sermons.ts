@@ -1,24 +1,26 @@
+// src/features/sermons.ts
 import { Bot } from "grammy";
 import { MyContext } from "../types/grammy-context";
 import { env } from "../config/env";
 import { replySermonsMenu } from "../utils/keyboards";
 import { MENU_LABELS } from "../constants/button-lables";
+import { SERMONS } from "../services/texts";
 
 /**
- * Рендер корня раздела «Проповеди»
+ * 📌 Рендер корня раздела «Проповеди»
  */
 export async function renderSermonsRoot(ctx: MyContext) {
 	ctx.session.menuStack = ["sermons"];
 	ctx.session.lastSection = "sermons";
 
-	await ctx.reply("*Проповеди*", {
+	await ctx.reply(SERMONS.title, {
 		parse_mode: "Markdown",
 		reply_markup: replySermonsMenu,
 	});
 }
 
 /**
- * Регистрация хендлеров раздела «Проповеди»
+ * 📌 Регистрация хендлеров раздела «Проповеди»
  */
 export function registerSermons(bot: Bot<MyContext>) {
 	// Вход в раздел из главного меню
@@ -28,15 +30,10 @@ export function registerSermons(bot: Bot<MyContext>) {
 
 	// Подкасты
 	bot.hears(MENU_LABELS.SERMONS_PODCASTS, async (ctx) => {
-		await ctx.reply(
-			`🎧 Наши проповеди доступны в подкастах:\n\n` +
-				`- [Яндекс.Музыка](${env.SERMONS_YANDEX_URL})\n` +
-				`- [Podster.fm](${env.SERMONS_PODSTER_URL})`,
-			{
-				parse_mode: "Markdown",
-				link_preview_options: { is_disabled: true },
-				reply_markup: replySermonsMenu,
-			}
-		);
+		await ctx.reply(SERMONS.podcasts(env.SERMONS_YANDEX_URL, env.SERMONS_PODSTER_URL), {
+			parse_mode: "Markdown",
+			link_preview_options: { is_disabled: true },
+			reply_markup: replySermonsMenu,
+		});
 	});
 }

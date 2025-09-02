@@ -93,3 +93,11 @@ export const CALENDAR = {
 export const MAIN = {
 	title: "*Главное меню*\n_(Воспользуйтесь кнопками внизу)_",
 };
+
+export const SERMONS = {
+	title: "*Проповеди*",
+	podcasts: (yandexUrl: string, podsterUrl: string) =>
+		`🎧 Наши проповеди доступны в подкастах:\n\n` +
+		`- [Яндекс.Музыка](${yandexUrl})\n` +
+		`- [Podster.fm](${podsterUrl})`,
+};
