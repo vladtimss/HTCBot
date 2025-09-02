@@ -4,14 +4,12 @@ import { SUNDAY } from "../services/texts";
 import { MENU_LABELS } from "../constants/button-lables";
 
 /**
- * Отрисовывает экран "Воскресное богослужение".
- * Устанавливает lastSection и показывает текст с одной кнопкой
- * для возврата в главное меню.
+ * Отрисовывает экран «Воскресное богослужение».
  */
 export async function renderSunday(ctx: MyContext) {
 	ctx.session.lastSection = "sunday";
 
-	// Клавиатура: только кнопка "🏠 В главное меню"
+	// Клавиатура: только кнопка «🏠 В главное меню»
 	const backToMainKeyboard = {
 		keyboard: [[{ text: MENU_LABELS.BACK }]],
 		resize_keyboard: true,
@@ -25,16 +23,13 @@ export async function renderSunday(ctx: MyContext) {
 }
 
 /**
- * Регистрирует обработчики для раздела "Воскресное богослужение".
+ * Регистрирует обработчики для раздела «Воскресное богослужение».
  */
 export function registerSunday(bot: Bot<MyContext>) {
-	// Вход через reply-кнопку
 	bot.hears(MENU_LABELS.SUNDAY, async (ctx) => {
 		await renderSunday(ctx);
 	});
 
-	// Вход через inline-кнопку (nav:sunday),
-	// на случай если используем inline-навигацию
 	bot.callbackQuery("nav:sunday", async (ctx) => {
 		await ctx.answerCallbackQuery().catch(() => {});
 		await renderSunday(ctx);
