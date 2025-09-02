@@ -1,13 +1,13 @@
-// src/utils/keyboards.ts
 import { Keyboard, InlineKeyboard } from "grammy";
 import { MENU_LABELS } from "../constants/button-lables";
+import { GROUPS as GROUPS_TEXTS } from "../services/texts";
 
 /**
  * Главное меню — широкие кнопки (каждая в своей строке)
  */
 export const replyMainKeyboard = new Keyboard()
 	.text(MENU_LABELS.SUNDAY) // ⛪ Воскресное богослужение
-	.text(MENU_LABELS.SERMONS) // 👥 Малые группы
+	.text(MENU_LABELS.SERMONS) // 🎧 Проповеди
 	.row()
 	.text(MENU_LABELS.GROUPS) // 👥 Малые группы
 	.text(MENU_LABELS.CALENDAR) // 📅 Церковный календарь
@@ -25,7 +25,7 @@ export const replyAboutMenu = new Keyboard()
 	.text(MENU_LABELS.BELIEF) // 🧭 Во что мы верим
 	.text(MENU_LABELS.HISTORY) // 📜 Наша история
 	.row()
-	.text(MENU_LABELS.BACK) // 🏠 В главное меню
+	.text(MENU_LABELS.BACK) // ⬅️ Назад
 	.resized();
 
 /**
@@ -38,13 +38,18 @@ export const replyBackToAbout = new Keyboard()
 	.resized();
 
 /**
- * Клавиатура «Малые группы» (reply — широкие)
+ * Клавиатура «Малые группы»
+ * Первые две кнопки (По дням/По районам) берём из texts.ts,
+ * чтобы их же использовать в bot.hears().
  */
 export const replyGroupsMenu = new Keyboard()
-	.text(MENU_LABELS.LMG_NEXT) // 📅 Когда следующая встреча ЛМГ
-	.text(MENU_LABELS.LMG_ALL) // 📖 Все встречи ЛМГ до конца сезона
+	.text(GROUPS_TEXTS.byDay) // 📅 По дням
+	.text(GROUPS_TEXTS.byDistrict) // 📍 По районам
 	.row()
-	.text(MENU_LABELS.BACK) // 🏠 В главное меню
+	.text(MENU_LABELS.LMG_NEXT) // Когда следующая встреча ЛМГ
+	.text(MENU_LABELS.LMG_ALL) // Все встречи ЛМГ до конца сезона
+	.row()
+	.text(MENU_LABELS.BACK) // ⬅️ Назад
 	.resized();
 
 /**
@@ -55,6 +60,7 @@ export const inlineBackToMain = () => new InlineKeyboard().text(MENU_LABELS.MAIN
 // Клавиатура «Проповеди»
 export const replySermonsMenu = new Keyboard().text("🎧 Подкасты").row().text("⬅️ Назад").resized();
 
+// Ниже — календарные клавиатуры (как были)
 export const replyCalendarMenu = {
 	keyboard: [
 		[MENU_LABELS.CALENDAR_MEMBERS, MENU_LABELS.CALENDAR_PRAYER],
