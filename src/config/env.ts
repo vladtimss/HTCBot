@@ -11,7 +11,6 @@ function required(name: string): string {
 
 /** Опциональная переменная с фолбэком */
 function optional(key: string, fallback: string): string {
-	console.log(process.env[key] ?? fallback);
 	return process.env[key] ?? fallback;
 }
 
