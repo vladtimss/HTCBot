@@ -1,7 +1,7 @@
 // src/features/about-htc.ts
 import { Bot } from "grammy";
 import { MyContext } from "../types/grammy-context";
-import { ABOUT, HISTORY } from "../services/texts";
+import { ABOUT, BELIEF, HISTORY } from "../services/texts";
 import { env } from "../config/env";
 import { replyAboutMenu } from "../utils/keyboards";
 import { MENU_LABELS } from "../constants/button-lables";
@@ -41,7 +41,8 @@ export function registerAboutHTC(bot: Bot<MyContext>) {
 
 	// Во что мы верим — просто информационное сообщение внутри раздела
 	bot.hears(MENU_LABELS.BELIEF, async (ctx) => {
-		await ctx.reply(`*${ABOUT.beliefButton}*\n\n${ABOUT.belief}`, {
+		await ctx.replyWithPhoto("https://disk.yandex.ru/i/D40j3pRDbGGFMw", {
+			caption: BELIEF,
 			parse_mode: "Markdown",
 			reply_markup: replyAboutMenu,
 		});
