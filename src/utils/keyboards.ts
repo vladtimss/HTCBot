@@ -6,18 +6,27 @@
 import { Keyboard, InlineKeyboard } from "grammy";
 import { MENU_LABELS } from "../constants/button-lables";
 import { GROUPS as GROUPS_TEXTS } from "../services/texts";
+import { MyContext } from "../types/grammy-context";
 
-/* -------------------- Главное меню -------------------- */
-export const replyMainKeyboard = new Keyboard()
-	.text(MENU_LABELS.SUNDAY) // ⛪ Воскресное богослужение
-	.text(MENU_LABELS.SERMONS) // 🎧 Проповеди
-	.row()
-	.text(MENU_LABELS.GROUPS) // 👥 Малые группы
-	.text(MENU_LABELS.CALENDAR) // 📅 Церковный календарь
-	.row()
-	.text(MENU_LABELS.ABOUT) // 🙌 О нас
-	.resized()
-	.persistent();
+/**
+ * Главное меню зависит от прав:
+ * - если есть доступ — показываем кнопку "Церковный календарь"
+ * - если нет — не показываем
+ */
+export function replyMainKeyboard(ctx: MyContext) {
+	const kb = new Keyboard()
+		.text(MENU_LABELS.SUNDAY) // ⛪ Воскресное богослужение
+		.text(MENU_LABELS.SERMONS) // 🎧 Проповеди
+		.row()
+		.text(MENU_LABELS.GROUPS); // 👥 Малые группы
+
+	if (ctx.access.isPrivileged) {
+		kb.text(MENU_LABELS.CALENDAR); // 📅 Церковный календарь
+	}
+
+	kb.row().text(MENU_LABELS.ABOUT).resized().persistent();
+	return kb;
+}
 
 /* -------------------- О нас -------------------- */
 export const replyAboutMenu = new Keyboard()
@@ -37,15 +46,26 @@ export const replyBackToAbout = new Keyboard()
 	.resized();
 
 /* -------------------- Малые группы -------------------- */
-export const replyGroupsMenu = new Keyboard()
-	.text(GROUPS_TEXTS.byDay) // 📅 По дням
-	.text(GROUPS_TEXTS.byDistrict) // 📍 По районам
-	.row()
-	.text(MENU_LABELS.LMG_NEXT) // ⏱️ Следующая встреча ЛМГ
-	.text(MENU_LABELS.LMG_ALL) // 🗓️ Все встречи ЛМГ
-	.row()
-	.text(MENU_LABELS.BACK) // ⬅️ Назад
-	.resized();
+/**
+ * В малых группах нужно скрывать кнопки календаря у неавторизованных.
+ */
+export function replyGroupsMenu(ctx: MyContext) {
+	const kb = new Keyboard()
+		.text(GROUPS_TEXTS.byDay) // 📅 По дням
+		.text(GROUPS_TEXTS.byDistrict) // 📍 По районам
+		.row();
+
+	if (ctx.access.isPrivileged) {
+		kb.text(MENU_LABELS.LMG_NEXT) // ⏱️ Следующая встреча ЛМГ
+			.text(MENU_LABELS.LMG_ALL) // 🗓️ Все встречи ЛМГ
+			.row();
+	}
+
+	kb.text(MENU_LABELS.BACK) // ⬅️ Назад
+		.resized();
+
+	return kb;
+}
 
 /* -------------------- Проповеди -------------------- */
 export const replySermonsMenu = new Keyboard().text("🎧 Подкасты").row().text("⬅️ Назад").resized();

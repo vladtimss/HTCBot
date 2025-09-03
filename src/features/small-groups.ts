@@ -13,6 +13,7 @@ import { GROUPS as GROUPS_TEXTS } from "../services/texts";
 import { replyGroupsMenu } from "../utils/keyboards";
 import { fetchAllFutureEventsByTitle, fetchNextEventByTitle, formatEvent } from "../services/calendar";
 import { MENU_LABELS } from "../constants/button-lables";
+import { requirePrivileged } from "../utils/guards";
 
 /**
  * Форматирует информацию об одной малой группе в виде HTML-текста
@@ -53,7 +54,7 @@ async function renderGroupsRoot(ctx: MyContext) {
 
 	await ctx.reply(`*${GROUPS_TEXTS.title}*`, {
 		parse_mode: "Markdown",
-		reply_markup: replyGroupsMenu,
+		reply_markup: replyGroupsMenu(ctx),
 	});
 }
 
@@ -160,6 +161,8 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 
 	// Когда следующая встреча ЛМГ
 	bot.hears(MENU_LABELS.LMG_NEXT, async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+
 		const nextLm = await fetchNextEventByTitle("Встреча ЛМГ");
 		if (!nextLm) {
 			await ctx.reply(GROUPS_TEXTS.noNextLmg);
@@ -170,6 +173,8 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 
 	// Все встречи ЛМГ до конца сезона
 	bot.hears(MENU_LABELS.LMG_ALL, async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+
 		const lmEvents = await fetchAllFutureEventsByTitle("Встреча ЛМГ");
 		if (lmEvents.length === 0) {
 			await ctx.reply(GROUPS_TEXTS.noFutureLmg);

@@ -18,7 +18,7 @@ export function registerNavigation(bot: Bot<MyContext>) {
 		if (!ctx.session.menuStack || ctx.session.menuStack.length <= 1) {
 			await ctx.reply(MAIN.title, {
 				parse_mode: "Markdown",
-				reply_markup: replyMainKeyboard,
+				reply_markup: replyMainKeyboard(ctx),
 			});
 			ctx.session.lastSection = "main";
 			ctx.session.menuStack = ["main"];
@@ -48,7 +48,7 @@ export function registerNavigation(bot: Bot<MyContext>) {
 				// если не знаем что это → кидаем в главное меню
 				await ctx.reply(MAIN.title, {
 					parse_mode: "Markdown",
-					reply_markup: replyMainKeyboard,
+					reply_markup: replyMainKeyboard(ctx),
 				});
 				ctx.session.lastSection = "main";
 				ctx.session.menuStack = ["main"];
