@@ -1,7 +1,7 @@
 // src/features/about-htc.ts
 import { Bot } from "grammy";
 import { MyContext } from "../types/grammy-context";
-import { ABOUT } from "../services/texts";
+import { ABOUT, HISTORY } from "../services/texts";
 import { env } from "../config/env";
 import { replyAboutMenu } from "../utils/keyboards";
 import { MENU_LABELS } from "../constants/button-lables";
@@ -51,9 +51,10 @@ export function registerAboutHTC(bot: Bot<MyContext>) {
 
 	// Наша история — аналогично
 	bot.hears(MENU_LABELS.HISTORY, async (ctx) => {
-		await ctx.reply(`*${ABOUT.historyButton}*\n\n${ABOUT.history}`, {
+		await ctx.reply(HISTORY, {
 			parse_mode: "Markdown",
 			reply_markup: replyAboutMenu,
+			link_preview_options: { is_disabled: true },
 		});
 		ctx.session.menuStack = ["about"];
 		ctx.session.lastSection = "about";
