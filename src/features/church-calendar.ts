@@ -42,11 +42,14 @@ export async function renderCalendarRoot(ctx: MyContext) {
 async function replyInstruction(ctx: MyContext, title: string, body: string) {
 	if (!requirePrivileged(ctx)) return;
 
-	await ctx.editMessageText(`*${title}*\n\n${body}\n\n*Ссылка для подписки:*\n\n${env.CALENDAR_SUBSCRIBE_URL}\n`, {
-		parse_mode: "Markdown",
-		reply_markup: new InlineKeyboard().text("⬅️ Назад", "calendar:instructions"),
-		link_preview_options: { is_disabled: true },
-	});
+	await ctx.editMessageText(
+		`*${title}*\n\n${body}\n\n*Ссылка для подписки:*\n\n\`${env.CALENDAR_SUBSCRIBE_URL}\`\n`,
+		{
+			parse_mode: "Markdown",
+			reply_markup: new InlineKeyboard().text("⬅️ Назад", "calendar:instructions"),
+			link_preview_options: { is_disabled: true },
+		}
+	);
 }
 /**
  * 📌 Регистрируем все обработчики для календаря
@@ -258,14 +261,14 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		await replyInstruction(ctx, "Подписка — Apple", CALENDAR.subscribeInstructions.apple);
 	});
 
-	bot.callbackQuery("calendar:sub:yandex", async (ctx) => {
-		await ctx.answerCallbackQuery().catch(() => {});
-		await replyInstruction(ctx, "Подписка — Яндекс", CALENDAR.subscribeInstructions.yandex);
-	});
-
 	bot.callbackQuery("calendar:sub:google", async (ctx) => {
 		await ctx.answerCallbackQuery().catch(() => {});
 		await replyInstruction(ctx, "Подписка — Google", CALENDAR.subscribeInstructions.google);
+	});
+
+	bot.callbackQuery("calendar:sub:yandex", async (ctx) => {
+		await ctx.answerCallbackQuery().catch(() => {});
+		await replyInstruction(ctx, "Подписка — Яндекс", CALENDAR.subscribeInstructions.yandex);
 	});
 
 	bot.callbackQuery("calendar:sub:xiomi", async (ctx) => {
