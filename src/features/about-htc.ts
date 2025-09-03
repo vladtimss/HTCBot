@@ -49,7 +49,7 @@ export function registerAboutHTC(bot: Bot<MyContext>) {
 		ctx.session.lastSection = "about";
 	});
 
-	// Наша история — аналогично
+	// Наша история
 	bot.hears(MENU_LABELS.HISTORY, async (ctx) => {
 		await ctx.reply(HISTORY, {
 			parse_mode: "Markdown",
