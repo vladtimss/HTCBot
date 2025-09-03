@@ -69,6 +69,7 @@ export const env = {
 	// ⚙️ Опциональные переменные
 	START_IMAGE: optional("START_IMAGE", "assets/main.png"),
 	CHANNEL_URL: optional("CHANNEL_URL", "https://t.me/"),
+	CALENDAR_SUBSCRIBE_URL: optional("CALENDAR_SUBSCRIBE_URL", ""),
 	YANDEX_MAP_URL: optional("YANDEX_MAP_URL", ""),
 
 	// 👥 Списки и структуры

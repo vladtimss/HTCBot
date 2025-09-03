@@ -14,6 +14,7 @@ import { renderCalendarRoot } from "./church-calendar";
  */
 export function registerNavigation(bot: Bot<MyContext>) {
 	bot.hears(MENU_LABELS.BACK, async (ctx) => {
+		console.log(1);
 		// Если стека нет или в нём только один элемент → кидаем в главное меню
 		if (!ctx.session.menuStack || ctx.session.menuStack.length <= 1) {
 			await ctx.reply(MAIN.title, {

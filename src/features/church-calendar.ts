@@ -1,4 +1,4 @@
-import { Bot } from "grammy";
+import { Bot, InlineKeyboard } from "grammy";
 import { MyContext } from "../types/grammy-context";
 import {
 	fetchUpcomingEvents,
@@ -16,8 +16,10 @@ import {
 	replyCalendarMembersMenu,
 	replyCalendarHolidaysMenu,
 	replyCalendarFamilyMenu,
+	subscribeKeyboard,
 } from "../utils/keyboards";
 import { requirePrivileged } from "../utils/guards";
+import { env } from "../config/env";
 
 /**
  * 📌 Отрисовка корня раздела «Церковный календарь»
@@ -31,6 +33,21 @@ export async function renderCalendarRoot(ctx: MyContext) {
 	});
 }
 
+/**
+ * Отрисовка кнопок с выбором инструкций
+ * @param ctx
+ * @param title
+ * @param body
+ */
+async function replyInstruction(ctx: MyContext, title: string, body: string) {
+	if (!requirePrivileged(ctx)) return;
+
+	await ctx.editMessageText(`*${title}*\n\n${body}\n\n*Ссылка для подписки:*\n\n${env.CALENDAR_SUBSCRIBE_URL}\n`, {
+		parse_mode: "Markdown",
+		reply_markup: new InlineKeyboard().text("⬅️ Назад", "calendar:instructions"),
+		link_preview_options: { is_disabled: true },
+	});
+}
 /**
  * 📌 Регистрируем все обработчики для календаря
  */
@@ -211,5 +228,53 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		const events = await fetchAllFutureEventsByTitle("отцы и дети");
 		if (events.length === 0) return ctx.reply(CALENDAR.familyNoneAll);
 		await ctx.reply(events.map(formatEvent).join("\n\n"), { parse_mode: "Markdown" });
+	});
+
+	bot.hears(MENU_LABELS.CALENDAR_SUBSCRIBE, async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+
+		await ctx.reply(CALENDAR.yourCalendarUsing, {
+			parse_mode: "Markdown",
+			reply_markup: subscribeKeyboard(),
+		});
+	});
+
+	// Список инстуркций
+	bot.callbackQuery("calendar:instructions", async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+
+		await ctx.answerCallbackQuery().catch(() => {});
+
+		await ctx.reply(CALENDAR.yourCalendarUsing, {
+			parse_mode: "Markdown",
+			reply_markup: subscribeKeyboard(),
+		});
+	});
+
+	// ---------- инструкции для подписки на календарь -------------
+
+	bot.callbackQuery("calendar:sub:apple", async (ctx) => {
+		await ctx.answerCallbackQuery().catch(() => {});
+		await replyInstruction(ctx, "Подписка — Apple", CALENDAR.subscribeInstructions.apple);
+	});
+
+	bot.callbackQuery("calendar:sub:yandex", async (ctx) => {
+		await ctx.answerCallbackQuery().catch(() => {});
+		await replyInstruction(ctx, "Подписка — Яндекс", CALENDAR.subscribeInstructions.yandex);
+	});
+
+	bot.callbackQuery("calendar:sub:google", async (ctx) => {
+		await ctx.answerCallbackQuery().catch(() => {});
+		await replyInstruction(ctx, "Подписка — Google", CALENDAR.subscribeInstructions.google);
+	});
+
+	bot.callbackQuery("calendar:sub:xiomi", async (ctx) => {
+		await ctx.answerCallbackQuery().catch(() => {});
+		await replyInstruction(ctx, "Подписка — Xiaomi / MIUI", CALENDAR.subscribeInstructions.xiaomi);
+	});
+
+	bot.callbackQuery("calendar:sub:other", async (ctx) => {
+		await ctx.answerCallbackQuery().catch(() => {});
+		await replyInstruction(ctx, "Подписка — Другие приложения", CALENDAR.subscribeInstructions.other);
 	});
 }

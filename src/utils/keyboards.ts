@@ -76,7 +76,7 @@ export const replyCalendarMenu = {
 		[MENU_LABELS.CALENDAR_MEMBERS, MENU_LABELS.CALENDAR_PRAYER],
 		[MENU_LABELS.CALENDAR_LMG, MENU_LABELS.CALENDAR_FAMILY],
 		[MENU_LABELS.CALENDAR_NEXT, MENU_LABELS.CALENDAR_HOLIDAYS],
-		[MENU_LABELS.BACK],
+		[MENU_LABELS.BACK, MENU_LABELS.CALENDAR_SUBSCRIBE],
 	],
 	resize_keyboard: true,
 };
@@ -120,6 +120,19 @@ export const replyCalendarFamilyMenu = {
 	],
 	resize_keyboard: true,
 };
+
+export function subscribeKeyboard() {
+	return new InlineKeyboard()
+		.text(MENU_LABELS.CALENDAR_SUB_APPLE, "calendar:sub:apple")
+		.row()
+		.text(MENU_LABELS.CALENDAR_SUB_YANDEX, "calendar:sub:yandex")
+		.row()
+		.text(MENU_LABELS.CALENDAR_SUB_GOOGLE, "calendar:sub:google")
+		.row()
+		.text(MENU_LABELS.CALENDAR_SUB_XIOMI, "calendar:sub:xiomi")
+		.row()
+		.text(MENU_LABELS.CALENDAR_SUB_OTHER, "calendar:sub:other");
+}
 
 /* -------------------- Общие inline-кнопки -------------------- */
 /** 🏠 В главное меню (используется в списках и сообщениях) */
