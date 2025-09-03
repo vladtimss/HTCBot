@@ -16,7 +16,8 @@ export async function renderSunday(ctx: MyContext) {
 		is_persistent: true,
 	};
 
-	await ctx.reply(SUNDAY.text, {
+	await ctx.replyWithPhoto("https://disk.yandex.ru/i/DNEDfqc1f2TMNg", {
+		caption: SUNDAY.text,
 		parse_mode: "HTML",
 		reply_markup: backToMainKeyboard,
 	});
