@@ -8,7 +8,7 @@ import {
 	formatEvent,
 } from "../services/calendar";
 import { MENU_LABELS } from "../constants/button-lables";
-import { CALENDAR } from "../services/texts";
+import { CALENDAR, COMMON } from "../services/texts";
 import {
 	replyCalendarMenu,
 	replyCalendarLmgMenu,
@@ -28,8 +28,9 @@ export async function renderCalendarRoot(ctx: MyContext) {
 	ctx.session.lastSection = "calendar";
 	ctx.session.menuStack = ["calendar"];
 
-	await ctx.reply(CALENDAR.title, {
+	await ctx.reply(`${CALENDAR.title}\n\n${COMMON.useButtonBelow}`, {
 		reply_markup: replyCalendarMenu,
+		parse_mode: "Markdown",
 	});
 }
 
@@ -80,8 +81,9 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		if (!requirePrivileged(ctx)) return;
 
 		ctx.session.menuStack.push("lmg");
-		await ctx.reply(CALENDAR.lmgTitle, {
+		await ctx.reply(`${CALENDAR.lmgTitle}\n\n${COMMON.useButtonBelow}`, {
 			reply_markup: replyCalendarLmgMenu,
+			parse_mode: "Markdown",
 		});
 	});
 
@@ -106,8 +108,9 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		if (!requirePrivileged(ctx)) return;
 
 		ctx.session.menuStack.push("prayers");
-		await ctx.reply(CALENDAR.prayersTitle, {
+		await ctx.reply(`${CALENDAR.prayersTitle}\n\n${COMMON.useButtonBelow}`, {
 			reply_markup: replyCalendarPrayerMenu,
+			parse_mode: "Markdown",
 		});
 	});
 
@@ -134,8 +137,9 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		if (!requirePrivileged(ctx)) return;
 
 		ctx.session.menuStack.push("members");
-		await ctx.reply(CALENDAR.membersTitle, {
+		await ctx.reply(`${CALENDAR.membersTitle}\n\n${COMMON.useButtonBelow}`, {
 			reply_markup: replyCalendarMembersMenu,
+			parse_mode: "Markdown",
 		});
 	});
 
@@ -162,8 +166,9 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		if (!requirePrivileged(ctx)) return;
 
 		ctx.session.menuStack.push("holidays");
-		await ctx.reply(CALENDAR.holidaysTitle, {
+		await ctx.reply(`${CALENDAR.holidaysTitle}\n\n${COMMON.useButtonBelow}`, {
 			reply_markup: replyCalendarHolidaysMenu,
+			parse_mode: "Markdown",
 		});
 	});
 
@@ -212,8 +217,9 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		if (!requirePrivileged(ctx)) return;
 
 		ctx.session.menuStack.push("family");
-		await ctx.reply(CALENDAR.familyTitle, {
+		await ctx.reply(`${CALENDAR.familyTitle}\n\n${COMMON.useButtonBelow}`, {
 			reply_markup: replyCalendarFamilyMenu,
+			parse_mode: "Markdown",
 		});
 	});
 
