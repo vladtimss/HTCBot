@@ -9,7 +9,7 @@ import {
 	SmallGroup,
 	DISTRICT_MAP,
 } from "../data/small-groups";
-import { SMALL_GROUPS_TEXTS } from "../services/texts";
+import { COMMON, SMALL_GROUPS_TEXTS } from "../services/texts";
 import { replyGroupsMenu } from "../utils/keyboards";
 import { fetchAllFutureEventsByTitle, fetchNextEventByTitle, formatEvent } from "../services/calendar";
 import { MENU_LABELS } from "../constants/button-lables";
@@ -73,10 +73,17 @@ async function renderGroupsRoot(ctx: MyContext) {
 	ctx.session.menuStack = ["groups"];
 	ctx.session.lastSection = "groups";
 
-	await ctx.reply(`*${SMALL_GROUPS_TEXTS.title}*`, {
-		parse_mode: "Markdown",
-		reply_markup: replyGroupsMenu(ctx),
-	});
+	const isPrivileged = ctx.access?.isPrivileged;
+
+	await ctx.reply(
+		`*${SMALL_GROUPS_TEXTS.title}*\n\n${
+			isPrivileged ? SMALL_GROUPS_TEXTS.descriptionForMembers : SMALL_GROUPS_TEXTS.descriptionForOther
+		}\n\n${COMMON.useButtonBelow}`,
+		{
+			parse_mode: "Markdown",
+			reply_markup: replyGroupsMenu(ctx),
+		}
+	);
 }
 
 /**
