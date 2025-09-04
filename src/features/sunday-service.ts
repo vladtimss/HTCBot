@@ -12,7 +12,7 @@ export async function renderSunday(ctx: MyContext) {
 
 	await ctx.replyWithPhoto(env.SUNDAY_SERVICE_IMG, {
 		caption: SUNDAY.text,
-		parse_mode: "HTML",
+		parse_mode: "MarkdownV2",
 	});
 }
 
