@@ -11,7 +11,7 @@ export async function renderSunday(ctx: MyContext) {
 
 	await ctx.replyWithPhoto("https://disk.yandex.ru/i/DNEDfqc1f2TMNg", {
 		caption: SUNDAY.text,
-		parse_mode: "HTML",
+		parse_mode: "MarkdownV2",
 	});
 }
 
