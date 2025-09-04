@@ -19,7 +19,7 @@ export function registerStart(bot: Bot<MyContext>) {
 		const kb = new InlineKeyboard().text(MENU_LABELS.START, "nav:main");
 
 		try {
-			await ctx.replyWithPhoto(new InputFile(env.START_IMAGE), {
+			await ctx.replyWithPhoto(env.START_IMAGE, {
 				caption: greet(ctx),
 				parse_mode: "Markdown",
 				reply_markup: kb,
