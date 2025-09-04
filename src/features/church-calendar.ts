@@ -1,4 +1,4 @@
-import { Bot } from "grammy";
+import { Bot, InlineKeyboard } from "grammy";
 import { MyContext } from "../types/grammy-context";
 import {
 	fetchUpcomingEvents,
@@ -8,7 +8,7 @@ import {
 	formatEvent,
 } from "../services/calendar";
 import { MENU_LABELS } from "../constants/button-lables";
-import { CALENDAR } from "../services/texts";
+import { CALENDAR, COMMON } from "../services/texts";
 import {
 	replyCalendarMenu,
 	replyCalendarLmgMenu,
@@ -16,8 +16,10 @@ import {
 	replyCalendarMembersMenu,
 	replyCalendarHolidaysMenu,
 	replyCalendarFamilyMenu,
+	subscribeKeyboard,
 } from "../utils/keyboards";
 import { requirePrivileged } from "../utils/guards";
+import { env } from "../config/env";
 
 /**
  * 📌 Отрисовка корня раздела «Церковный календарь»
@@ -26,11 +28,30 @@ export async function renderCalendarRoot(ctx: MyContext) {
 	ctx.session.lastSection = "calendar";
 	ctx.session.menuStack = ["calendar"];
 
-	await ctx.reply(CALENDAR.title, {
+	await ctx.reply(`${CALENDAR.title}\n\n${COMMON.useButtonBelow}`, {
 		reply_markup: replyCalendarMenu,
+		parse_mode: "Markdown",
 	});
 }
 
+/**
+ * Отрисовка кнопок с выбором инструкций
+ * @param ctx
+ * @param title
+ * @param body
+ */
+async function replyInstruction(ctx: MyContext, title: string, body: string) {
+	if (!requirePrivileged(ctx)) return;
+
+	await ctx.editMessageText(
+		`*${title}*\n\n${body}\n\n*Ссылка для подписки:*\n\n\`${env.CALENDAR_SUBSCRIBE_URL}\`\n`,
+		{
+			parse_mode: "Markdown",
+			reply_markup: new InlineKeyboard().text("⬅️ Назад", "calendar:instructions"),
+			link_preview_options: { is_disabled: true },
+		}
+	);
+}
 /**
  * 📌 Регистрируем все обработчики для календаря
  */
@@ -50,7 +71,7 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		if (events.length === 0) {
 			return ctx.reply(CALENDAR.noEvents);
 		}
-		await ctx.reply(CALENDAR.nextEventsTitle + "\n\n" + events.map(formatEvent).join("\n\n"), {
+		await ctx.reply(CALENDAR.nextEventsTitle + "\n\n" + events.map((e) => formatEvent(e, true)).join("\n\n"), {
 			parse_mode: "Markdown",
 		});
 	});
@@ -60,8 +81,9 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		if (!requirePrivileged(ctx)) return;
 
 		ctx.session.menuStack.push("lmg");
-		await ctx.reply(CALENDAR.lmgTitle, {
+		await ctx.reply(`${CALENDAR.lmgTitle}\n\n${COMMON.useButtonBelow}`, {
 			reply_markup: replyCalendarLmgMenu,
+			parse_mode: "Markdown",
 		});
 	});
 
@@ -78,7 +100,7 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 
 		const events = await fetchAllFutureEventsByTitle("лмг");
 		if (events.length === 0) return ctx.reply(CALENDAR.lmgNoneAll);
-		await ctx.reply(events.map(formatEvent).join("\n\n"), { parse_mode: "Markdown" });
+		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: "Markdown" });
 	});
 
 	// === Молитвенные собрания ===
@@ -86,8 +108,9 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		if (!requirePrivileged(ctx)) return;
 
 		ctx.session.menuStack.push("prayers");
-		await ctx.reply(CALENDAR.prayersTitle, {
+		await ctx.reply(`${CALENDAR.prayersTitle}\n\n${COMMON.useButtonBelow}`, {
 			reply_markup: replyCalendarPrayerMenu,
+			parse_mode: "Markdown",
 		});
 	});
 
@@ -106,7 +129,7 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 
 		const events = await fetchAllFutureEventsByTitle("молитвенное собрание");
 		if (events.length === 0) return ctx.reply(CALENDAR.prayersNoneAll);
-		await ctx.reply(events.map(formatEvent).join("\n\n"), { parse_mode: "Markdown" });
+		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: "Markdown" });
 	});
 
 	// === Членские собрания ===
@@ -114,8 +137,9 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		if (!requirePrivileged(ctx)) return;
 
 		ctx.session.menuStack.push("members");
-		await ctx.reply(CALENDAR.membersTitle, {
+		await ctx.reply(`${CALENDAR.membersTitle}\n\n${COMMON.useButtonBelow}`, {
 			reply_markup: replyCalendarMembersMenu,
+			parse_mode: "Markdown",
 		});
 	});
 
@@ -134,7 +158,7 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 
 		const events = await fetchAllFutureEventsByTitle("членское собрание");
 		if (events.length === 0) return ctx.reply(CALENDAR.membersNoneAll);
-		await ctx.reply(events.map(formatEvent).join("\n\n"), { parse_mode: "Markdown" });
+		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: "Markdown" });
 	});
 
 	// === Большие праздники ===
@@ -142,8 +166,9 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		if (!requirePrivileged(ctx)) return;
 
 		ctx.session.menuStack.push("holidays");
-		await ctx.reply(CALENDAR.holidaysTitle, {
+		await ctx.reply(`${CALENDAR.holidaysTitle}\n\n${COMMON.useButtonBelow}`, {
 			reply_markup: replyCalendarHolidaysMenu,
+			parse_mode: "Markdown",
 		});
 	});
 
@@ -192,8 +217,9 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		if (!requirePrivileged(ctx)) return;
 
 		ctx.session.menuStack.push("family");
-		await ctx.reply(CALENDAR.familyTitle, {
+		await ctx.reply(`${CALENDAR.familyTitle}\n\n${COMMON.useButtonBelow}`, {
 			reply_markup: replyCalendarFamilyMenu,
+			parse_mode: "Markdown",
 		});
 	});
 
@@ -210,6 +236,54 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 
 		const events = await fetchAllFutureEventsByTitle("отцы и дети");
 		if (events.length === 0) return ctx.reply(CALENDAR.familyNoneAll);
-		await ctx.reply(events.map(formatEvent).join("\n\n"), { parse_mode: "Markdown" });
+		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: "Markdown" });
+	});
+
+	bot.hears(MENU_LABELS.CALENDAR_SUBSCRIBE, async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+
+		await ctx.reply(CALENDAR.yourCalendarUsing, {
+			parse_mode: "Markdown",
+			reply_markup: subscribeKeyboard(),
+		});
+	});
+
+	// Список инстуркций
+	bot.callbackQuery("calendar:instructions", async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+
+		await ctx.answerCallbackQuery().catch(() => {});
+
+		await ctx.reply(CALENDAR.yourCalendarUsing, {
+			parse_mode: "Markdown",
+			reply_markup: subscribeKeyboard(),
+		});
+	});
+
+	// ---------- инструкции для подписки на календарь -------------
+
+	bot.callbackQuery("calendar:sub:apple", async (ctx) => {
+		await ctx.answerCallbackQuery().catch(() => {});
+		await replyInstruction(ctx, "Подписка — Apple", CALENDAR.subscribeInstructions.apple);
+	});
+
+	bot.callbackQuery("calendar:sub:google", async (ctx) => {
+		await ctx.answerCallbackQuery().catch(() => {});
+		await replyInstruction(ctx, "Подписка — Google", CALENDAR.subscribeInstructions.google);
+	});
+
+	bot.callbackQuery("calendar:sub:yandex", async (ctx) => {
+		await ctx.answerCallbackQuery().catch(() => {});
+		await replyInstruction(ctx, "Подписка — Яндекс", CALENDAR.subscribeInstructions.yandex);
+	});
+
+	bot.callbackQuery("calendar:sub:xiomi", async (ctx) => {
+		await ctx.answerCallbackQuery().catch(() => {});
+		await replyInstruction(ctx, "Подписка — Xiaomi / MIUI", CALENDAR.subscribeInstructions.xiaomi);
+	});
+
+	bot.callbackQuery("calendar:sub:other", async (ctx) => {
+		await ctx.answerCallbackQuery().catch(() => {});
+		await replyInstruction(ctx, "Подписка — Другие приложения", CALENDAR.subscribeInstructions.other);
 	});
 }

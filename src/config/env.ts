@@ -67,8 +67,10 @@ export const env = {
 	SERMONS_YANDEX_URL: required("SERMONS_YANDEX_URL"),
 
 	// ⚙️ Опциональные переменные
-	START_IMAGE: optional("START_IMAGE", "assets/main.png"),
+	START_IMAGE: optional("START_IMAGE", "assets/greet.png"),
+	SUNDAY_SERVICE_IMG: optional("SUNDAY_SERVICE_IMG", ""),
 	CHANNEL_URL: optional("CHANNEL_URL", "https://t.me/"),
+	CALENDAR_SUBSCRIBE_URL: optional("CALENDAR_SUBSCRIBE_URL", ""),
 	YANDEX_MAP_URL: optional("YANDEX_MAP_URL", ""),
 
 	// 👥 Списки и структуры

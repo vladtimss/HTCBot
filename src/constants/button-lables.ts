@@ -1,5 +1,8 @@
 // src/constants/menu-labels.ts
 export const MENU_LABELS = {
+	// Старт
+	START: "🚀 Начать",
+
 	// Главное меню
 	SUNDAY: "⛪ Воскресное богослужение",
 	GROUPS: "👥 Малые группы",
@@ -36,6 +39,12 @@ export const MENU_LABELS = {
 	CALENDAR_NEXT: "🗓️ Ближайшие события",
 	CALENDAR_HOLIDAYS: "🎉 Большие праздники",
 	HOLIDAY_EASTER: "✝️ Когда будет Пасха",
+	CALENDAR_SUBSCRIBE: "🔔 Подписаться на календарь",
+	CALENDAR_SUB_APPLE: "🍏 Apple",
+	CALENDAR_SUB_YANDEX: "📒 Яндекс",
+	CALENDAR_SUB_GOOGLE: "🔎 Google",
+	CALENDAR_SUB_XIOMI: "📱 Xiaomi",
+	CALENDAR_SUB_OTHER: "❓ Другой",
 
 	// Рождественский выезд
 	HOLIDAY_RV: "🎄 Даты РВ",

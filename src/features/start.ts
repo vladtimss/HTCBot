@@ -1,8 +1,9 @@
-import { Bot, InlineKeyboard } from "grammy";
+import { Bot, InlineKeyboard, InputFile } from "grammy";
 import { MyContext } from "../types/grammy-context";
-import { START, COMMON } from "../services/texts";
+import { COMMON, greet } from "../services/texts";
 import { env } from "../config/env";
 import { replyMainKeyboard } from "../utils/keyboards";
+import { MENU_LABELS } from "../constants/button-lables";
 
 /**
  * Регистрирует обработчик команды /start.
@@ -15,19 +16,16 @@ export function registerStart(bot: Bot<MyContext>) {
 		ctx.session.lastSection = "main";
 
 		// Кнопка «🏠 Главное меню»
-		const kb = new InlineKeyboard().text(START.button, "nav:main");
-
-		// Текст приветствия
-		const welcomeText = `*${START.title}*\n\n${START.description}`;
+		const kb = new InlineKeyboard().text(MENU_LABELS.START, "nav:main");
 
 		try {
 			await ctx.replyWithPhoto(env.START_IMAGE, {
-				caption: welcomeText,
+				caption: greet(ctx),
 				parse_mode: "Markdown",
 				reply_markup: kb,
 			});
-		} catch {
-			await ctx.reply(welcomeText, {
+		} catch (e) {
+			await ctx.reply(greet(ctx), {
 				parse_mode: "Markdown",
 				reply_markup: kb,
 			});

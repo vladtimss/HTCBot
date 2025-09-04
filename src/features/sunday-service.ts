@@ -2,6 +2,7 @@ import { Bot } from "grammy";
 import { MyContext } from "../types/grammy-context";
 import { SUNDAY } from "../services/texts";
 import { MENU_LABELS } from "../constants/button-lables";
+import { env } from "../config/env";
 
 /**
  * Отрисовывает экран «Воскресное богослужение».
@@ -9,16 +10,9 @@ import { MENU_LABELS } from "../constants/button-lables";
 export async function renderSunday(ctx: MyContext) {
 	ctx.session.lastSection = "sunday";
 
-	// Клавиатура: только кнопка «⬅️ Назад»
-	const backToMainKeyboard = {
-		keyboard: [[{ text: MENU_LABELS.BACK }]],
-		resize_keyboard: true,
-		is_persistent: true,
-	};
-
-	await ctx.reply(SUNDAY.text, {
+	await ctx.replyWithPhoto(env.SUNDAY_SERVICE_IMG, {
+		caption: SUNDAY.text,
 		parse_mode: "HTML",
-		reply_markup: backToMainKeyboard,
 	});
 }
 

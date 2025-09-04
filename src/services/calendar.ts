@@ -86,14 +86,25 @@ export async function fetchUpcomingEvents(limit = 3): Promise<CalendarEvent[]> {
 		.slice(0, Math.max(0, limit));
 }
 
-export function formatEvent(e: CalendarEvent): string {
-	const date = e.startsAt.toLocaleString("ru-RU", { dateStyle: "short", timeStyle: "short" });
-	const place = e.location ? `\n📍 ${e.location}` : "";
-	const descr = e.description ? `\n— ${e.description}` : "";
-	return `• *${escapeMd(e.title)}*\n🕒 ${date}${place}${descr}`;
+export function formatEvent(e: CalendarEvent, isList = false): string {
+	const dateStr = e.startsAt.toLocaleString("ru-RU", {
+		weekday: "long",
+		day: "numeric",
+		month: "long",
+		hour: "2-digit",
+		minute: "2-digit",
+	});
+
+	// const place = e.location ? `\n📍 ${e.location}` : "";
+	const descr = e.description ? `\n📝 ${e.description}` : "";
+
+	const card = [`*✨ ${escapeMd(e.title)}*`, `*🗓 ${dateStr}*`, descr].filter(Boolean).join("\n");
+
+	return isList ? card + "\n\n━━━━━━━━━━" : card;
 }
+
 function escapeMd(s: string): string {
-	return s.replace(/([_*[\]()~`>#+\-=|{}.!\\])/g, "\\$1");
+	return s.replace(/([_*[\]()~`>#{.!\\-])/g, "\\$1");
 }
 
 /**
