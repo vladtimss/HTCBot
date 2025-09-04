@@ -16,12 +16,33 @@ import { MENU_LABELS } from "../constants/button-lables";
 import { requirePrivileged } from "../utils/guards";
 
 /**
- * Форматирует информацию об одной малой группе в виде HTML-текста
+ * Форматирует информацию об одной малой группе в виде «карточки».
  */
 function formatGroup(g: SmallGroup): string {
-	const leaders = g.leaders.map((l) => `👤 ${l.firstName} — ${l.phone}`).join("\n");
+	const leaders = g.leaders
+		.map((l) => {
+			if (l.tgUserName) {
+				return `👤 ${l.firstName} — <a href="https://t.me/${l.tgUserName}">Написать лидеру</a>`;
+			}
+			if (l.tgId) {
+				return `👤 ${l.firstName} — <a href="tg://user?id=${l.tgId}">Написать лидеру</a>`;
+			}
+			// fallback на телефон, если нет ни tgUserName, ни tgId
+			return `👤 ${l.firstName} — ${l.phone}`;
+		})
+		.join("\n");
+
 	const addresses = g.addresses.map((a) => `📍 <a href="${a.mapUrl}">${a.address}</a>`).join("\n");
-	return `<b>${g.title}</b>\n🗓 ${WEEKDAY_TITLE[g.weekday]}, начало в ${g.time}\n${addresses}\n${leaders}`;
+
+	return `
+<b>✨ ${g.title}</b>
+
+🗓 <i>${WEEKDAY_TITLE[g.weekday]}, начало в ${g.time}</i>
+
+${addresses}
+
+${leaders}
+	`.trim();
 }
 
 /**

@@ -1,3 +1,5 @@
+// ts-node src/scripts/encode-env.ts
+
 import fs from "fs";
 
 function encodeFile(path: string): string {

@@ -47,42 +47,41 @@ export type SmallGroup = SmallGroupRaw & {
 
 // --- Районы (ключ -> отображаемое название)
 export const DISTRICT_MAP: Record<string, string> = {
-	"troick-pervomaiskoe": "Троицк-Первомайское",
-	rasskazovo: "Рассказово",
-	"troick-vatutinki": "Троицк-Ватутинки",
-	"kommunarka-filimonkovskoe": "Коммунарка-Первомайское",
+	troick: "Троицк",
+	vnukovo: "Внуково",
+	kommunarka: "Коммунарка",
 };
 
 // Базовый список (без адресов и лидеров) — 4 группы: 3 в пятницу и 1 в среду
 const RAW_GROUPS: SmallGroupRaw[] = [
 	{
 		id: "g1",
-		title: "Троицк-Первомайское",
-		region: "troick-pervomaiskoe",
+		title: "Группа в Троицке",
+		region: "troick",
 		weekday: "WED",
 		time: "19:30",
 		leaderIds: ["l1", "l2"],
 	},
 	{
 		id: "g2",
-		title: "Рассказово",
-		region: "rasskazovo",
+		title: "Группа в ЖК Рассказово",
+		region: "vnukovo",
 		weekday: "FRI",
 		time: "19:30",
 		leaderIds: ["l3", "l4"],
 	},
 	{
 		id: "g3",
-		title: "Троицк-Ватутинки",
-		region: "troick-vatutinki",
+		title: "Группа в ЖК Кленовые Аллеи",
+		region: "troick",
 		weekday: "FRI",
 		time: "19:00",
 		leaderIds: ["l5", "l6"],
 	},
 	{
 		id: "g4",
-		title: "Коммунарка-Первомайское",
-		region: "kommunarka-filimonkovskoe",
+		title: "Группа в Коммунарке",
+		region: "kommunarka",
 		weekday: "FRI",
 		time: "20:00",
 		leaderIds: ["l8", "l9", "l7"],
