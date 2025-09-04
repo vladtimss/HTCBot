@@ -16,33 +16,33 @@ import { MENU_LABELS } from "../constants/button-lables";
 import { requirePrivileged } from "../utils/guards";
 
 /**
- * Форматирует информацию об одной малой группе в виде «карточки».
+ * Форматирует информацию об одной малой группе в виде «карточки» (Markdown).
  */
 function formatGroup(g: SmallGroup): string {
 	const leaders = g.leaders
 		.map((l) => {
 			if (l.tgUserName) {
-				return `👤 ${l.firstName} — <a href="https://t.me/${l.tgUserName}">Написать лидеру</a>`;
+				return `👤 [${l.firstName}](https://t.me/${l.tgUserName})`;
 			}
 			if (l.tgId) {
-				return `👤 ${l.firstName} — <a href="tg://user?id=${l.tgId}">Написать лидеру</a>`;
+				return `👤 [${l.firstName}](tg://user?id=${l.tgId})`;
 			}
-			// fallback на телефон, если нет ни tgUserName, ни tgId
-			return `👤 ${l.firstName} — ${l.phone}`;
+			return `👤 ${l.firstName}`;
 		})
 		.join("\n");
 
-	const addresses = g.addresses.map((a) => `📍 <a href="${a.mapUrl}">${a.address}</a>`).join("\n");
+	const addresses = g.addresses.map((a) => `📍 [${a.address}](${a.mapUrl})`).join("\n");
 
-	return `
-<b>✨ ${g.title}</b>
-
-🗓 <i>${WEEKDAY_TITLE[g.weekday]}, начало в ${g.time}</i>
-
-${addresses}
-
-${leaders}
-	`.trim();
+	return [
+		`*✨ ${g.title}*`,
+		"",
+		`🗓 _${WEEKDAY_TITLE[g.weekday]}, начало в ${g.time}_`,
+		"",
+		addresses,
+		"",
+		"_(Напишите ведущим, если хотите что-то уточнить - нажмите на имя)_\n",
+		leaders,
+	].join("\n");
 }
 
 /**
@@ -126,8 +126,8 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 
 		const list = SMALL_GROUPS.filter((g) => g.weekday === day);
 
-		await ctx.reply(`<b>${WEEKDAY_TITLE[day]} — группы:</b>`, {
-			parse_mode: "HTML",
+		await ctx.reply(`*${WEEKDAY_TITLE[day]} — группы:*`, {
+			parse_mode: "Markdown",
 			link_preview_options: { is_disabled: true },
 		});
 
@@ -136,7 +136,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 			const isLast = i === list.length - 1;
 
 			await ctx.reply(formatGroup(g), {
-				parse_mode: "HTML",
+				parse_mode: "Markdown",
 				link_preview_options: { is_disabled: true },
 				reply_markup: isLast ? new InlineKeyboard().text("⬅️ К дням", "groups:byday") : undefined,
 			});
@@ -161,8 +161,8 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 
 		const list = SMALL_GROUPS.filter((g) => g.region === districtKey);
 
-		await ctx.reply(`<b>${districtName} — группы:</b>`, {
-			parse_mode: "HTML",
+		await ctx.reply(`*${districtName} — группы:*`, {
+			parse_mode: "Markdown",
 			link_preview_options: { is_disabled: true },
 		});
 
@@ -171,7 +171,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 			const isLast = i === list.length - 1;
 
 			await ctx.reply(formatGroup(g), {
-				parse_mode: "HTML",
+				parse_mode: "Markdown",
 				link_preview_options: { is_disabled: true },
 				reply_markup: isLast ? new InlineKeyboard().text("⬅️ К районам", "groups:bydistrict") : undefined,
 			});
