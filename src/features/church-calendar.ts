@@ -71,7 +71,7 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		if (events.length === 0) {
 			return ctx.reply(CALENDAR.noEvents);
 		}
-		await ctx.reply(CALENDAR.nextEventsTitle + "\n\n" + events.map(formatEvent).join("\n\n"), {
+		await ctx.reply(CALENDAR.nextEventsTitle + "\n\n" + events.map((e) => formatEvent(e, true)).join("\n\n"), {
 			parse_mode: "Markdown",
 		});
 	});
@@ -100,7 +100,7 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 
 		const events = await fetchAllFutureEventsByTitle("лмг");
 		if (events.length === 0) return ctx.reply(CALENDAR.lmgNoneAll);
-		await ctx.reply(events.map(formatEvent).join("\n\n"), { parse_mode: "Markdown" });
+		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: "Markdown" });
 	});
 
 	// === Молитвенные собрания ===
@@ -129,7 +129,7 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 
 		const events = await fetchAllFutureEventsByTitle("молитвенное собрание");
 		if (events.length === 0) return ctx.reply(CALENDAR.prayersNoneAll);
-		await ctx.reply(events.map(formatEvent).join("\n\n"), { parse_mode: "Markdown" });
+		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: "Markdown" });
 	});
 
 	// === Членские собрания ===
@@ -158,7 +158,7 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 
 		const events = await fetchAllFutureEventsByTitle("членское собрание");
 		if (events.length === 0) return ctx.reply(CALENDAR.membersNoneAll);
-		await ctx.reply(events.map(formatEvent).join("\n\n"), { parse_mode: "Markdown" });
+		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: "Markdown" });
 	});
 
 	// === Большие праздники ===
@@ -236,7 +236,7 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 
 		const events = await fetchAllFutureEventsByTitle("отцы и дети");
 		if (events.length === 0) return ctx.reply(CALENDAR.familyNoneAll);
-		await ctx.reply(events.map(formatEvent).join("\n\n"), { parse_mode: "Markdown" });
+		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: "Markdown" });
 	});
 
 	bot.hears(MENU_LABELS.CALENDAR_SUBSCRIBE, async (ctx) => {

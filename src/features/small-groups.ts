@@ -208,7 +208,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 			await ctx.reply(SMALL_GROUPS_TEXTS.noFutureLmg);
 			return;
 		}
-		const list = lmEvents.map(formatEvent).join("\n\n");
+		const list = lmEvents.map((e) => formatEvent(e, true)).join("\n\n");
 		await ctx.reply(`${SMALL_GROUPS_TEXTS.lmgSeasonList}\n\n${list}`, {
 			parse_mode: "Markdown",
 		});
