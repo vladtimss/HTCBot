@@ -2,6 +2,7 @@ import { Bot } from "grammy";
 import { MyContext } from "../types/grammy-context";
 import { SUNDAY } from "../services/texts";
 import { MENU_LABELS } from "../constants/button-lables";
+import { env } from "../config/env";
 
 /**
  * Отрисовывает экран «Воскресное богослужение».
@@ -9,9 +10,9 @@ import { MENU_LABELS } from "../constants/button-lables";
 export async function renderSunday(ctx: MyContext) {
 	ctx.session.lastSection = "sunday";
 
-	await ctx.replyWithPhoto("https://disk.yandex.ru/i/DNEDfqc1f2TMNg", {
+	await ctx.replyWithPhoto(env.SUNDAY_SERVICE_IMG, {
 		caption: SUNDAY.text,
-		parse_mode: "MarkdownV2",
+		parse_mode: "HTML",
 	});
 }
 
