@@ -1,7 +1,7 @@
 // src/features/about-htc.ts
 import { Bot } from "grammy";
 import { MyContext } from "../types/grammy-context";
-import { ABOUT, BELIEF, HISTORY } from "../services/texts";
+import { ABOUT, BELIEF, COMMON, HISTORY } from "../services/texts";
 import { env } from "../config/env";
 import { replyAboutMenu } from "../utils/keyboards";
 import { MENU_LABELS } from "../constants/button-lables";
@@ -13,7 +13,7 @@ export async function renderAboutRoot(ctx: MyContext) {
 	ctx.session.menuStack = ["about"];
 	ctx.session.lastSection = "about";
 
-	await ctx.reply(`*${ABOUT.title}*`, {
+	await ctx.reply(`*Раздел: ${ABOUT.title}*\n\n${COMMON.useButtonBelow}`, {
 		parse_mode: "Markdown",
 		reply_markup: replyAboutMenu,
 	});
@@ -32,8 +32,6 @@ export function registerAboutHTC(bot: Bot<MyContext>) {
 	bot.hears(MENU_LABELS.CHANNEL, async (ctx) => {
 		await ctx.reply(`Наш канал: ${env.CHANNEL_URL}`, {
 			reply_markup: replyAboutMenu,
-			// если нужно без превью, раскомментируй:
-			// link_preview_options: { is_disabled: true },
 		});
 		ctx.session.menuStack = ["about"];
 		ctx.session.lastSection = "about";
