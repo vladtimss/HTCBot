@@ -60,7 +60,7 @@ export const ABOUT = {
 };
 
 /* -------------------- Малые группы -------------------- */
-export const GROUPS = {
+export const SMALL_GROUPS_TEXTS = {
 	title: "Малые группы",
 
 	// Кнопки (используются и в клавиатуре, и в хендлерах)

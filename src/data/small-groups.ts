@@ -89,7 +89,7 @@ const RAW_GROUPS: SmallGroupRaw[] = [
 ];
 
 // Готовый список с лидерами и адресами
-export const GROUPS: SmallGroup[] = RAW_GROUPS.map((g) => {
+export const SMALL_GROUPS: SmallGroup[] = RAW_GROUPS.map((g) => {
 	const leaders: SmallGroupLeader[] = (g.leaderIds || [])
 		.map((id) => {
 			const src = env.LEADERS[id];
@@ -112,7 +112,7 @@ export const GROUPS: SmallGroup[] = RAW_GROUPS.map((g) => {
 });
 
 // Все районы
-export const DISTRICTS = Array.from(new Set(GROUPS.map((g) => g.region)));
+export const DISTRICTS = Array.from(new Set(SMALL_GROUPS.map((g) => g.region)));
 
 // Все дни
-export const WEEKDAYS_PRESENT = Array.from(new Set(GROUPS.map((g) => g.weekday))) as Weekday[];
+export const WEEKDAYS_PRESENT = Array.from(new Set(SMALL_GROUPS.map((g) => g.weekday))) as Weekday[];

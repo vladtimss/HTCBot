@@ -5,7 +5,7 @@
 
 import { Keyboard, InlineKeyboard } from "grammy";
 import { MENU_LABELS } from "../constants/button-lables";
-import { GROUPS as GROUPS_TEXTS } from "../services/texts";
+import { SMALL_GROUPS_TEXTS as GROUPS_TEXTS } from "../services/texts";
 import { MyContext } from "../types/grammy-context";
 
 /**
