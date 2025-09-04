@@ -9,17 +9,9 @@ import { MENU_LABELS } from "../constants/button-lables";
 export async function renderSunday(ctx: MyContext) {
 	ctx.session.lastSection = "sunday";
 
-	// Клавиатура: только кнопка «⬅️ Назад»
-	const backToMainKeyboard = {
-		keyboard: [[{ text: MENU_LABELS.BACK }]],
-		resize_keyboard: true,
-		is_persistent: true,
-	};
-
 	await ctx.replyWithPhoto("https://disk.yandex.ru/i/DNEDfqc1f2TMNg", {
 		caption: SUNDAY.text,
 		parse_mode: "HTML",
-		reply_markup: backToMainKeyboard,
 	});
 }
 
