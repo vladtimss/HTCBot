@@ -20,6 +20,7 @@ import {
 } from "../utils/keyboards";
 import { requirePrivileged } from "../utils/guards";
 import { env } from "../config/env";
+import { withLoading } from "../utils/loading";
 
 /**
  * 📌 Отрисовка корня раздела «Церковный календарь»
@@ -67,7 +68,10 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 	bot.hears(MENU_LABELS.CALENDAR_NEXT, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
-		const events = await fetchUpcomingEvents(5);
+		const events = await withLoading(ctx, () => fetchUpcomingEvents(5), {
+			text: "⏳ Запрашиваю календарь…",
+		});
+
 		if (events.length === 0) {
 			return ctx.reply(CALENDAR.noEvents);
 		}
@@ -90,7 +94,9 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 	bot.hears(MENU_LABELS.LMG_NEXT, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
-		const ev = await fetchNextEventByTitle("лмг");
+		const ev = await withLoading(ctx, () => fetchNextEventByTitle("лмг"), {
+			text: "⏳ Ищу ближайшую встречу ЛМГ…",
+		});
 		if (!ev) return ctx.reply(CALENDAR.lmgNone);
 		await ctx.reply(CALENDAR.lmgNext + "\n\n" + formatEvent(ev), { parse_mode: "Markdown" });
 	});
@@ -98,7 +104,9 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 	bot.hears(MENU_LABELS.LMG_ALL, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
-		const events = await fetchAllFutureEventsByTitle("лмг");
+		const events = await withLoading(ctx, () => fetchAllFutureEventsByTitle("лмг"), {
+			text: "⏳ Получаю расписание ЛМГ…",
+		});
 		if (events.length === 0) return ctx.reply(CALENDAR.lmgNoneAll);
 		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: "Markdown" });
 	});
@@ -117,7 +125,9 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 	bot.hears(MENU_LABELS.PRAYER_NEXT, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
-		const ev = await fetchNextEventByTitle("молитвенное собрание");
+		const ev = await withLoading(ctx, () => fetchNextEventByTitle("молитвенное собрание"), {
+			text: "⏳ Ищу ближайшее молитвенное…",
+		});
 		if (!ev) return ctx.reply(CALENDAR.prayersNone);
 		await ctx.reply(CALENDAR.prayersNext + "\n\n" + formatEvent(ev), {
 			parse_mode: "Markdown",
@@ -127,7 +137,9 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 	bot.hears(MENU_LABELS.PRAYER_ALL, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
-		const events = await fetchAllFutureEventsByTitle("молитвенное собрание");
+		const events = await withLoading(ctx, () => fetchAllFutureEventsByTitle("молитвенное собрание"), {
+			text: "⏳ Получаю список молитвенных…",
+		});
 		if (events.length === 0) return ctx.reply(CALENDAR.prayersNoneAll);
 		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: "Markdown" });
 	});
@@ -146,7 +158,9 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 	bot.hears(MENU_LABELS.MEMBERS_NEXT, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
-		const ev = await fetchNextEventByTitle("членское собрание");
+		const ev = await withLoading(ctx, () => fetchNextEventByTitle("членское собрание"), {
+			text: "⏳ Ищу ближайшее членское…",
+		});
 		if (!ev) return ctx.reply(CALENDAR.membersNone);
 		await ctx.reply(CALENDAR.membersNext + "\n\n" + formatEvent(ev), {
 			parse_mode: "Markdown",
@@ -156,7 +170,9 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 	bot.hears(MENU_LABELS.MEMBERS_ALL, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
-		const events = await fetchAllFutureEventsByTitle("членское собрание");
+		const events = await withLoading(ctx, () => fetchAllFutureEventsByTitle("членское собрание"), {
+			text: "⏳ Получаю список членских…",
+		});
 		if (events.length === 0) return ctx.reply(CALENDAR.membersNoneAll);
 		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: "Markdown" });
 	});
@@ -176,16 +192,16 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		if (!requirePrivileged(ctx)) return;
 
 		const year = new Date().getFullYear();
-		const res = await fetchHolidayEvent("Рождественский выезд");
+		const res = await withLoading(ctx, () => fetchHolidayEvent("Рождественский выезд"), {
+			text: "🎄 Уточняю даты Рождественского выезда…",
+		});
 
 		if (res.status === "not_found") {
 			return ctx.reply(CALENDAR.rvNotPlanned(year));
 		}
-
 		if (res.status === "past") {
 			return ctx.reply(CALENDAR.rvPast(year, formatEvent(res.event)), { parse_mode: "Markdown" });
 		}
-
 		if (res.status === "future") {
 			return ctx.reply(CALENDAR.rvFuture(formatEvent(res.event)), { parse_mode: "Markdown" });
 		}
@@ -195,18 +211,18 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		if (!requirePrivileged(ctx)) return;
 
 		const year = new Date().getFullYear();
-		const res = await fetchHolidayEvent("пасха");
+		const res = await withLoading(ctx, () => fetchHolidayEvent("пасха"), {
+			text: "🐣 Сверяю даты Пасхи…",
+		});
 
 		if (res.status === "not_found") {
 			return ctx.reply(CALENDAR.easterNotPlanned(year));
 		}
-
 		if (res.status === "past") {
 			return ctx.reply(CALENDAR.easterPast(year, formatEvent(res.event)), {
 				parse_mode: "Markdown",
 			});
 		}
-
 		if (res.status === "future") {
 			return ctx.reply(CALENDAR.easterFuture(formatEvent(res.event)), { parse_mode: "Markdown" });
 		}
@@ -226,7 +242,9 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 	bot.hears(MENU_LABELS.FAMILY_NEXT, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
-		const ev = await fetchNextEventByTitle("отцы и дети");
+		const ev = await withLoading(ctx, () => fetchNextEventByTitle("отцы и дети"), {
+			text: "⏳ Ищу ближайшую встречу «Отцы и дети»…",
+		});
 		if (!ev) return ctx.reply(CALENDAR.familyNone);
 		await ctx.reply(CALENDAR.familyNext + "\n\n" + formatEvent(ev), { parse_mode: "Markdown" });
 	});
@@ -234,7 +252,9 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 	bot.hears(MENU_LABELS.FAMILY_ALL, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
-		const events = await fetchAllFutureEventsByTitle("отцы и дети");
+		const events = await withLoading(ctx, () => fetchAllFutureEventsByTitle("отцы и дети"), {
+			text: "⏳ Получаю расписание «Отцы и дети»…",
+		});
 		if (events.length === 0) return ctx.reply(CALENDAR.familyNoneAll);
 		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: "Markdown" });
 	});
