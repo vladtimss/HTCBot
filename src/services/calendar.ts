@@ -91,9 +91,20 @@ function capitalize(str: string): string {
 	return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+/**
+ * Форматирует событие календаря в красивую «карточку» для Telegram.
+ *
+ * Особенности:
+ * - Если событие однодневное → показывается диапазон времени (14:00 — 18:00).
+ * - Если событие многодневное → показывается полный интервал с датами и временем.
+ *
+ * Используется для форматирования событий из CalDAV календаря
+ * перед отправкой в чат.
+ */
 export function formatEvent(e: CalendarEvent, isList = false): string {
 	const startDate = e.startsAt;
 	const endDate = e.endsAt;
+	const year = startDate.getFullYear();
 
 	const sameDay = endDate && startDate.toDateString() === endDate.toDateString();
 
@@ -154,7 +165,7 @@ export function formatEvent(e: CalendarEvent, isList = false): string {
 
 	const descr = e.description ? `\n📝 ${e.description}` : "";
 
-	const card = [`*✨ ${escapeMd(e.title)}*`, `*🗓 ${escapeMd(dateStr)}*`, descr].filter(Boolean).join("\n");
+	const card = [`*✨ ${escapeMd(e.title)} (${year})*`, `*🗓 ${escapeMd(dateStr)}*`, descr].filter(Boolean).join("\n");
 
 	return isList ? card + "\n\n━━━━━━━━━━" : card;
 }
@@ -207,30 +218,35 @@ export async function fetchAllFutureEventsByTitle(title: string, strict = false)
  * - past → событие уже прошло в этом году
  * - not_found → в этом году не найдено
  */
-export async function fetchHolidayEvent(title: string): Promise<HolidayEventResult> {
+export async function fetchHolidayEvent(
+	title: string,
+	options?: { strictYear?: boolean }
+): Promise<HolidayEventResult> {
 	const objs = await fetchCalendarObjects();
 	const allEvents = objs.flatMap(parseDavObjectToEvents);
 
 	const today = new Date();
 	const year = today.getFullYear();
 
-	// Все события нужного названия в этом году
-	const eventsThisYear = allEvents
-		.filter((e) => e.title.toLowerCase().includes(title.toLowerCase()) && isSameYear(e.startsAt, today))
-		.sort((a, b) => compareAsc(a.startsAt, b.startsAt));
+	// фильтр по названию
+	let events = allEvents.filter((e) => e.title.toLowerCase().includes(title.toLowerCase()));
 
-	if (eventsThisYear.length === 0) {
+	if (options?.strictYear) {
+		events = events.filter((e) => isSameYear(e.startsAt, today));
+	}
+
+	events = events.sort((a, b) => compareAsc(a.startsAt, b.startsAt));
+
+	if (events.length === 0) {
 		return { status: "not_found" };
 	}
 
-	// ближайшее будущее событие в этом году
-	const future = eventsThisYear.find((e) => isAfter(e.startsAt, today));
+	const future = events.find((e) => isAfter(e.startsAt, today));
 	if (future) {
 		return { status: "future", event: future };
 	}
 
-	// иначе берём последнее прошедшее событие в этом году
-	const past = [...eventsThisYear].reverse().find((e) => isBefore(e.startsAt, today));
+	const past = [...events].reverse().find((e) => isBefore(e.startsAt, today));
 	if (past) {
 		return { status: "past", event: past };
 	}

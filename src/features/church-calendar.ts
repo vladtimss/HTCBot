@@ -188,11 +188,12 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		});
 	});
 
+	// 🎄 Рождественский выезд
 	bot.hears(MENU_LABELS.HOLIDAY_RV, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
 		const year = new Date().getFullYear();
-		const res = await withLoading(ctx, () => fetchHolidayEvent("Рождественский выезд"), {
+		const res = await withLoading(ctx, () => fetchHolidayEvent("Рождественский выезд", { strictYear: true }), {
 			text: "🎄 Уточняю даты Рождественского выезда…",
 		});
 
@@ -200,18 +201,19 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 			return ctx.reply(CALENDAR.rvNotPlanned(year));
 		}
 		if (res.status === "past") {
-			return ctx.reply(CALENDAR.rvPast(year, formatEvent(res.event)), { parse_mode: "Markdown" });
+			return ctx.reply(formatEvent(res.event), { parse_mode: "Markdown" });
 		}
 		if (res.status === "future") {
-			return ctx.reply(CALENDAR.rvFuture(formatEvent(res.event)), { parse_mode: "Markdown" });
+			return ctx.reply(formatEvent(res.event), { parse_mode: "Markdown" });
 		}
 	});
 
+	// 🐣 Пасха
 	bot.hears(MENU_LABELS.HOLIDAY_EASTER, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
 		const year = new Date().getFullYear();
-		const res = await withLoading(ctx, () => fetchHolidayEvent("пасха"), {
+		const res = await withLoading(ctx, () => fetchHolidayEvent("Пасха"), {
 			text: "🐣 Сверяю даты Пасхи…",
 		});
 
@@ -219,12 +221,10 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 			return ctx.reply(CALENDAR.easterNotPlanned(year));
 		}
 		if (res.status === "past") {
-			return ctx.reply(CALENDAR.easterPast(year, formatEvent(res.event)), {
-				parse_mode: "Markdown",
-			});
+			return ctx.reply(formatEvent(res.event), { parse_mode: "Markdown" });
 		}
 		if (res.status === "future") {
-			return ctx.reply(CALENDAR.easterFuture(formatEvent(res.event)), { parse_mode: "Markdown" });
+			return ctx.reply(formatEvent(res.event), { parse_mode: "Markdown" });
 		}
 	});
 
