@@ -86,8 +86,18 @@ export async function fetchUpcomingEvents(limit = 3): Promise<CalendarEvent[]> {
 		.slice(0, Math.max(0, limit));
 }
 
+/** Делает первую букву строки заглавной */
+function capitalize(str: string): string {
+	return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
 export function formatEvent(e: CalendarEvent, isList = false): string {
-	const dateStr = e.startsAt.toLocaleString("ru-RU", {
+	const startDate = e.startsAt;
+	const endDate = e.endsAt;
+
+	const sameDay = endDate && startDate.toDateString() === endDate.toDateString();
+
+	const startStrFull = startDate.toLocaleString("ru-RU", {
 		weekday: "long",
 		day: "numeric",
 		month: "long",
@@ -95,10 +105,56 @@ export function formatEvent(e: CalendarEvent, isList = false): string {
 		minute: "2-digit",
 	});
 
-	// const place = e.location ? `\n📍 ${e.location}` : "";
+	let dateStr: string;
+	if (endDate) {
+		if (sameDay) {
+			// Если в один день — показываем диапазон времени
+			const startTime = startDate.toLocaleString("ru-RU", {
+				hour: "2-digit",
+				minute: "2-digit",
+			});
+			const endTime = endDate.toLocaleString("ru-RU", {
+				hour: "2-digit",
+				minute: "2-digit",
+			});
+			const dayStr = capitalize(
+				startDate.toLocaleString("ru-RU", {
+					weekday: "long",
+					day: "numeric",
+					month: "long",
+				})
+			);
+			dateStr = `${dayStr}, ${startTime} — ${endTime}`;
+		} else {
+			// Если разные дни — показываем полный интервал
+			const startStr = capitalize(
+				startDate.toLocaleString("ru-RU", {
+					weekday: "long",
+					day: "numeric",
+					month: "long",
+					hour: "2-digit",
+					minute: "2-digit",
+				})
+			);
+			const endStr = capitalize(
+				endDate.toLocaleString("ru-RU", {
+					weekday: "long",
+					day: "numeric",
+					month: "long",
+					hour: "2-digit",
+					minute: "2-digit",
+				})
+			);
+			dateStr = `${startStr} — ${endStr}`;
+		}
+	} else {
+		// Если конца нет
+		dateStr = capitalize(startStrFull);
+	}
+
 	const descr = e.description ? `\n📝 ${e.description}` : "";
 
-	const card = [`*✨ ${escapeMd(e.title)}*`, `*🗓 ${dateStr}*`, descr].filter(Boolean).join("\n");
+	const card = [`*✨ ${escapeMd(e.title)}*`, `*🗓 ${escapeMd(dateStr)}*`, descr].filter(Boolean).join("\n");
 
 	return isList ? card + "\n\n━━━━━━━━━━" : card;
 }
