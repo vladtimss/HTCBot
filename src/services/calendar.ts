@@ -1,15 +1,23 @@
 // src/services/calendar.ts
+// ========================
+// Работа с календарём (CalDAV):
+// - подключение к серверу CalDAV
+// - загрузка и парсинг событий
+// - фильтрация будущих событий
+// - поиск праздников и встреч по названию
+// - форматирование событий для Telegram
+
 import { createDAVClient, DAVCalendar, DAVObject } from "tsdav";
 import ICAL from "ical.js";
 import { compareAsc, isAfter, isBefore, isSameYear } from "date-fns";
 import { env } from "../config/env";
 
 export type HolidayEventResult =
-	| { status: "future"; event: CalendarEvent } // ещё не было в этом году
-	| { status: "past"; event: CalendarEvent } // уже прошло в этом году
-	| { status: "not_found" }; // в этом году дат нет
+	| { status: "future"; event: CalendarEvent } // событие ещё впереди
+	| { status: "past"; event: CalendarEvent } // событие уже прошло
+	| { status: "not_found" }; // ничего не нашли
 
-/** Нормализованное событие для бота */
+/** Унифицированное событие календаря */
 export interface CalendarEvent {
 	title: string;
 	startsAt: Date;
@@ -21,6 +29,10 @@ export interface CalendarEvent {
 type TSDavClient = Awaited<ReturnType<typeof createDAVClient>>;
 let cached: { client: TSDavClient; calendar: DAVCalendar } | null = null;
 
+/**
+ * Создаём клиент CalDAV и ищем нужный календарь.
+ * Кэшируем, чтобы не пересоздавать на каждый вызов.
+ */
 export async function getCalendar(): Promise<{ client: TSDavClient; calendar: DAVCalendar }> {
 	if (cached) return cached;
 
@@ -42,12 +54,18 @@ export async function getCalendar(): Promise<{ client: TSDavClient; calendar: DA
 	return cached;
 }
 
+/**
+ * Загружаем все объекты календаря (VEVENT и др.)
+ */
 export async function fetchCalendarObjects(): Promise<DAVObject[]> {
 	const { client, calendar } = await getCalendar();
 	const objs = await client.fetchCalendarObjects({ calendar });
 	return (objs ?? []) as DAVObject[];
 }
 
+/**
+ * Превращаем DAVObject → список CalendarEvent
+ */
 export function parseDavObjectToEvents(obj: DAVObject): CalendarEvent[] {
 	if (!obj?.data || typeof obj.data !== "string") return [];
 	try {
@@ -75,7 +93,10 @@ export function parseDavObjectToEvents(obj: DAVObject): CalendarEvent[] {
 	}
 }
 
-export async function fetchUpcomingEvents(limit = 3): Promise<CalendarEvent[]> {
+/**
+ * Найти ближайшие N событий (по умолчанию 3).
+ */
+export async function fetchUpcomingEvents(limit = 5): Promise<CalendarEvent[]> {
 	const objs = await fetchCalendarObjects();
 	const allEvents = objs.flatMap(parseDavObjectToEvents);
 
@@ -86,22 +107,22 @@ export async function fetchUpcomingEvents(limit = 3): Promise<CalendarEvent[]> {
 		.slice(0, Math.max(0, limit));
 }
 
-/** Делает первую букву строки заглавной */
+/** Первая буква заглавная */
 function capitalize(str: string): string {
 	return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 /**
- * Форматирование события календаря в карточку для Telegram
+ * Форматирование события в карточку Telegram.
  * @param e - событие
- * @param isList - если true, добавляет разделитель для списков
- * @param shouldShowYear - если true, добавляется год к названию (для крупных праздников)
+ * @param isList - если true → добавляем разделитель (для списков)
+ * @param shouldShowYear - если true → выводим год в заголовке (для крупных праздников)
  */
 export function formatEvent(e: CalendarEvent, isList = false, shouldShowYear = false): string {
 	const startDate = e.startsAt;
 	const endDate = e.endsAt ?? null;
 
-	// День недели + дата (с заглавной буквы)
+	// Дата: день недели + число + месяц
 	const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 	const dayStr = (d: Date) =>
 		capitalize(
@@ -112,7 +133,7 @@ export function formatEvent(e: CalendarEvent, isList = false, shouldShowYear = f
 			})
 		);
 
-	// Часы и минуты
+	// Время: часы и минуты
 	const timeStr = (d: Date) =>
 		d.toLocaleString("ru-RU", {
 			hour: "2-digit",
@@ -121,34 +142,36 @@ export function formatEvent(e: CalendarEvent, isList = false, shouldShowYear = f
 
 	let dateStr: string;
 	if (endDate && startDate.toDateString() !== endDate.toDateString()) {
-		// Разные дни → показываем оба
+		// Начало и конец в разные дни
 		dateStr = `${dayStr(startDate)}, ${timeStr(startDate)} — ${dayStr(endDate)}, ${timeStr(endDate)}`;
 	} else if (endDate) {
-		// Один день → показываем диапазон времени
+		// Один день, но диапазон времени
 		dateStr = `${dayStr(startDate)}, ${timeStr(startDate)} — ${timeStr(endDate)}`;
 	} else {
 		// Только начало
 		dateStr = `${dayStr(startDate)}, ${timeStr(startDate)}`;
 	}
 
-	// Заголовок
+	// Заголовок (с годом — опционально)
 	const title = shouldShowYear ? `✨ ${escapeMd(e.title)} (${startDate.getFullYear()})` : `✨ ${escapeMd(e.title)}`;
 
-	// Описание
+	// Описание (если есть)
 	const descr = e.description ? `\n📝 ${e.description}` : "";
 
-	// Собираем карточку
+	// Финальная карточка
 	const card = [`*${title}*`, `*🗓 ${dateStr}*`, descr].filter(Boolean).join("\n");
 
 	return isList ? card + "\n\n━━━━━━━━━━" : card;
 }
 
+/** Экранирование спецсимволов для Markdown */
 function escapeMd(s: string): string {
 	return s.replace(/([_*[\]()~`>#{.!])/g, "\\$1");
 }
 
 /**
- * Найти ближайшее событие по названию (строго или нестрого)
+ * Найти ближайшее событие по названию.
+ * @param strict - если true, ищем точное совпадение
  */
 export async function fetchNextEventByTitle(title: string, strict = false): Promise<CalendarEvent | null> {
 	const objs = await fetchCalendarObjects();
@@ -166,7 +189,8 @@ export async function fetchNextEventByTitle(title: string, strict = false): Prom
 }
 
 /**
- * Найти все будущие события по названию до конца сезона (строго или нестрого)
+ * Найти все будущие события по названию до конца сезона.
+ * Сезон = до 31 июля.
  */
 export async function fetchAllFutureEventsByTitle(title: string, strict = false): Promise<CalendarEvent[]> {
 	const objs = await fetchCalendarObjects();
@@ -185,11 +209,11 @@ export async function fetchAllFutureEventsByTitle(title: string, strict = false)
 }
 
 /**
- * Получить событие праздника по имени (например: Пасха, РВ).
- * Возвращает статус:
- * - future → событие ещё впереди в этом году
- * - past → событие уже прошло в этом году
- * - not_found → в этом году не найдено
+ * Получить событие праздника по названию (например: Пасха, РВ).
+ * Возвращает:
+ * - future → впереди в этом году
+ * - past → уже прошло в этом году
+ * - not_found → ничего не нашли
  */
 export async function fetchHolidayEvent(
 	title: string,
@@ -199,11 +223,11 @@ export async function fetchHolidayEvent(
 	const allEvents = objs.flatMap(parseDavObjectToEvents);
 
 	const today = new Date();
-	const year = today.getFullYear();
 
-	// фильтр по названию
+	// Фильтруем по названию
 	let events = allEvents.filter((e) => e.title.toLowerCase().includes(title.toLowerCase()));
 
+	// Если включён strictYear → берём только события этого года
 	if (options?.strictYear) {
 		events = events.filter((e) => isSameYear(e.startsAt, today));
 	}
@@ -214,11 +238,13 @@ export async function fetchHolidayEvent(
 		return { status: "not_found" };
 	}
 
+	// Смотрим будущие события
 	const future = events.find((e) => isAfter(e.startsAt, today));
 	if (future) {
 		return { status: "future", event: future };
 	}
 
+	// Если будущих нет — берём последнее прошедшее
 	const past = [...events].reverse().find((e) => isBefore(e.startsAt, today));
 	if (past) {
 		return { status: "past", event: past };
