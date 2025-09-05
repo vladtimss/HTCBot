@@ -89,6 +89,7 @@ export const replyCalendarMenu = {
 export const replyCalendarLmgMenu = {
 	keyboard: [
 		[MENU_LABELS.LMG_NEXT, MENU_LABELS.LMG_ALL],
+		[MENU_LABELS.LMG_TRIP],
 		[MENU_LABELS.BACK, MENU_LABELS.MAIN],
 	],
 	resize_keyboard: true,

@@ -177,6 +177,26 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: "Markdown" });
 	});
 
+	// === ЛМГ Выезд ===
+	bot.hears(MENU_LABELS.LMG_TRIP, async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+
+		const year = new Date().getFullYear();
+		const res = await withLoading(ctx, () => fetchHolidayEvent("Выезд ЛМГ"), {
+			text: "🚌 Проверяю даты выезда ЛМГ…",
+		});
+
+		if (res.status === "not_found") {
+			return ctx.reply(`В ${year} году даты выезда ЛМГ пока не запланированы.`, { parse_mode: "Markdown" });
+		}
+		if (res.status === "past") {
+			return ctx.reply(formatEvent(res.event), { parse_mode: "Markdown" });
+		}
+		if (res.status === "future") {
+			return ctx.reply(formatEvent(res.event), { parse_mode: "Markdown" });
+		}
+	});
+
 	// === Большие праздники ===
 	bot.hears(MENU_LABELS.CALENDAR_HOLIDAYS, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
