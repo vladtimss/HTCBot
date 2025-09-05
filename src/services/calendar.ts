@@ -92,80 +92,53 @@ function capitalize(str: string): string {
 }
 
 /**
- * Форматирует событие календаря в красивую «карточку» для Telegram.
- *
- * Особенности:
- * - Если событие однодневное → показывается диапазон времени (14:00 — 18:00).
- * - Если событие многодневное → показывается полный интервал с датами и временем.
- *
- * Используется для форматирования событий из CalDAV календаря
- * перед отправкой в чат.
+ * Форматирование события календаря в карточку для Telegram
+ * @param e - событие
+ * @param isList - если true, добавляет разделитель для списков
+ * @param shouldShowYear - если true, добавляется год к названию (для крупных праздников)
  */
-export function formatEvent(e: CalendarEvent, isList = false): string {
+export function formatEvent(e: CalendarEvent, isList = false, shouldShowYear = false): string {
 	const startDate = e.startsAt;
-	const endDate = e.endsAt;
-	const year = startDate.getFullYear();
+	const endDate = e.endsAt ?? null;
 
-	const sameDay = endDate && startDate.toDateString() === endDate.toDateString();
+	// День недели + дата (с заглавной буквы)
+	const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+	const dayStr = (d: Date) =>
+		capitalize(
+			d.toLocaleString("ru-RU", {
+				weekday: "long",
+				day: "numeric",
+				month: "long",
+			})
+		);
 
-	const startStrFull = startDate.toLocaleString("ru-RU", {
-		weekday: "long",
-		day: "numeric",
-		month: "long",
-		hour: "2-digit",
-		minute: "2-digit",
-	});
+	// Часы и минуты
+	const timeStr = (d: Date) =>
+		d.toLocaleString("ru-RU", {
+			hour: "2-digit",
+			minute: "2-digit",
+		});
 
 	let dateStr: string;
-	if (endDate) {
-		if (sameDay) {
-			// Если в один день — показываем диапазон времени
-			const startTime = startDate.toLocaleString("ru-RU", {
-				hour: "2-digit",
-				minute: "2-digit",
-			});
-			const endTime = endDate.toLocaleString("ru-RU", {
-				hour: "2-digit",
-				minute: "2-digit",
-			});
-			const dayStr = capitalize(
-				startDate.toLocaleString("ru-RU", {
-					weekday: "long",
-					day: "numeric",
-					month: "long",
-				})
-			);
-			dateStr = `${dayStr}, ${startTime} — ${endTime}`;
-		} else {
-			// Если разные дни — показываем полный интервал
-			const startStr = capitalize(
-				startDate.toLocaleString("ru-RU", {
-					weekday: "long",
-					day: "numeric",
-					month: "long",
-					hour: "2-digit",
-					minute: "2-digit",
-				})
-			);
-			const endStr = capitalize(
-				endDate.toLocaleString("ru-RU", {
-					weekday: "long",
-					day: "numeric",
-					month: "long",
-					hour: "2-digit",
-					minute: "2-digit",
-				})
-			);
-			dateStr = `${startStr} — ${endStr}`;
-		}
+	if (endDate && startDate.toDateString() !== endDate.toDateString()) {
+		// Разные дни → показываем оба
+		dateStr = `${dayStr(startDate)}, ${timeStr(startDate)} — ${dayStr(endDate)}, ${timeStr(endDate)}`;
+	} else if (endDate) {
+		// Один день → показываем диапазон времени
+		dateStr = `${dayStr(startDate)}, ${timeStr(startDate)} — ${timeStr(endDate)}`;
 	} else {
-		// Если конца нет
-		dateStr = capitalize(startStrFull);
+		// Только начало
+		dateStr = `${dayStr(startDate)}, ${timeStr(startDate)}`;
 	}
 
+	// Заголовок
+	const title = shouldShowYear ? `✨ ${escapeMd(e.title)} (${startDate.getFullYear()})` : `✨ ${escapeMd(e.title)}`;
+
+	// Описание
 	const descr = e.description ? `\n📝 ${e.description}` : "";
 
-	const card = [`*✨ ${escapeMd(e.title)} (${year})*`, `*🗓 ${escapeMd(dateStr)}*`, descr].filter(Boolean).join("\n");
+	// Собираем карточку
+	const card = [`*${title}*`, `*🗓 ${dateStr}*`, descr].filter(Boolean).join("\n");
 
 	return isList ? card + "\n\n━━━━━━━━━━" : card;
 }

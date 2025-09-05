@@ -190,10 +190,10 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 			return ctx.reply(`В ${year} году даты выезда ЛМГ пока не запланированы.`, { parse_mode: "Markdown" });
 		}
 		if (res.status === "past") {
-			return ctx.reply(formatEvent(res.event), { parse_mode: "Markdown" });
+			return ctx.reply(formatEvent(res.event, false, true), { parse_mode: "Markdown" });
 		}
 		if (res.status === "future") {
-			return ctx.reply(formatEvent(res.event), { parse_mode: "Markdown" });
+			return ctx.reply(formatEvent(res.event, false, true), { parse_mode: "Markdown" });
 		}
 	});
 
@@ -221,10 +221,10 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 			return ctx.reply(CALENDAR.rvNotPlanned(year));
 		}
 		if (res.status === "past") {
-			return ctx.reply(formatEvent(res.event), { parse_mode: "Markdown" });
+			return ctx.reply(formatEvent(res.event, false, true), { parse_mode: "Markdown" });
 		}
 		if (res.status === "future") {
-			return ctx.reply(formatEvent(res.event), { parse_mode: "Markdown" });
+			return ctx.reply(formatEvent(res.event, false, true), { parse_mode: "Markdown" });
 		}
 	});
 
@@ -241,10 +241,10 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 			return ctx.reply(CALENDAR.easterNotPlanned(year));
 		}
 		if (res.status === "past") {
-			return ctx.reply(formatEvent(res.event), { parse_mode: "Markdown" });
+			return ctx.reply(formatEvent(res.event, false, true), { parse_mode: "Markdown" });
 		}
 		if (res.status === "future") {
-			return ctx.reply(formatEvent(res.event), { parse_mode: "Markdown" });
+			return ctx.reply(formatEvent(res.event, false, true), { parse_mode: "Markdown" });
 		}
 	});
 
