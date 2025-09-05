@@ -10,8 +10,13 @@ import {
 	DISTRICT_MAP,
 } from "../data/small-groups";
 import { COMMON, SMALL_GROUPS_TEXTS } from "../services/texts";
-import { replyGroupsMenu } from "../utils/keyboards";
-import { fetchAllFutureEventsByTitle, fetchNextEventByTitle, formatEvent } from "../services/calendar";
+import { inlineLmgTrip, replyGroupsMenu } from "../utils/keyboards";
+import {
+	fetchAllFutureEventsByTitle,
+	fetchHolidayEvent,
+	fetchNextEventByTitle,
+	formatEvent,
+} from "../services/calendar";
 import { MENU_LABELS } from "../constants/button-lables";
 import { requirePrivileged } from "../utils/guards";
 import { withLoading } from "../utils/loading";
@@ -219,5 +224,37 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 		await ctx.reply(`${SMALL_GROUPS_TEXTS.lmgSeasonList}\n\n${list}`, {
 			parse_mode: "Markdown",
 		});
+	});
+
+	// Выезд ЛМГ
+	bot.hears(MENU_LABELS.LMG_TRIP, async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+		await ctx.reply("*Выезд ЛМГ*", {
+			parse_mode: "Markdown",
+			reply_markup: inlineLmgTrip,
+		});
+	});
+
+	// Обработка inline-кнопки «Даты выезда»
+	bot.callbackQuery("lmg_trip_dates", async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+		const res = await withLoading(ctx, () => fetchHolidayEvent("Выезд ЛМГ"), {
+			text: "🚌 Проверяю даты выезда…",
+		});
+
+		if (res.status === "not_found") {
+			await ctx.answerCallbackQuery({ text: "Даты пока не запланированы", show_alert: true });
+			return;
+		}
+
+		const msg =
+			res.status === "future"
+				? formatEvent(res.event)
+				: res.status === "past"
+				? `Последний выезд был:\n\n${formatEvent(res.event)}`
+				: "Нет данных по выезду";
+
+		await ctx.reply(msg, { parse_mode: "Markdown" });
+		await ctx.answerCallbackQuery();
 	});
 }

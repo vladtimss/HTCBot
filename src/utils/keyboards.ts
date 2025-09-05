@@ -58,6 +58,8 @@ export function replyGroupsMenu(ctx: MyContext) {
 	if (ctx.access.isPrivileged) {
 		kb.text(MENU_LABELS.LMG_NEXT) // ⏱️ Следующая встреча ЛМГ
 			.text(MENU_LABELS.LMG_ALL) // 🗓️ Все встречи ЛМГ
+			.row()
+			.text(MENU_LABELS.LMG_TRIP)
 			.row();
 	}
 
@@ -66,6 +68,9 @@ export function replyGroupsMenu(ctx: MyContext) {
 
 	return kb;
 }
+
+// Inline-меню для выезда ЛМГ
+export const inlineLmgTrip = new InlineKeyboard().text("📅 Даты выезда", "lmg_trip_dates");
 
 /* -------------------- Проповеди -------------------- */
 export const replySermonsMenu = new Keyboard().text("🎧 Подкасты").row().text("⬅️ Назад").resized();

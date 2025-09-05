@@ -86,6 +86,7 @@ export const SMALL_GROUPS_TEXTS = {
 	byDistrict: "📍 По районам",
 	nextMg: "⏱️ Ближайшая МГ",
 	seasonAll: "🗓️ Все будущие встречи",
+	lmgTrip: "🚌 Выезд ЛМГ",
 	back: "⬅️ Назад",
 	main: "🏠 В главное меню",
 
