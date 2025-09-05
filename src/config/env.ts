@@ -58,7 +58,7 @@ type LeaderData = {
 
 export const env = {
 	// 🔐 Обязательные переменные
-	BOT_TOKEN: required("BOT_TOKEN"),
+	BOT_TOKEN: process.env.NODE_ENV === "production" ? required("BOT_TOKEN") : required("DEV_BOT_TOKEN"),
 	CALDAV_URL: required("CALDAV_URL"),
 	CALDAV_USERNAME: required("CALDAV_USERNAME"),
 	CALDAV_PASSWORD: required("CALDAV_PASSWORD"),
