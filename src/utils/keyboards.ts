@@ -1,6 +1,8 @@
 /**
- * Все клавиатуры бота собраны в одном месте.
- * Разбито по разделам главного меню для удобства.
+ * utils/keyboard.ts
+ * --------------------------
+ * Все клавиатуры (reply и inline) собраны здесь.
+ * Разделено по темам главного меню.
  */
 
 import { Keyboard, InlineKeyboard } from "grammy";
@@ -8,10 +10,14 @@ import { MENU_LABELS } from "../constants/button-lables";
 import { SMALL_GROUPS_TEXTS as GROUPS_TEXTS } from "../services/texts";
 import { MyContext } from "../types/grammy-context";
 
+/* -------------------- Общие inline-кнопки -------------------- */
+/** Возврат в главное меню (inline-режим). */
+export const inlineBackToMain = () => new InlineKeyboard().text(MENU_LABELS.MAIN, "nav:main");
+
+/* -------------------- Главное меню -------------------- */
 /**
  * Главное меню зависит от прав:
- * - если есть доступ — показываем кнопку "Церковный календарь"
- * - если нет — не показываем
+ * - у привилегированных пользователей есть кнопка "Церковный календарь"
  */
 export function replyMainKeyboard(ctx: MyContext) {
 	const kb = new Keyboard()
@@ -28,7 +34,7 @@ export function replyMainKeyboard(ctx: MyContext) {
 	return kb;
 }
 
-/* -------------------- О нас -------------------- */
+/* -------------------- Раздел "О нас" -------------------- */
 export const replyAboutMenu = new Keyboard()
 	.text(MENU_LABELS.CHANNEL) // 📣 Канал
 	.row()
@@ -38,7 +44,7 @@ export const replyAboutMenu = new Keyboard()
 	.text(MENU_LABELS.BACK) // ⬅️ Назад
 	.resized();
 
-/** 🔙 Назад к «О нас» + 🏠 Главное меню */
+/** Назад → к "О нас" или → главное меню */
 export const replyBackToAbout = new Keyboard()
 	.text(MENU_LABELS.BACK) // ⬅️ Назад
 	.row()
@@ -46,9 +52,6 @@ export const replyBackToAbout = new Keyboard()
 	.resized();
 
 /* -------------------- Малые группы -------------------- */
-/**
- * В малых группах нужно скрывать кнопки календаря у неавторизованных.
- */
 export function replyGroupsMenu(ctx: MyContext) {
 	const kb = new Keyboard()
 		.text(GROUPS_TEXTS.byDay) // 📅 По дням
@@ -59,13 +62,11 @@ export function replyGroupsMenu(ctx: MyContext) {
 		kb.text(MENU_LABELS.LMG_NEXT) // ⏱️ Следующая встреча ЛМГ
 			.text(MENU_LABELS.LMG_ALL) // 🗓️ Все встречи ЛМГ
 			.row()
-			.text(MENU_LABELS.LMG_TRIP)
+			.text(MENU_LABELS.LMG_TRIP) // 🚌 Выезд ЛМГ
 			.row();
 	}
 
-	kb.text(MENU_LABELS.BACK) // ⬅️ Назад
-		.resized();
-
+	kb.text(MENU_LABELS.BACK).resized();
 	return kb;
 }
 
@@ -127,6 +128,7 @@ export const replyCalendarFamilyMenu = {
 	resize_keyboard: true,
 };
 
+// Inline-кнопки для подписки на календарь
 export function subscribeKeyboard() {
 	return new InlineKeyboard()
 		.text(MENU_LABELS.CALENDAR_SUB_APPLE, "calendar:sub:apple")
@@ -139,7 +141,3 @@ export function subscribeKeyboard() {
 		.row()
 		.text(MENU_LABELS.CALENDAR_SUB_OTHER, "calendar:sub:other");
 }
-
-/* -------------------- Общие inline-кнопки -------------------- */
-/** 🏠 В главное меню (используется в списках и сообщениях) */
-export const inlineBackToMain = () => new InlineKeyboard().text(MENU_LABELS.MAIN, "nav:main");

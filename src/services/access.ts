@@ -1,15 +1,21 @@
-// src/services/access.ts
+/**
+ * services/access.ts
+ * --------------------------
+ * Проверка доступа (привилегирован ли пользователь).
+ */
+
 import { MyContext } from "../types/grammy-context";
 import { env } from "../config/env";
 
-// нормализуем username: убираем @ и приводим к lower-case
+/** Нормализация username: убираем @ и приводим к lower-case */
 function normalizeUsername(u?: string | null): string | null {
 	if (!u) return null;
 	return u.replace(/^@/, "").toLowerCase();
 }
 
 /**
- * Привилегирован ли пользователь (по username из ENV)
+ * Проверяет, есть ли у пользователя привилегии.
+ * Основано на списке AUTHORIZED_USERNAMES.
  */
 export function isPrivileged(ctx: MyContext): boolean {
 	const uname = normalizeUsername(ctx.from?.username);

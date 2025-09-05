@@ -1,4 +1,14 @@
-import { Api, Bot, RawApi } from "grammy";
+/**
+ * app.ts
+ * --------------------------
+ * Точка входа Telegram-бота:
+ *  - создаём инстанс бота
+ *  - подключаем middleware
+ *  - регистрируем модули с обработчиками
+ *  - запускаем бота
+ */
+
+import { Bot } from "grammy";
 import { env } from "./config/env";
 import { MyContext } from "./types/grammy-context";
 import { logger } from "./utils/logger";
@@ -15,53 +25,42 @@ import { registerNavigation } from "./features/navigation";
 import { registerSermons } from "./features/sermons";
 import { registerAboutHTC } from "./features/about-htc";
 
-/**
- * Инициализация Telegram-бота
- */
+/** Создание инстанса бота */
 const bot = new Bot<MyContext>(env.BOT_TOKEN);
 
-/**
- * ========================
- *   Подключаем middlewares
- * ========================
- */
+/* ============
+ *  Middleware
+ * ============ */
 
-// Глобальная «обёртка» для ошибок — перехватывает и логирует все ошибки
+// Ловим и логируем ошибки, чтобы бот не падал
 bot.use(withErrorBoundary());
 
-// Храним данные о пользователе в сессии (например, текущий раздел меню)
+// Сессии: храним состояние пользователя (например, текущий раздел)
 bot.use(sessionMiddleware);
 
-// Проверяем авторизацию (например, доступ к закрытым функциям)
+// Авторизация: добавляет в ctx.access данные о ролях/доступе
 bot.use(authMiddleware());
 
-/**
- * ========================
- *   Логирование апдейтов
- * ========================
- */
+/* ============
+ *  Логирование
+ * ============ */
 bot.use(async (ctx, next) => {
-	// Формируем объект для логов
 	logger.info(
 		{
-			from: ctx.from?.username, // ник юзера (если есть)
-			id: ctx.from?.id, // id пользователя
-			type: Object.keys(ctx.update)[1] ?? "unknown", // тип апдейта (message, callback_query и т.п.)
-			payload: ctx.message?.text ?? ctx.callbackQuery?.data, // текст сообщения или data из кнопки
+			from: ctx.from?.username,
+			id: ctx.from?.id,
+			type: Object.keys(ctx.update)[1] ?? "unknown",
+			payload: ctx.message?.text ?? ctx.callbackQuery?.data,
 		},
 		"update"
 	);
 
-	// Передаём управление дальше по цепочке middlewares
 	await next();
 });
 
-/**
- * ========================
- *   Регистрация фич
- * ========================
- * Каждая "фича" — отдельный модуль с собственными командами/обработчиками.
- */
+/* ============
+ *  Регистрация фич
+ * ============ */
 registerStart(bot); // Команда /start
 registerMainMenu(bot); // Главное меню
 registerSunday(bot); // Воскресное богослужение
@@ -69,21 +68,16 @@ registerAboutHTC(bot); // Раздел "О нас"
 registerSmallGroups(bot); // Малые группы
 registerChurchCalendar(bot); // Церковный календарь
 registerSermons(bot); // Проповеди
-registerNavigation(bot); // Навигация (кнопка назад)
+registerNavigation(bot); // Навигация (кнопка "Назад")
 
-/**
- * ========================
- *   Общий обработчик сообщений
- * ========================
- * Если пользователь пишет текстом в ЛС, а не через кнопки —
- * проверяем, что это не одна из «известных» кнопок.
- * Если неизвестно → показываем главное меню.
- */
+/* ===================================
+ *  Общий обработчик сообщений
+ * =================================== */
 bot.on("message", async (ctx) => {
-	// Игнорируем групповые чаты
+	// Игнорируем все чаты кроме личных
 	if (ctx.chat.type !== "private") return;
 
-	// Набор всех допустимых кнопок (reply-клавиатуры)
+	// Известные кнопки главного меню
 	const known = new Set([
 		MENU_LABELS.SUNDAY,
 		MENU_LABELS.GROUPS,
@@ -96,16 +90,15 @@ bot.on("message", async (ctx) => {
 		MENU_LABELS.HISTORY,
 	]);
 
+	// Если пришёл неизвестный текст — возвращаем пользователя в главное меню
 	if (!ctx.message.text || !known.has(ctx.message.text)) {
 		await renderMain(ctx);
 	}
 });
 
-/**
- * ========================
- *   Запуск бота
- * ========================
- */
+/* ============
+ *  Запуск бота
+ * ============ */
 bot.start({
 	onStart: (me) => logger.info(`Bot @${me.username} started`),
 });
