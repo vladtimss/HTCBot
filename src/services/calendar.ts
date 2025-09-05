@@ -104,7 +104,7 @@ export function formatEvent(e: CalendarEvent, isList = false): string {
 }
 
 function escapeMd(s: string): string {
-	return s.replace(/([_*[\]()~`>#{.!\\-])/g, "\\$1");
+	return s.replace(/([_*[\]()~`>#{.!])/g, "\\$1");
 }
 
 /**
