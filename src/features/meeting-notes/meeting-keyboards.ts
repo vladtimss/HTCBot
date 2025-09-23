@@ -1,13 +1,12 @@
 // src/features/meeting-notes/meeting-keyboards.ts
 /**
  * Клавиатуры для раздела "Конспекты ЛМГ"
- * - все подписи на русском
  */
 
 import { InlineKeyboard } from "grammy";
 import { getTitle } from "./meeting-helpers";
 
-/** Главное inline-меню конспектов */
+/** Главное inline-меню */
 export function kbMainInline(): InlineKeyboard {
 	const kb = new InlineKeyboard();
 	kb.text("Конспект с прошлой встречи", "notes:last").row();
@@ -15,7 +14,7 @@ export function kbMainInline(): InlineKeyboard {
 	return kb;
 }
 
-/** Подменю поиска (inline) */
+/** Подменю поиска */
 export function kbSearchMenu(): InlineKeyboard {
 	const kb = new InlineKeyboard();
 	kb.text("📅 По дате", "notes:bydate").row();
@@ -25,7 +24,7 @@ export function kbSearchMenu(): InlineKeyboard {
 	return kb;
 }
 
-/** Клавиатура годов (2022..текущий год) */
+/** Года 2022..current */
 export function kbYears(): InlineKeyboard {
 	const kb = new InlineKeyboard();
 	const current = new Date().getFullYear();
@@ -36,7 +35,7 @@ export function kbYears(): InlineKeyboard {
 	return kb;
 }
 
-/** Клавиатура месяцев (передаются номера месяцев 1..12) */
+/** Месяцы (ярлыки) */
 export function kbMonths(year: number, monthsNumbers: number[]): InlineKeyboard {
 	const MONTH_NAMES = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
 	const kb = new InlineKeyboard();
@@ -48,15 +47,19 @@ export function kbMonths(year: number, monthsNumbers: number[]): InlineKeyboard 
 	return kb;
 }
 
-/** Список записей — сокращённые кнопки */
-export function kbRecordsList(records: any[]): InlineKeyboard {
+/**
+ * Список записей — принимает backAction (куда вести при нажатии "Назад")
+ * records — массив записей (объекты buildin)
+ */
+export function kbRecordsList(records: any[], backAction: string): InlineKeyboard {
 	const kb = new InlineKeyboard();
 	for (const r of records) {
-		const ds = r && r.properties ? (r.properties["Дата встречи"]?.date?.start ?? "").split?.("T")?.[0] ?? "" : "";
+		const ds = r?.properties?.["Дата встречи"]?.date?.start?.split?.("T")?.[0] ?? "";
 		const title = getTitle(r);
 		const label = `${ds ? ds + " — " : ""}${title}`.slice(0, 40);
+		// callback data: notes:get:<pageId>
 		kb.text(label, `notes:get:${r.id}`).row();
 	}
-	kb.text("⬅️ Назад к месяцам", "notes:bydate");
+	kb.text("⬅️ Назад", backAction);
 	return kb;
 }

@@ -1,9 +1,8 @@
 // src/services/buildin.ts
 /**
  * Сервис для работы с Buildin API
- * - централизует все HTTP-вызовы
- * - умеет query (постранично) и получать страницу по id
- * - возвращает "сырые" JSON-ответы (any) — фича-слой их обрабатывает
+ * - централизует HTTP-вызовы
+ * - query / getPage / listAllRecords
  */
 
 import { DATABASES } from "../config/databases.buildin";
@@ -15,8 +14,8 @@ if (!TOKEN) {
 	console.warn("⚠️ BUILDIN_TOKEN не задан (env). Buildin API вызовы будут падать.");
 }
 
-/** Универсальный fetch к Buildin (возвращает распарсенный JSON) */
-async function request(endpoint: string, options: RequestInit = {}): Promise<any> {
+/** Универсальный запрос к Buildin (парсит JSON и бросает ошибку при не-ok) */
+export async function request(endpoint: string, options: RequestInit = {}): Promise<any> {
 	const url = `${API_URL}${endpoint}`;
 	const res = await fetch(url, {
 		...options,
@@ -27,17 +26,15 @@ async function request(endpoint: string, options: RequestInit = {}): Promise<any
 		},
 	});
 
-	// Если не ок — пробуем прочитать тело и бросить ошибку
 	if (!res.ok) {
 		const text = await res.text().catch(() => "<no-body>");
 		throw new Error(`Buildin API error: ${res.status} ${text}`);
 	}
 
-	// Парсим JSON (Buildin возвращает JSON для всех API).
 	return (await res.json()) as any;
 }
 
-/** Выполнить POST /databases/{database_id}/query */
+/** POST /databases/{databaseId}/query */
 export async function queryDatabaseById(databaseId: string, body: object): Promise<any> {
 	return request(`/databases/${databaseId}/query`, {
 		method: "POST",
@@ -51,14 +48,13 @@ export async function queryDatabase(dbKey: keyof typeof DATABASES, body: object)
 	return queryDatabaseById(id, body);
 }
 
-/** Получить страницу (page) по id: GET /v1/pages/{pageId} */
+/** GET /v1/pages/{pageId} */
 export async function getPage(pageId: string): Promise<any> {
 	return request(`/pages/${pageId}`, { method: "GET" });
 }
 
 /**
  * Собрать все записи базы постранично.
- * Возвращает массив результатов (records).
  * maxRecords — защита от бесконечной загрузки.
  */
 export async function listAllRecords(dbKey: keyof typeof DATABASES, pageSize = 100, maxRecords = 2000): Promise<any[]> {
@@ -83,7 +79,7 @@ export async function listAllRecords(dbKey: keyof typeof DATABASES, pageSize = 1
 	return out.slice(0, maxRecords);
 }
 
-/** Экспорт */
+/** Экспорт удобного объекта и именованных функций */
 export const buildin = {
 	request,
 	queryDatabaseById,
