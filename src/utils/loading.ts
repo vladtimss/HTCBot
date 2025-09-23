@@ -1,76 +1,80 @@
+// src/utils/loading.ts
 /**
- * utils/loading.ts
- * --------------------------
- * Утилита для отображения "ожидания" при долгих операциях.
- * Если задача выполняется дольше delayMs — в чат отправляется сообщение.
- * После завершения задача убирает/редактирует сообщение.
+ * Универсальная утилита с индикатором загрузки.
+ *
+ * Показать сообщение о загрузке только через delayMs (по умолчанию 300ms).
+ * Если операция закончилась раньше — сообщение не показывается.
+ * Если сообщение показано — гарантированно попытаемся удалить его в finally (ожидаем
+ * завершения ctx.reply, чтобы не оставить "висящий" loader).
+ *
+ * ctx должен быть grammY-контекстом (можно any).
  */
 
-import type { Message } from "grammy/types";
-import type { MyContext } from "../types/grammy-context";
+export async function withLoading<T>(
+	ctx: any,
+	fn: () => Promise<T>,
+	opts?: { text?: string; delayMs?: number }
+): Promise<T> {
+	const text = opts?.text ?? "⏳ Пожалуйста, подождите...";
+	const delayMs = typeof opts?.delayMs === "number" ? opts.delayMs : 500;
 
-/** Опции показа сообщения об ожидании */
-export interface LoadingOptions {
-	text?: string; // текст сообщения (по умолчанию: "⏳ Загружаю…")
-	delayMs?: number; // задержка перед показом (мс)
-	parseMode?: "Markdown" | "MarkdownV2" | "HTML"; // режим парсинга текста
-}
+	let loaderMsg: any = null; // объект сообщения, если оно появилось
+	let loaderPromise: Promise<any> | null = null; // промис ctx.reply (если был запущен)
+	let timer: NodeJS.Timeout | null = null;
 
-/**
- * Обёртка для асинхронной операции с "ожиданием".
- */
-export async function withLoading<T>(ctx: MyContext, task: () => Promise<T>, options: LoadingOptions = {}): Promise<T> {
-	const { text = "⏳ Загружаю…", delayMs = 300, parseMode } = options;
-
-	let timer: ReturnType<typeof setTimeout> | undefined;
-	let loadingMsg: Message.TextMessage | undefined;
-	let shown = false;
-
-	// Запланировать показ сообщения, если операция долгая
-	timer = setTimeout(async () => {
-		try {
-			shown = true;
-			loadingMsg = await ctx.reply(text, {
-				parse_mode: parseMode,
-				link_preview_options: { is_disabled: true }, // отключаем превью
-			});
-		} catch {
-			// Игнорируем ошибки отправки
-		}
+	// Запланировать показ loader'а через delayMs.
+	timer = setTimeout(() => {
+		// Сохраняем промис — чтобы в finally можно было дождаться создания сообщения
+		loaderPromise = (async () => {
+			try {
+				const m = await ctx.reply(text);
+				loaderMsg = m;
+				return m;
+			} catch (e) {
+				// если не удалось показать loader — безопасно игнорируем
+				loaderMsg = null;
+				return null;
+			}
+		})();
 	}, delayMs);
 
 	try {
-		const result = await task();
+		// Выполняем основную работу
+		const res = await fn();
+		return res;
+	} finally {
+		// Отменяем таймер (если он ещё не сработал)
+		if (timer) {
+			clearTimeout(timer);
+			timer = null;
+		}
 
-		// Операция завершилась → убираем сообщение
-		if (timer) clearTimeout(timer);
-		if (shown && loadingMsg) {
+		// Если показ loader'а запущен (loaderPromise существует) - дождёмся его завершения,
+		// чтобы получить message_id и корректно удалить сообщение.
+		if (loaderPromise) {
 			try {
-				await ctx.api.deleteMessage(loadingMsg.chat.id, loadingMsg.message_id);
+				await loaderPromise;
 			} catch {
-				// Если удалить нельзя → заменяем текст
-				try {
-					await ctx.api.editMessageText(loadingMsg.chat.id, loadingMsg.message_id, "✅ Готово");
-				} catch {
-					// Игнорируем любые ошибки
+				// игнорируем ошибки показа loader'а
+			}
+		}
+
+		// Если сообщение loader'а успешно показалось — удаляем его
+		if (loaderMsg) {
+			try {
+				// пытаемся получить chatId/messageId из ответа на ctx.reply
+				const chatId = loaderMsg?.chat?.id ?? ctx?.chat?.id ?? (ctx?.callbackQuery as any)?.message?.chat?.id;
+				const messageId = (loaderMsg as any)?.message_id ?? (loaderMsg as any)?.message?.message_id;
+				if (chatId && messageId) {
+					try {
+						await ctx.api.deleteMessage(chatId, messageId);
+					} catch {
+						// игнорируем — возможно сообщение уже удалено/недоступно
+					}
 				}
-			}
-		}
-
-		return result;
-	} catch (err) {
-		if (timer) clearTimeout(timer);
-		if (shown && loadingMsg) {
-			try {
-				await ctx.api.editMessageText(
-					loadingMsg.chat.id,
-					loadingMsg.message_id,
-					"⚠️ Не удалось загрузить данные"
-				);
 			} catch {
-				// Игнорируем
+				// игнорируем любые ошибки удаления
 			}
 		}
-		throw err;
 	}
 }

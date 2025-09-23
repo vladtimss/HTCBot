@@ -10,8 +10,9 @@ export type RecordObj = any;
 /** Получить заголовок (Тема / title) */
 export function getTitle(record: RecordObj): string {
 	return (
-		record?.properties?.["Тема"]?.title?.map((t: any) => t.plain_text).join(" ") ||
-		record?.properties?.title?.title?.map((t: any) => t.plain_text).join(" ") ||
+		record?.properties?.["Тема"]?.title?.[0]?.plain_text ??
+		record?.properties?.title?.title?.[0]?.plain_text ??
+		record?.properties?.title?.title?.[0]?.text?.content ??
 		"Без названия"
 	);
 }
