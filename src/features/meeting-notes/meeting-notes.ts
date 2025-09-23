@@ -23,6 +23,7 @@ import {
 	getDate,
 } from "./meeting-helpers";
 import { kbMainInline, kbSearchMenu, kbYears, kbMonths, kbRecordsList, kbAfterLast } from "./meeting-keyboards";
+import { COMMON } from "../../services/texts";
 
 const FETCH_PAGE_SIZE = 100;
 
@@ -97,7 +98,7 @@ export function registerMeetingNotes(bot: Bot<MyContext>) {
 	bot.callbackQuery("notes:backmg", async (ctx) => {
 		await ctx.answerCallbackQuery();
 		// просто пишем текст (пользователь сказал, что так делает) — оставляем минимальную реализацию
-		await safeEditMessage(ctx, "📖 Малые группы — меню");
+		await safeEditMessage(ctx, `📖 Малые группы — меню\n\n${COMMON.useButtonBelow}`);
 	});
 
 	// Быстрый: конспект с прошлой встречи (с loader'ом)
