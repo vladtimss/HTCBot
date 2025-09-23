@@ -371,4 +371,65 @@ export function registerMeetingNotes(bot: Bot<MyContext>) {
 			{ text: "⏳ Загружаю запись..." }
 		);
 	});
+
+	// поиск по ключевым словам
+	bot.callbackQuery("notes:bykeywords", async (ctx) => {
+		await ctx.answerCallbackQuery();
+		await safeEditMessage(
+			ctx,
+			"🔑 Введите ключевое слово или несколько слов для поиска.\n\n" + "Отправьте их обычным сообщением в чат.",
+			{ reply_markup: new InlineKeyboard().text("⬅️ Назад", "notes:searchmenu") }
+		);
+
+		// ставим флаг в сессию, чтобы перехватить следующее текстовое сообщение
+		const session = (ctx.session as any) ?? {};
+		session.notesCache = session.notesCache ?? {};
+		session.notesCache.awaitingKeywords = true;
+		(ctx.session as any) = session;
+	});
+
+	// обработка текстового ввода для поиска
+	bot.on("message:text", async (ctx, next) => {
+		const session = (ctx.session as any) ?? {};
+		if (!session.notesCache?.awaitingKeywords) {
+			return next();
+		}
+
+		const query = ctx.message.text.trim().toLowerCase();
+		if (!query) {
+			await ctx.reply("❌ Пустой запрос. Введите ключевое слово.");
+			return;
+		}
+
+		// снимаем флаг
+		session.notesCache.awaitingKeywords = false;
+		(ctx.session as any) = session;
+
+		await withLoading(
+			ctx,
+			async () => {
+				const all = await buildin.listAllRecords("lmgNotes", FETCH_PAGE_SIZE, 2000);
+				const filtered = all.filter((r: any) => {
+					const title = getTitle(r).toLowerCase();
+					const ds = extractAllDateStrings(r).join(" ").toLowerCase();
+					return title.includes(query) || ds.includes(query);
+				});
+
+				if (!filtered.length) {
+					await ctx.reply("❌ Ничего не найдено по запросу.");
+					return;
+				}
+
+				// сохраняем список для навигации назад
+				session.notesCache.lastList = filtered;
+				session.notesCache.backAction = "notes:bykeywords";
+				(ctx.session as any) = session;
+
+				await ctx.reply(`🔑 Найдено ${filtered.length} записей:`, {
+					reply_markup: kbRecordsList(filtered, session.notesCache.backAction),
+				});
+			},
+			{ text: "⏳ Ищу по ключевым словам..." }
+		);
+	});
 }
