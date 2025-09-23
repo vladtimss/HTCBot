@@ -9,7 +9,7 @@ import { getTitle } from "./meeting-helpers";
 /** Главное inline-меню */
 export function kbMainInline(): InlineKeyboard {
 	const kb = new InlineKeyboard();
-	kb.text("Конспект с прошлой встречи", "notes:last").row();
+	kb.text("📖 Конспект с прошлой встречи", "notes:last").row();
 	kb.text("🔎 Искать конспекты", "notes:searchmenu");
 	return kb;
 }
@@ -21,6 +21,15 @@ export function kbSearchMenu(): InlineKeyboard {
 	kb.text("📚 По книге", "notes:bybook").row();
 	kb.text("🔑 По ключевым словам", "notes:bykeywords").row();
 	kb.text("⬅️ В меню", "notes:menu");
+	return kb;
+}
+
+/** Клавиатура после последней встречи */
+export function kbAfterLast(): InlineKeyboard {
+	const kb = new InlineKeyboard();
+	kb.text("📖 Конспект с прошлой встречи", "notes:last").row();
+	kb.text("🔎 Искать конспекты", "notes:searchmenu").row();
+	kb.text("⬅️ К разделу МГ", "notes:backmg");
 	return kb;
 }
 
