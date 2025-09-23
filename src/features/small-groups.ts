@@ -20,6 +20,7 @@ import {
 import { MENU_LABELS } from "../constants/button-lables";
 import { requirePrivileged } from "../utils/guards";
 import { withLoading } from "../utils/loading";
+import { kbMainInline } from "./meeting-notes/meeting-keyboards";
 
 /**
  * Форматирует информацию об одной малой группе в виде «карточки» (Markdown).
@@ -256,5 +257,11 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 
 		await ctx.reply(msg, { parse_mode: "Markdown" });
 		await ctx.answerCallbackQuery();
+	});
+
+	// ✅ Новый обработчик для кнопки "Конспекты ЛМГ"
+	// при нажатии в reply-клавиатуре
+	bot.hears(MENU_LABELS.LMG_NOTES, async (ctx) => {
+		await ctx.reply("Конспекты ЛМГ:", { reply_markup: kbMainInline() });
 	});
 }

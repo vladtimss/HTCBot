@@ -19,6 +19,7 @@ export const MENU_LABELS = {
 	LMG_NEXT: "📅 Следующая встреча ЛМГ",
 	LMG_ALL: "📑 Список встреч ЛМГ",
 	LMG_TRIP: "🚌 Выезд ЛМГ",
+	LMG_NOTES: "📄 Конспекты ЛМГ",
 
 	// Раздел «О нас»
 	CHANNEL: "📢 Канал",

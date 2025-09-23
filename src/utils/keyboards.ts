@@ -62,6 +62,7 @@ export function replyGroupsMenu(ctx: MyContext) {
 		kb.text(MENU_LABELS.LMG_NEXT) // ⏱️ Следующая встреча ЛМГ
 			.text(MENU_LABELS.LMG_ALL) // 🗓️ Все встречи ЛМГ
 			.row()
+			.text(MENU_LABELS.LMG_NOTES)
 			.text(MENU_LABELS.LMG_TRIP) // 🚌 Выезд ЛМГ
 			.row();
 	}

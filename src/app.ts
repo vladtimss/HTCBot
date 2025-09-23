@@ -24,6 +24,7 @@ import { registerChurchCalendar } from "./features/church-calendar";
 import { registerNavigation } from "./features/navigation";
 import { registerSermons } from "./features/sermons";
 import { registerAboutHTC } from "./features/about-htc";
+import { registerMeetingNotes } from "./features/meeting-notes/meeting-notes";
 
 /** Создание инстанса бота */
 const bot = new Bot<MyContext>(env.BOT_TOKEN);
@@ -69,6 +70,7 @@ registerSmallGroups(bot); // Малые группы
 registerChurchCalendar(bot); // Церковный календарь
 registerSermons(bot); // Проповеди
 registerNavigation(bot); // Навигация (кнопка "Назад")
+registerMeetingNotes(bot); // Поиск конспектов ЛМГ
 
 /* ===================================
  *  Общий обработчик сообщений
