@@ -40,7 +40,7 @@ export function kbYears(): InlineKeyboard {
 
 /** Клавиатура месяцев (передаются номера месяцев 1..12) */
 export function kbMonths(year: number, monthsNumbers: number[]): InlineKeyboard {
-	const MONTH_NAMES = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
+	const MONTH_NAMES = ["ЯНВ", "ФЕВ", "МАР", "АПР", "МАЙ", "ИЮН", "ИЮЛ", "АВГ", "СЕН", "ОКТ", "НОЯ", "ДЕК"];
 	const kb = new InlineKeyboard();
 	for (const m of monthsNumbers) {
 		const label = MONTH_NAMES[m - 1] ?? String(m);
