@@ -9,14 +9,21 @@ import * as buildin from "../../services/buildin";
 
 /**
  * ID базы с конспектами ЛМГ
- * (оставляем прямо в фиче, а не в env — т.к. таких ID будет несколько)
+ * (держим в фиче — у тебя может быть много баз)
  */
-const LMG_NOTES_DATABASE_ID = "122e4ef5-7599-4bfb-9cd5-206119056c20";
+const LMG_NOTES_DATABASE_ID = "d8ddec27-c395-4c7c-a229-850d579ef7b3";
 
+/**
+ * Регистрирует обработчики раздела "Конспекты ЛМГ"
+ */
 export function registerLmgNotesFeature(bot: Bot<MyContext>) {
-	// Раздел "Конспекты ЛМГ"
+	// 1) Открыть раздел "Конспекты ЛМГ"
 	bot.hears(MENU_LABELS.LMG_NOTES, async (ctx) => {
-		ctx.session.menuStack.push("groups/notes");
+		// гарантируем корректное состояние stack
+		const stack = ctx.session.menuStack ?? [];
+		if (stack.length === 0) stack.push("groups"); // если стек пуст — считаем, что мы пришли из groups
+		stack.push("groups/notes");
+		ctx.session.menuStack = stack;
 		ctx.session.lastSection = "groups/notes";
 
 		await ctx.reply(SMALL_GROUPS_TEXTS.lmgNotesIntro, {
@@ -25,38 +32,55 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 		});
 	});
 
-	// Кнопка "Конспект с прошлой встречи" → получить JSON базы
+	// 2) Конспект с прошлой встречи — получить структуру БД и отправить JSON
 	bot.hears(MENU_LABELS.LMG_CONSP_PREV, async (ctx) => {
-		const db = await withLoading(ctx, () => buildin.getDatabase(LMG_NOTES_DATABASE_ID), {
-			text: "⏳ Получаю структуру базы данных…",
-		});
+		try {
+			const db = await withLoading(ctx, () => buildin.getDatabase(LMG_NOTES_DATABASE_ID), {
+				text: "⏳ Получаю структуру базы данных…",
+			});
 
-		const jsonText = JSON.stringify(db, null, 2);
-
-		if (jsonText.length < 3900) {
-			// Если влезает в сообщение — шлём как код-блок
-			await ctx.reply("```json\n" + jsonText + "\n```", { parse_mode: "Markdown" });
-		} else {
-			// Иначе отправляем как файл .json
-			await ctx.replyWithDocument(
-				new InputFile(Buffer.from(jsonText, "utf-8"), `database-${LMG_NOTES_DATABASE_ID}.json`)
-			);
+			const jsonText = JSON.stringify(db, null, 2);
+			if (jsonText.length < 3900) {
+				await ctx.reply("```json\n" + jsonText + "\n```", { parse_mode: "Markdown" });
+			} else {
+				await ctx.replyWithDocument(
+					new InputFile(Buffer.from(jsonText, "utf-8"), `database-${LMG_NOTES_DATABASE_ID}.json`)
+				);
+			}
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err);
+			console.error("[lmg-notes] getDatabase error:", message);
+			await ctx.reply(`❌ Не удалось получить структуру базы: ${message}`);
 		}
 	});
 
-	// Кнопка "Назад" → возвращаем в меню Малых групп
+	// Назад — корректно возвращаемся по стеку
 	bot.hears(MENU_LABELS.BACK, async (ctx) => {
 		const stack = ctx.session.menuStack ?? [];
+		if (stack.length > 0) {
+			stack.pop(); // убираем текущий раздел
+		}
+
 		const last = stack.at(-1);
+		ctx.session.menuStack = stack;
+		ctx.session.lastSection = last ?? "main";
 
-		if (last === "groups/notes") {
-			stack.pop();
-			ctx.session.menuStack = stack;
-			ctx.session.lastSection = "groups";
-
+		if (last === "groups") {
+			// Возвращаем меню Малых групп
 			await ctx.reply(SMALL_GROUPS_TEXTS.title ?? "Малые группы:", {
 				reply_markup: replyGroupsMenu(ctx),
 				parse_mode: "Markdown",
+			});
+		} else if (last === "groups/notes") {
+			// остаёмся в notes (если вдруг дважды нажали назад подряд)
+			await ctx.reply(SMALL_GROUPS_TEXTS.lmgNotesIntro, {
+				reply_markup: replyLmgNotesMenu(ctx),
+				parse_mode: "Markdown",
+			});
+		} else {
+			// если стек пуст или что-то другое — уходим в главное меню
+			await ctx.reply("Главное меню", {
+				reply_markup: replyGroupsMenu(ctx),
 			});
 		}
 	});

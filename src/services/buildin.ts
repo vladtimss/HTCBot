@@ -3,80 +3,107 @@ import { env } from "../config/env";
 
 const BASE_URL = "https://api.buildin.ai/v1";
 
+if (!env.BUILDIN_API_TOKEN) {
+	console.warn("⚠️ BUILDIN API token is not set (env.BUILDIN_API_TOKEN). Buildin requests will fail.");
+}
+
 /**
- * Универсальный fetch-клиент для Buildin.
- * - Добавляет Authorization
- * - По-умолчанию Accept: application/json
- * - По-умолчанию отправляет Cookie: locale=en-us (как в твоём postman)
- * - Парсит JSON если возможно, иначе возвращает текст
+ * Универсальный запрос к Buildin API.
+ * - Берёт токен из env.ts
+ * - Добавляет Accept: application/json
+ * - Добавляет Content-Type только если есть тело
+ * - Возвращает распарсенный JSON или бросает подробную ошибку
  */
-async function apiFetch(path: string, init: RequestInit = {}) {
-	const url = BASE_URL.replace(/\/+$/, "") + path;
-	const defaultHeaders: Record<string, string> = {
+async function apiFetch(path: string, init: RequestInit = {}): Promise<any> {
+	const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+	const url = `${BASE_URL}${normalizedPath}`;
+
+	const headers: Record<string, string> = {
 		Authorization: `Bearer ${env.BUILDIN_API_TOKEN}`,
 		Accept: "application/json",
-		// Buildin в твоём примере использует cookie locale, поэтому добавляем по умолчанию.
-		// Если это мешает — можно убрать или переопределить через init.headers.
+		// В твоём примере в Postman был Cookie: locale=en-us — оставляем возможность переопределить через init.headers
 		Cookie: "locale=en-us",
+		...(init.headers ? (init.headers as Record<string, string>) : {}),
 	};
 
-	// Не ставим Content-Type по-умолчанию для GET (чтобы не мешать),
-	// но для тела (POST/PUT) лучше присутствовать.
-	if (init.body && !(init.headers && (init.headers as any)["Content-Type"])) {
-		defaultHeaders["Content-Type"] = "application/json";
+	// Если есть тело и Content-Type не указан — добавляем application/json
+	let body = init.body;
+	if (body !== undefined && !(headers["Content-Type"] || headers["content-type"])) {
+		headers["Content-Type"] = "application/json";
+	}
+	if (body !== undefined && typeof body !== "string") {
+		// сериализация тела, если это не строка
+		try {
+			body = JSON.stringify(body);
+		} catch (e) {
+			// если сериализация упала — оставим как есть
+		}
 	}
 
-	const headers = Object.assign({}, defaultHeaders, init.headers ?? {});
+	// Лог запроса для дебага
+	console.debug("[buildin] request:", {
+		method: init.method ?? "GET",
+		url,
+		headers,
+		bodyPreview: typeof body === "string" ? body.slice(0, 400) : body,
+	});
 
-	// Если тело передан не строкой — сериализуем
-	const body = init.body && typeof init.body !== "string" ? JSON.stringify(init.body) : init.body;
+	let res: Response;
+	try {
+		res = await fetch(url, { ...init, headers, body });
+	} catch (err) {
+		console.error("[buildin] fetch error:", err);
+		throw new Error(`Buildin fetch failed: ${(err as Error).message}`);
+	}
 
-	// Выполняем запрос
-	const res = await fetch(url, { ...init, headers, body });
 	const text = await res.text().catch(() => "");
-
-	// Пытаемся распарсить JSON
 	let data: any;
 	try {
-		data = JSON.parse(text);
+		data = text ? JSON.parse(text) : text;
 	} catch {
 		data = text;
 	}
 
 	if (!res.ok) {
-		// Подробная ошибка для логов / дебага
-		const message = typeof data === "string" ? data : JSON.stringify(data);
-		throw new Error(`Buildin API error ${res.status}: ${message}`);
+		// Сформируем читаемое сообщение
+		const bodyStr = typeof data === "string" ? data : JSON.stringify(data);
+		console.error("[buildin] error response:", { status: res.status, body: bodyStr });
+		throw new Error(`Buildin API error ${res.status}: ${bodyStr}`);
 	}
 
+	console.debug("[buildin] response ok:", {
+		status: res.status,
+		preview: typeof data === "string" ? data.slice(0, 400) : data,
+	});
 	return data;
 }
 
-/** Получить блок (page/block) по ID — оставил для совместимости */
-export async function getBlock(blockId: string) {
-	return apiFetch(`/blocks/${blockId}`);
+/** GET /databases/{databaseId} — возвращает полную структуру базы (properties, title и т.д.) */
+export async function getDatabase(databaseId: string): Promise<any> {
+	return apiFetch(`/databases/${databaseId}`, { method: "GET" });
 }
 
-/** Получить дочерние блоки страницы */
-export async function getBlockChildren(blockId: string) {
-	return apiFetch(`/blocks/${blockId}/children`);
+/** POST /databases/{databaseId}/query — запрос записей (если понадобится) */
+export async function queryDatabase(databaseId: string, body: any = { page_size: 50 }): Promise<any> {
+	return apiFetch(`/databases/${databaseId}/query`, { method: "POST", body });
 }
 
-/**
- * Получить полную информацию о базе (database)
- * Возвращает весь JSON с полями, properties и т.д.
- */
-export async function getDatabase(databaseId: string) {
-	return apiFetch(`/databases/${databaseId}`);
+/** GET /blocks/{id} — если потребуется работать с блоками/pages */
+export async function getBlock(blockId: string): Promise<any> {
+	return apiFetch(`/blocks/${blockId}`, { method: "GET" });
 }
 
-/**
- * POST /databases/{id}/query — если понадобятся запросы к БД
- */
-export async function queryDatabase(databaseId: string, body: any = { page_size: 50 }) {
-	return apiFetch(`/databases/${databaseId}/query`, {
-		method: "POST",
-		body,
-		// body сериализуется в apiFetch
-	});
+/** GET /blocks/{id}/children */
+export async function getBlockChildren(blockId: string): Promise<any> {
+	return apiFetch(`/blocks/${blockId}/children`, { method: "GET" });
 }
+
+export const buildin = {
+	apiFetch,
+	getDatabase,
+	queryDatabase,
+	getBlock,
+	getBlockChildren,
+};
+
+export default buildin;
