@@ -40,14 +40,6 @@ async function apiFetch(path: string, init: RequestInit = {}): Promise<any> {
 		}
 	}
 
-	// Лог запроса для дебага
-	console.debug("[buildin] request:", {
-		method: init.method ?? "GET",
-		url,
-		headers,
-		bodyPreview: typeof body === "string" ? body.slice(0, 400) : body,
-	});
-
 	let res: Response;
 	try {
 		res = await fetch(url, { ...init, headers, body });
@@ -70,11 +62,6 @@ async function apiFetch(path: string, init: RequestInit = {}): Promise<any> {
 		console.error("[buildin] error response:", { status: res.status, body: bodyStr });
 		throw new Error(`Buildin API error ${res.status}: ${bodyStr}`);
 	}
-
-	console.debug("[buildin] response ok:", {
-		status: res.status,
-		preview: typeof data === "string" ? data.slice(0, 400) : data,
-	});
 	return data;
 }
 
