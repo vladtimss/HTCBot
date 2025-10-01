@@ -7,6 +7,7 @@ import { MAIN } from "../services/texts";
 
 import { renderAboutRoot } from "./about-htc";
 import { renderCalendarRoot } from "./church-calendar";
+import { renderGroupsRoot } from "./small-groups";
 
 /**
  * 📌 Универсальный обработчик кнопки «⬅️ Назад»
@@ -24,10 +25,11 @@ export function registerNavigation(bot: Bot<MyContext>) {
 			ctx.session.menuStack = ["main"];
 			return;
 		}
-
+		console.log(ctx.session.menuStack);
 		// Убираем текущий раздел
 		ctx.session.menuStack.pop();
 		const prev = ctx.session.menuStack[ctx.session.menuStack.length - 1];
+		console.log(prev);
 
 		// Выбираем что отрендерить в зависимости от раздела
 		switch (prev) {
@@ -42,6 +44,10 @@ export function registerNavigation(bot: Bot<MyContext>) {
 			case "holidays":
 			case "family":
 				await renderCalendarRoot(ctx);
+				break;
+
+			case "groups":
+				await renderGroupsRoot(ctx);
 				break;
 
 			default:
