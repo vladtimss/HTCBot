@@ -9,6 +9,7 @@ instructions.md
 /coverage
 
 src/secrets
+docs
 
 # production
 /build

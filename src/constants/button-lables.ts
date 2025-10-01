@@ -13,6 +13,9 @@ export const MENU_LABELS = {
 	// Навигация
 	MAIN: "🏠 В главное меню",
 	BACK: "⬅️ Назад",
+	// Конспекты ЛМГ
+	LMG_NOTES: "📝 Конспекты ЛМГ",
+	LMG_CONSP_PREV: "Конспект с прошлой встречи",
 
 	// ЛМГ
 	CALENDAR_LMG: "📖 ЛМГ",

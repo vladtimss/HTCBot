@@ -80,4 +80,6 @@ export const env = {
 	//   Пример генерации см. scripts/encode-env.ts
 	LEADERS: parseBase64Json<Record<string, LeaderData>>("LEADERS_JSON_BASE64", {}),
 	GROUP_ADDRESSES: parseBase64Json<Record<string, GroupAddress[]>>("GROUP_ADDRESSES_JSON_BASE64", {}),
+	// Buildin.ai
+	BUILDIN_API_TOKEN: required("BUILDIN_API_TOKEN"),
 };
