@@ -75,7 +75,7 @@ function makeDistrictsKeyboard() {
 /**
  * Рендер корня раздела «Малые группы»
  */
-async function renderGroupsRoot(ctx: MyContext) {
+export async function renderGroupsRoot(ctx: MyContext) {
 	ctx.session.menuStack = ["groups"];
 	ctx.session.lastSection = "groups";
 

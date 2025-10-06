@@ -3,10 +3,13 @@
 # dependencies
 /node_modules
 
+instructions.md
+
 # testing
 /coverage
 
 src/secrets
+docs
 
 # production
 /build

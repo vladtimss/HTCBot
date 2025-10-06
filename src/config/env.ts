@@ -71,6 +71,7 @@ export const env = {
 	SUNDAY_SERVICE_IMG: optional("SUNDAY_SERVICE_IMG", ""),
 	CHANNEL_URL: optional("CHANNEL_URL", "https://t.me/"),
 	CALENDAR_SUBSCRIBE_URL: optional("CALENDAR_SUBSCRIBE_URL", ""),
+	CALENDAR_EXPORT_URL: optional("CALENDAR_EXPORT_URL", ""),
 	YANDEX_MAP_URL: optional("YANDEX_MAP_URL", ""),
 
 	// 👥 Списки и структуры
@@ -80,4 +81,6 @@ export const env = {
 	//   Пример генерации см. scripts/encode-env.ts
 	LEADERS: parseBase64Json<Record<string, LeaderData>>("LEADERS_JSON_BASE64", {}),
 	GROUP_ADDRESSES: parseBase64Json<Record<string, GroupAddress[]>>("GROUP_ADDRESSES_JSON_BASE64", {}),
+	// Buildin.ai
+	BUILDIN_API_TOKEN: required("BUILDIN_API_TOKEN"),
 };

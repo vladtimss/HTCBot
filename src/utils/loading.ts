@@ -74,3 +74,45 @@ export async function withLoading<T>(ctx: MyContext, task: () => Promise<T>, opt
 		throw err;
 	}
 }
+
+// utils/loading.ts
+
+export async function withLoadingAndMsg<T>(
+	ctx: MyContext,
+	task: () => Promise<T>,
+	options: LoadingOptions = {}
+): Promise<{ result: T; loadingMsg?: Message.TextMessage }> {
+	const { text = "⏳ Загружаю…", delayMs = 300, parseMode } = options;
+
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	let loadingMsg: Message.TextMessage | undefined;
+	let shown = false;
+
+	timer = setTimeout(async () => {
+		try {
+			shown = true;
+			loadingMsg = await ctx.reply(text, {
+				parse_mode: parseMode,
+				link_preview_options: { is_disabled: true },
+			});
+		} catch {}
+	}, delayMs);
+
+	try {
+		const result = await task();
+		if (timer) clearTimeout(timer);
+		return { result, loadingMsg };
+	} catch (err) {
+		if (timer) clearTimeout(timer);
+		if (shown && loadingMsg) {
+			try {
+				await ctx.api.editMessageText(
+					loadingMsg.chat.id,
+					loadingMsg.message_id,
+					"⚠️ Не удалось загрузить данные"
+				);
+			} catch {}
+		}
+		throw err;
+	}
+}

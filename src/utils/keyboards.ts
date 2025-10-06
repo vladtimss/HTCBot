@@ -62,11 +62,18 @@ export function replyGroupsMenu(ctx: MyContext) {
 		kb.text(MENU_LABELS.LMG_NEXT) // ⏱️ Следующая встреча ЛМГ
 			.text(MENU_LABELS.LMG_ALL) // 🗓️ Все встречи ЛМГ
 			.row()
+			.text(MENU_LABELS.LMG_NOTES) // "Конспекты ЛМГ"
 			.text(MENU_LABELS.LMG_TRIP) // 🚌 Выезд ЛМГ
 			.row();
 	}
 
 	kb.text(MENU_LABELS.BACK).resized();
+	return kb;
+}
+
+// Клавиатура для раздела "Конспекты ЛМГ"
+export function replyLmgNotesMenu(ctx: MyContext) {
+	const kb = new Keyboard().text(MENU_LABELS.LMG_CONSP_PREV).row().text(MENU_LABELS.BACK).resized();
 	return kb;
 }
 
@@ -79,6 +86,7 @@ export const replySermonsMenu = new Keyboard().text("🎧 Подкасты").row
 /* -------------------- Церковный календарь -------------------- */
 export const replyCalendarMenu = {
 	keyboard: [
+		[MENU_LABELS.CALENDAR_EVENTS],
 		[MENU_LABELS.CALENDAR_MEMBERS, MENU_LABELS.CALENDAR_PRAYER],
 		[MENU_LABELS.CALENDAR_LMG, MENU_LABELS.CALENDAR_FAMILY],
 		[MENU_LABELS.CALENDAR_NEXT, MENU_LABELS.CALENDAR_HOLIDAYS],
