@@ -22,6 +22,7 @@ import { requirePrivileged } from "../utils/guards";
 import { env } from "../config/env";
 import { withLoading } from "../utils/loading";
 import puppeteer from "puppeteer";
+import os from "os";
 
 // Удаляем markdown-знаки вроде * _ `
 function stripMarkdown(s: string): string {
@@ -442,6 +443,7 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 			// Рендерим HTML в PDF через puppeteer
 			const browser = await puppeteer.launch({
 				headless: true,
+				executablePath: os.platform() === "linux" ? "/usr/bin/chromium-browser" : undefined,
 				args: ["--no-sandbox", "--disable-setuid-sandbox"],
 			});
 			const page = await browser.newPage();
