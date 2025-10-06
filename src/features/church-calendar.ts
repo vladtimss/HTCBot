@@ -1,4 +1,4 @@
-import { Bot, InlineKeyboard } from "grammy";
+import { Bot, InlineKeyboard, InputFile } from "grammy";
 import { MyContext } from "../types/grammy-context";
 import {
 	fetchUpcomingEvents,
@@ -21,6 +21,9 @@ import {
 import { requirePrivileged } from "../utils/guards";
 import { env } from "../config/env";
 import { withLoading } from "../utils/loading";
+import puppeteer from "puppeteer";
+import path from "path";
+import fs from "fs";
 
 /**
  * 📌 Отрисовка корня раздела «Церковный календарь»
@@ -344,10 +347,41 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 	// --- Обработка inline-кнопок ---
 	bot.callbackQuery("calendar:view:list", async (ctx) => {
 		await ctx.answerCallbackQuery().catch(() => {});
-		await ctx.reply(`📋 [Посмотреть все события списком](${env.CALENDAR_EXPORT_URL})`, {
-			parse_mode: "Markdown",
-			link_preview_options: { is_disabled: true },
-		});
+		await ctx.reply("📄 Формирую PDF со всеми событиями, пожалуйста подождите…");
+
+		try {
+			const url = env.CALENDAR_EXPORT_URL;
+			const browser = await puppeteer.launch({
+				headless: true,
+				args: ["--no-sandbox", "--disable-setuid-sandbox"],
+			});
+
+			const page = await browser.newPage();
+			await page.goto(url, { waitUntil: "networkidle2", timeout: 60000 });
+
+			const pdfPath = path.resolve("calendar.pdf");
+			await page.pdf({
+				path: pdfPath,
+				format: "A4",
+				printBackground: true,
+				margin: { top: "15mm", bottom: "15mm", left: "10mm", right: "10mm" },
+			});
+
+			await browser.close();
+
+			const pdfBuffer = fs.readFileSync(pdfPath);
+			const inputFile = new InputFile(pdfBuffer, "Церковный календарь.pdf");
+
+			await ctx.replyWithDocument(inputFile, {
+				caption: "🗓️ Все ближайшие события церкви",
+				parse_mode: "Markdown",
+			});
+
+			fs.unlinkSync(pdfPath);
+		} catch (err) {
+			console.error("Ошибка при формировании PDF:", err);
+			await ctx.reply("⚠️ Не удалось сформировать PDF-файл. Попробуйте позже.");
+		}
 	});
 
 	bot.callbackQuery("calendar:view:calendar", async (ctx) => {
