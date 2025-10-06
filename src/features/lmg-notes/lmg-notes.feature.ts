@@ -7,6 +7,7 @@ import { replyLmgNotesMenu } from "../../utils/keyboards";
 import { withLoading, withLoadingAndMsg } from "../../utils/loading";
 import * as buildin from "../../services/buildin";
 import { BuildinFile, Meeting } from "../../types/buildin";
+import { requirePrivileged } from "../../utils/guards";
 
 function normalizeDate(dateStr: string): string {
 	if (!dateStr) return dateStr;
@@ -32,6 +33,8 @@ const LMG_NOTES_DATABASE_ID = "d8ddec27-c395-4c7c-a229-850d579ef7b3";
 export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 	// Открыть раздел "Конспекты ЛМГ"
 	bot.hears(MENU_LABELS.LMG_NOTES, async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+
 		ctx.session.menuStack.push("lmg-notes");
 		ctx.session.lastSection = "lmg-notes";
 
@@ -43,6 +46,8 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 
 	// 2) Конспект с прошлой встречи — получить PDF из поля "Конспект"
 	bot.hears(MENU_LABELS.LMG_CONSP_PREV, async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+
 		try {
 			const { result, loadingMsg } = await withLoadingAndMsg(
 				ctx,
