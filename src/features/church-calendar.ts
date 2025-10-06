@@ -22,8 +22,63 @@ import { requirePrivileged } from "../utils/guards";
 import { env } from "../config/env";
 import { withLoading } from "../utils/loading";
 import puppeteer from "puppeteer";
-import path from "path";
-import fs from "fs";
+
+// Удаляем markdown-знаки вроде * _ `
+function stripMarkdown(s: string): string {
+	return String(s ?? "")
+		.replace(/[*_`~]/g, "")
+		.trim();
+}
+
+// Экранируем текст для вставки в HTML
+function escapeHtml(s: string): string {
+	return String(s ?? "")
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&#039;");
+}
+
+// Собираем HTML — событие жирным, дата под ним
+function buildHtmlForEvents(title: string, items: { dateLine: string; title: string }[]) {
+	const rows = items
+		.map(
+			(it) => `
+      <li>
+        <div class="ttl">${escapeHtml(stripMarkdown(it.title))}</div>
+        <div class="date">${escapeHtml(stripMarkdown(it.dateLine))}</div>
+      </li>`
+		)
+		.join("\n");
+
+	return `<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8"/>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color:#111; padding:30px; max-width:700px; margin:0 auto;
+      }
+      h1 {
+        font-size:20px; margin-bottom:20px; text-align:center;
+        border-bottom:1px solid #ddd; padding-bottom:10px;
+      }
+      ul { list-style:none; padding:0; margin:0; }
+      li { margin:14px 0 20px 0; }
+      .ttl { font-size:14px; font-weight:600; color:#000; margin-bottom:2px; }
+      .date { font-size:12px; color:#666; }
+    </style>
+  </head>
+  <body>
+    <h1>${escapeHtml(title)}</h1>
+    <ul>
+      ${rows}
+    </ul>
+  </body>
+</html>`;
+}
 
 /**
  * 📌 Отрисовка корня раздела «Церковный календарь»
@@ -345,42 +400,74 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 	});
 
 	// --- Обработка inline-кнопок ---
+	// === Сформировать компактный PDF со списком событий (без адресов) ===
 	bot.callbackQuery("calendar:view:list", async (ctx) => {
 		await ctx.answerCallbackQuery().catch(() => {});
-		await ctx.reply("📄 Формирую PDF со всеми событиями, пожалуйста подождите…");
+
+		// Показываем промежуточный ответ — чтобы пользователь видел, что идёт формирование
+		const preparingMsg = await ctx.reply(
+			"📄 Готовлю список всех событий… Их довольно много, поэтому прошу подождать — процесс займёт немного времени 🙂"
+		);
 
 		try {
-			const url = env.CALENDAR_EXPORT_URL;
+			// Получаем события (вперед на 365 дней — можно изменить)
+			const events: any[] = await withLoading(ctx, () => fetchUpcomingEvents(365), {
+				text: "⏳ Получаю события календаря…",
+			});
+
+			if (!Array.isArray(events) || events.length === 0) {
+				await ctx.reply("❌ Нет запланированных событий.");
+				return;
+			}
+
+			// Для каждого события используем форматирование formatEvent(e, true)
+			// ожидаем, что формат возвращает Markdown-подобный текст:
+			// строка1 — заголовок, строка2 — дата/время, далее — адрес (мы пропускаем)
+			const items = events.map((e: any) => {
+				const formatted = String(formatEvent(e, true) ?? "");
+				const lines = formatted
+					.split("\n")
+					.map((l) => l.trim())
+					.filter(Boolean);
+				const titleLine = lines[0] ?? e.summary ?? e.title ?? "Событие";
+				const dateLine = lines[1] ?? "";
+				// Удаляем начящиеся '# ' если есть
+				const titleClean = titleLine.replace(/^#\s*/, "");
+				return { dateLine, title: titleClean };
+			});
+
+			// Собираем HTML из items
+			const html = buildHtmlForEvents("Церковный календарь — ближайшие события", items);
+
+			// Рендерим HTML в PDF через puppeteer
 			const browser = await puppeteer.launch({
 				headless: true,
 				args: ["--no-sandbox", "--disable-setuid-sandbox"],
 			});
-
 			const page = await browser.newPage();
-			await page.goto(url, { waitUntil: "networkidle2", timeout: 60000 });
-
-			const pdfPath = path.resolve("calendar.pdf");
-			await page.pdf({
-				path: pdfPath,
+			await page.setContent(html, { waitUntil: "networkidle0" });
+			const pdfBuffer = await page.pdf({
 				format: "A4",
 				printBackground: true,
 				margin: { top: "15mm", bottom: "15mm", left: "10mm", right: "10mm" },
 			});
-
 			await browser.close();
 
-			const pdfBuffer = fs.readFileSync(pdfPath);
-			const inputFile = new InputFile(pdfBuffer, "Церковный календарь.pdf");
-
-			await ctx.replyWithDocument(inputFile, {
-				caption: "🗓️ Все ближайшие события церкви",
-				parse_mode: "Markdown",
+			// Отправляем PDF (используем конструктор InputFile — чтобы имя файла было в кириллице)
+			const input = new InputFile(Buffer.from(pdfBuffer), "Церковный_календарь.pdf");
+			await ctx.replyWithDocument(input, {
+				caption: "🗓 Список ближайших событий (без адресов)",
 			});
-
-			fs.unlinkSync(pdfPath);
 		} catch (err) {
-			console.error("Ошибка при формировании PDF:", err);
-			await ctx.reply("⚠️ Не удалось сформировать PDF-файл. Попробуйте позже.");
+			console.error("[calendar:view:list] error:", err);
+			await ctx.reply("⚠️ Не удалось сформировать PDF. Попробуйте позже.");
+		} finally {
+			// Убираем сообщение «формирую...»
+			try {
+				await ctx.api.deleteMessage(preparingMsg.chat.id, preparingMsg.message_id);
+			} catch {
+				// игнорируем
+			}
 		}
 	});
 
