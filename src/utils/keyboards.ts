@@ -86,6 +86,7 @@ export const replySermonsMenu = new Keyboard().text("🎧 Подкасты").row
 /* -------------------- Церковный календарь -------------------- */
 export const replyCalendarMenu = {
 	keyboard: [
+		[MENU_LABELS.CALENDAR_EVENTS],
 		[MENU_LABELS.CALENDAR_MEMBERS, MENU_LABELS.CALENDAR_PRAYER],
 		[MENU_LABELS.CALENDAR_LMG, MENU_LABELS.CALENDAR_FAMILY],
 		[MENU_LABELS.CALENDAR_NEXT, MENU_LABELS.CALENDAR_HOLIDAYS],

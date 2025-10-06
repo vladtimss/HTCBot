@@ -39,6 +39,7 @@ export const MENU_LABELS = {
 	MEMBERS_ALL: "📑 Все членские",
 
 	// Календарь (общие события)
+	CALENDAR_EVENTS: "🗓️ Посмотреть все события",
 	NEXT3: "🗓️ Три ближайших события",
 	CALENDAR_NEXT: "🗓️ Ближайшие события",
 	CALENDAR_HOLIDAYS: "🎉 Большие праздники",

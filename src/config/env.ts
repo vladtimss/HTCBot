@@ -71,6 +71,7 @@ export const env = {
 	SUNDAY_SERVICE_IMG: optional("SUNDAY_SERVICE_IMG", ""),
 	CHANNEL_URL: optional("CHANNEL_URL", "https://t.me/"),
 	CALENDAR_SUBSCRIBE_URL: optional("CALENDAR_SUBSCRIBE_URL", ""),
+	CALENDAR_EXPORT_URL: optional("CALENDAR_EXPORT_URL", ""),
 	YANDEX_MAP_URL: optional("YANDEX_MAP_URL", ""),
 
 	// 👥 Списки и структуры

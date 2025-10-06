@@ -326,4 +326,38 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		await ctx.answerCallbackQuery().catch(() => {});
 		await replyInstruction(ctx, "Подписка — Другие приложения", CALENDAR.subscribeInstructions.other);
 	});
+
+	// === Посмотреть все события ===
+	bot.hears("🗓️ Посмотреть все события", async (ctx) => {
+		if (!requirePrivileged(ctx)) return;
+
+		const keyboard = new InlineKeyboard()
+			.text("📋 Посмотреть списком", "calendar:view:list")
+			.row()
+			.text("📅 Посмотреть в виде календаря", "calendar:view:calendar");
+
+		await ctx.reply("Выберите способ просмотра всех событий:", {
+			reply_markup: keyboard,
+		});
+	});
+
+	// --- Обработка inline-кнопок ---
+	bot.callbackQuery("calendar:view:list", async (ctx) => {
+		await ctx.answerCallbackQuery().catch(() => {});
+		await ctx.reply(`📋 [Посмотреть все события списком](${env.CALENDAR_EXPORT_URL})`, {
+			parse_mode: "Markdown",
+			link_preview_options: { is_disabled: true },
+		});
+	});
+
+	bot.callbackQuery("calendar:view:calendar", async (ctx) => {
+		await ctx.answerCallbackQuery().catch(() => {});
+		await ctx.reply(
+			"📅 [Посмотреть календарь](https://calendar.yandex.ru/embed/month?&layer_ids=30582246&tz_id=Europe/Moscow&layer_names=Церковь%20Святой%20Троицы)",
+			{
+				parse_mode: "Markdown",
+				link_preview_options: { is_disabled: true },
+			}
+		);
+	});
 }
