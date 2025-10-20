@@ -56,6 +56,7 @@ function formatGroup(g: SmallGroup): string {
  */
 function makeWeekdaysKeyboard() {
 	const kb = new InlineKeyboard();
+
 	WEEKDAYS_PRESENT.forEach((d) => kb.text(WEEKDAY_TITLE[d], `groups:day:${d}`).row());
 	return kb;
 }

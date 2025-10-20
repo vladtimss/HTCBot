@@ -50,6 +50,8 @@ export const DISTRICT_MAP: Record<string, string> = {
 	troick: "Троицк",
 	vnukovo: "Внуково",
 	kommunarka: "Коммунарка",
+	rasskazovka: "Рассказовка",
+	vatutinki: "Ватутинки",
 };
 
 // Базовый список (без адресов и лидеров) — 4 группы: 3 в пятницу и 1 в среду
@@ -58,24 +60,24 @@ const RAW_GROUPS: SmallGroupRaw[] = [
 		id: "g1",
 		title: "Группа в Троицке",
 		region: "troick",
-		weekday: "WED",
+		weekday: "FRI",
 		time: "19:30",
 		leaderIds: ["l1", "l2"],
 	},
 	{
 		id: "g2",
 		title: "Группа в ЖК Рассказово",
-		region: "vnukovo",
-		weekday: "FRI",
+		region: "rasskazovka",
+		weekday: "THU",
 		time: "19:30",
 		leaderIds: ["l3", "l4"],
 	},
 	{
 		id: "g3",
 		title: "Группа в ЖК Кленовые Аллеи",
-		region: "troick",
+		region: "vatutinki",
 		weekday: "FRI",
-		time: "19:00",
+		time: "18:30",
 		leaderIds: ["l5", "l6"],
 	},
 	{
@@ -115,4 +117,8 @@ export const SMALL_GROUPS: SmallGroup[] = RAW_GROUPS.map((g) => {
 export const DISTRICTS = Array.from(new Set(SMALL_GROUPS.map((g) => g.region)));
 
 // Все дни
-export const WEEKDAYS_PRESENT = Array.from(new Set(SMALL_GROUPS.map((g) => g.weekday))) as Weekday[];
+export const WEEKDAY_ORDER: Weekday[] = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+
+export const WEEKDAYS_PRESENT = Array.from(new Set(SMALL_GROUPS.map((g) => g.weekday)))
+	.filter((d): d is Weekday => WEEKDAY_ORDER.includes(d as Weekday))
+	.sort((a, b) => WEEKDAY_ORDER.indexOf(a) - WEEKDAY_ORDER.indexOf(b));
