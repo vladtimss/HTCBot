@@ -66,7 +66,7 @@ const RAW_GROUPS: SmallGroupRaw[] = [
 	},
 	{
 		id: "g2",
-		title: "Группа в ЖК Рассказово",
+		title: "Группа в Рассказовке",
 		region: "rasskazovka",
 		weekday: "THU",
 		time: "19:30",
@@ -74,7 +74,7 @@ const RAW_GROUPS: SmallGroupRaw[] = [
 	},
 	{
 		id: "g3",
-		title: "Группа в ЖК Кленовые Аллеи",
+		title: "Группа в Ватутинках",
 		region: "vatutinki",
 		weekday: "FRI",
 		time: "18:30",
