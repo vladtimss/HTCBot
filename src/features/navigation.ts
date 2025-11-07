@@ -14,7 +14,7 @@ import { renderGroupsRoot } from "./small-groups";
  * - Использует menuStack для навигации
  */
 export function registerNavigation(bot: Bot<MyContext>) {
-	bot.hears(MENU_LABELS.BACK, async (ctx) => {
+    bot.hears(MENU_LABELS.NAV_BACK, async (ctx) => {
 		// Если стека нет или в нём только один элемент → кидаем в главное меню
 		if (!ctx.session.menuStack || ctx.session.menuStack.length <= 1) {
 			await ctx.reply(MAIN.title, {

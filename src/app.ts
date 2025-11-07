@@ -81,15 +81,15 @@ bot.on("message", async (ctx) => {
 
 	// Известные кнопки главного меню
 	const known = new Set([
-		MENU_LABELS.SUNDAY,
-		MENU_LABELS.GROUPS,
-		MENU_LABELS.NEXT3,
-		MENU_LABELS.ABOUT,
-		MENU_LABELS.MAIN,
-		MENU_LABELS.BACK,
-		MENU_LABELS.CHANNEL,
-		MENU_LABELS.BELIEF,
-		MENU_LABELS.HISTORY,
+		MENU_LABELS.MAIN_SUNDAY,
+		MENU_LABELS.MAIN_GROUPS,
+		MENU_LABELS.CAL_NEXT3,
+		MENU_LABELS.MAIN_ABOUT,
+		MENU_LABELS.NAV_MAIN,
+		MENU_LABELS.NAV_BACK,
+		MENU_LABELS.ABOUT_CHANNEL,
+		MENU_LABELS.ABOUT_BELIEF,
+		MENU_LABELS.ABOUT_HISTORY,
 	]);
 
 	// Если пришёл неизвестный текст — возвращаем пользователя в главное меню

@@ -27,7 +27,7 @@ export function registerMainMenu(bot: Bot<MyContext>) {
 	/**
 	 * Inline-кнопка «🏠 Главное меню»
 	 */
-	bot.callbackQuery("nav:main", async (ctx) => {
+    bot.callbackQuery("nav:main", async (ctx) => {
 		await ctx.answerCallbackQuery().catch(() => {});
 		await renderMain(ctx);
 	});
@@ -36,7 +36,7 @@ export function registerMainMenu(bot: Bot<MyContext>) {
 	 * Reply-кнопка «🏠 В главное меню»
 	 * Используется в клавиатурах внутри разных разделов.
 	 */
-	bot.hears(MENU_LABELS.MAIN, async (ctx) => {
+    bot.hears(MENU_LABELS.NAV_MAIN, async (ctx) => {
 		await renderMain(ctx);
 	});
 }

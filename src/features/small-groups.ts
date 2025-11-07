@@ -98,12 +98,12 @@ export async function renderGroupsRoot(ctx: MyContext) {
  */
 export function registerSmallGroups(bot: Bot<MyContext>) {
 	// Вход в раздел «Малые группы»
-	bot.hears(MENU_LABELS.GROUPS, async (ctx) => {
+    bot.hears(MENU_LABELS.MAIN_GROUPS, async (ctx) => {
 		await renderGroupsRoot(ctx);
 	});
 
 	// «📅 По дням»
-	bot.hears(SMALL_GROUPS_TEXTS.byDay, async (ctx) => {
+    bot.hears(MENU_LABELS.LMG_GROUPS_BY_DAY, async (ctx) => {
 		if (!ctx.session.menuStack) ctx.session.menuStack = ["groups"];
 		ctx.session.menuStack.push("groups/byday");
 		ctx.session.lastSection = "groups/byday";
@@ -115,7 +115,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 	});
 
 	// «📍 По районам»
-	bot.hears(SMALL_GROUPS_TEXTS.byDistrict, async (ctx) => {
+    bot.hears(MENU_LABELS.LMG_GROUPS_BY_DISTRICT, async (ctx) => {
 		if (!ctx.session.menuStack) ctx.session.menuStack = ["groups"];
 		ctx.session.menuStack.push("groups/bydistrict");
 		ctx.session.lastSection = "groups/bydistrict";
@@ -142,10 +142,10 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 			const g = list[i];
 			const isLast = i === list.length - 1;
 
-			await ctx.reply(formatGroup(g), {
+            await ctx.reply(formatGroup(g), {
 				parse_mode: "Markdown",
 				link_preview_options: { is_disabled: true },
-				reply_markup: isLast ? new InlineKeyboard().text("⬅️ К дням", "groups:byday") : undefined,
+                reply_markup: isLast ? new InlineKeyboard().text(MENU_LABELS.LMG_GROUPS_BACK_TO_DAYS, "groups:byday") : undefined,
 			});
 		}
 	});
@@ -177,10 +177,10 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 			const g = list[i];
 			const isLast = i === list.length - 1;
 
-			await ctx.reply(formatGroup(g), {
+            await ctx.reply(formatGroup(g), {
 				parse_mode: "Markdown",
 				link_preview_options: { is_disabled: true },
-				reply_markup: isLast ? new InlineKeyboard().text("⬅️ К районам", "groups:bydistrict") : undefined,
+                reply_markup: isLast ? new InlineKeyboard().text(MENU_LABELS.LMG_GROUPS_BACK_TO_DISTRICTS, "groups:bydistrict") : undefined,
 			});
 		}
 	});
@@ -195,7 +195,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 	});
 
 	// Когда следующая встреча ЛМГ
-	bot.hears(MENU_LABELS.LMG_NEXT, async (ctx) => {
+    bot.hears(MENU_LABELS.LMG_CAL_NEXT, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
 		const nextLm = await withLoading(ctx, () => fetchNextEventByTitle("Встреча ЛМГ"), {
@@ -210,7 +210,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 	});
 
 	// Все встречи ЛМГ до конца сезона
-	bot.hears(MENU_LABELS.LMG_ALL, async (ctx) => {
+    bot.hears(MENU_LABELS.LMG_CAL_ALL, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
 		const lmEvents = await withLoading(ctx, () => fetchAllFutureEventsByTitle("Встреча ЛМГ"), {
@@ -228,7 +228,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 	});
 
 	// Выезд ЛМГ
-	bot.hears(MENU_LABELS.LMG_TRIP, async (ctx) => {
+    bot.hears(MENU_LABELS.LMG_CAL_TRIP, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 		await ctx.reply("*Выезд ЛМГ*", {
 			parse_mode: "Markdown",

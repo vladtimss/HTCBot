@@ -23,8 +23,8 @@ export async function renderSermonsRoot(ctx: MyContext) {
  * 📌 Регистрация хендлеров раздела «Проповеди»
  */
 export function registerSermons(bot: Bot<MyContext>) {
-	// Вход в раздел из главного меню
-	bot.hears(MENU_LABELS.SERMONS, async (ctx) => {
+    // Вход в раздел из главного меню
+    bot.hears(MENU_LABELS.MAIN_SERMONS, async (ctx) => {
 		await renderSermonsRoot(ctx);
 	});
 

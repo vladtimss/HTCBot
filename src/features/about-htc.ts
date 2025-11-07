@@ -24,12 +24,12 @@ export async function renderAboutRoot(ctx: MyContext) {
  */
 export function registerAboutHTC(bot: Bot<MyContext>) {
 	// Вход в раздел
-	bot.hears(MENU_LABELS.ABOUT, async (ctx) => {
+    bot.hears(MENU_LABELS.MAIN_ABOUT, async (ctx) => {
 		await renderAboutRoot(ctx);
 	});
 
 	// Канал — отправляем ссылку из env
-	bot.hears(MENU_LABELS.CHANNEL, async (ctx) => {
+    bot.hears(MENU_LABELS.ABOUT_CHANNEL, async (ctx) => {
 		await ctx.reply(`Наш канал: ${env.CHANNEL_URL}`, {
 			reply_markup: replyAboutMenu,
 		});
@@ -38,7 +38,7 @@ export function registerAboutHTC(bot: Bot<MyContext>) {
 	});
 
 	// Во что мы верим — просто информационное сообщение внутри раздела
-	bot.hears(MENU_LABELS.BELIEF, async (ctx) => {
+    bot.hears(MENU_LABELS.ABOUT_BELIEF, async (ctx) => {
 		await ctx.replyWithPhoto("https://disk.yandex.ru/i/D40j3pRDbGGFMw", {
 			caption: BELIEF,
 			parse_mode: "Markdown",
@@ -49,7 +49,7 @@ export function registerAboutHTC(bot: Bot<MyContext>) {
 	});
 
 	// Наша история
-	bot.hears(MENU_LABELS.HISTORY, async (ctx) => {
+    bot.hears(MENU_LABELS.ABOUT_HISTORY, async (ctx) => {
 		await ctx.reply(HISTORY, {
 			parse_mode: "Markdown",
 			reply_markup: replyAboutMenu,

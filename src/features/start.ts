@@ -1,4 +1,4 @@
-import { Bot, InlineKeyboard, InputFile } from "grammy";
+import { Bot, InlineKeyboard } from "grammy";
 import { MyContext } from "../types/grammy-context";
 import { COMMON, greet } from "../services/texts";
 import { env } from "../config/env";
@@ -16,7 +16,7 @@ export function registerStart(bot: Bot<MyContext>) {
 		ctx.session.lastSection = "main";
 
 		// Кнопка «🏠 Главное меню»
-		const kb = new InlineKeyboard().text(MENU_LABELS.START, "nav:main");
+        const kb = new InlineKeyboard().text(MENU_LABELS.GLOBAL_START, "nav:main");
 
 		try {
 			await ctx.replyWithPhoto(env.START_IMAGE, {

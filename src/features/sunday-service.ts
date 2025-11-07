@@ -20,7 +20,7 @@ export async function renderSunday(ctx: MyContext) {
  * Регистрирует обработчики для раздела «Воскресное богослужение».
  */
 export function registerSunday(bot: Bot<MyContext>) {
-	bot.hears(MENU_LABELS.SUNDAY, async (ctx) => {
+    bot.hears(MENU_LABELS.MAIN_SUNDAY, async (ctx) => {
 		await renderSunday(ctx);
 	});
 

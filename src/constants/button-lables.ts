@@ -1,64 +1,69 @@
 // src/constants/menu-labels.ts
+// Единый реестр текстов для всех кнопок бота (reply/inline).
+//
+// Задачи файла:
+// - Централизовать все лейблы, чтобы не было «магических строк» по коду.
+// - Облегчить поиск/редактирование — сгруппировано по разделам с комментариями.
+// - Избежать расхождений между клавиатурами и хендлерами bot.hears(...).
 export const MENU_LABELS = {
-	// Старт
-	START: "🚀 Начать",
+    // ==== Глобальные / Главное меню ====
+    GLOBAL_START: "🚀 Начать",
+    MAIN_SUNDAY: "⛪ Воскресное богослужение",
+    MAIN_GROUPS: "👥 Малые группы",
+    MAIN_CALENDAR: "📅 Церковный календарь",
+    MAIN_SERMONS: "🎙️ Проповеди",
+    MAIN_ABOUT: "ℹ️ О нас",
 
-	// Главное меню
-	SUNDAY: "⛪ Воскресное богослужение",
-	GROUPS: "👥 Малые группы",
-	CALENDAR: "📅 Церковный календарь",
-	SERMONS: "🎙️ Проповеди",
-	ABOUT: "ℹ️ О нас",
+    // ==== Навигация (общая) ====
+    NAV_MAIN: "🏠 В главное меню",
+    NAV_BACK: "⬅️ Назад",
 
-	// Навигация
-	MAIN: "🏠 В главное меню",
-	BACK: "⬅️ Назад",
-	// Конспекты ЛМГ
-	LMG_NOTES: "📝 Конспекты ЛМГ",
-	LMG_CONSP_PREV: "Конспект с прошлой встречи",
+    // ==== Раздел "Малые группы" ====
+    LMG_GROUPS_BY_DAY: "📅 По дням",
+    LMG_GROUPS_BY_DISTRICT: "📍 По районам",
+    LMG_GROUPS_BACK_TO_DAYS: "⬅️ К дням",
+    LMG_GROUPS_BACK_TO_DISTRICTS: "⬅️ К районам",
+    LMG_NOTES: "📝 Конспекты ЛМГ",
+    LMG_NOTES_PREV: "Конспект с прошлой встречи",
+    LMG_CAL_TRIP: "🚌 Выезд ЛМГ",
+    LMG_CAL_NEXT: "📅 Следующая встреча ЛМГ",
+    LMG_CAL_ALL: "📑 Список встреч ЛМГ",
 
-	// ЛМГ
-	CALENDAR_LMG: "📖 ЛМГ",
-	LMG_NEXT: "📅 Следующая встреча ЛМГ",
-	LMG_ALL: "📑 Список встреч ЛМГ",
-	LMG_TRIP: "🚌 Выезд ЛМГ",
+    // ==== Раздел «О нас» ====
+    ABOUT_CHANNEL: "📢 Канал",
+    ABOUT_BELIEF: "✝️ Во что мы верим",
+    ABOUT_HISTORY: "📜 Наша история",
 
-	// Раздел «О нас»
-	CHANNEL: "📢 Канал",
-	BELIEF: "✝️ Во что мы верим",
-	HISTORY: "📜 Наша история",
+    // ==== Раздел "Календарь (общие пункты)" ====
+    CAL_EVENTS: "🗓️ Посмотреть все события",
+    CAL_NEXT3: "🗓️ Три ближайших события",
+    CAL_NEXT: "🗓️ Ближайшие события",
+    CAL_HOLIDAYS: "🎉 Большие праздники",
+    CAL_HOLIDAYS_EASTER: "✝️ Когда будет Пасха",
+    CAL_HOLIDAYS_RV: "🎄 Даты РВ",
+    CAL_SUBSCRIBE: "🔔 Подписаться на календарь",
+    CAL_SUBSCRIBE_APPLE: "🍏 Apple",
+    CAL_SUBSCRIBE_YANDEX: "📒 Яндекс",
+    CAL_SUBSCRIBE_GOOGLE: "🔎 Google",
+    CAL_SUBSCRIBE_XIOMI: "📱 Xiaomi",
+    CAL_SUBSCRIBE_OTHER: "❓ Другой",
 
-	// Молитвенные собрания
-	CALENDAR_PRAYER: "🙏 Молитвенные собрания",
-	PRAYER_NEXT: "📅 Следующее молитвенное",
-	PRAYER_ALL: "📑 Все молитвенные",
+    // ==== Календарь (подразделы) ====
+    // ЛМГ
+    CAL_LMG: "📖 ЛМГ",
+    // Молитвенные
+    CAL_PRAYER: "🙏 Молитвенные собрания",
+    CAL_PRAYER_NEXT: "📅 Следующее молитвенное",
+    CAL_PRAYER_ALL: "📑 Все молитвенные",
+    // Членские
+    CAL_MEMBERS: "👥 Членские собрания",
+    CAL_MEMBERS_NEXT: "📅 Следующее членское",
+    CAL_MEMBERS_ALL: "📑 Все членские",
+    // Семейные
+    CAL_FAMILY: "👨‍👩‍👧 Отцы и дети / Сёстры",
+    CAL_FAMILY_NEXT: "📅 Следующая встреча",
+    CAL_FAMILY_ALL: "📑 Все встречи",
 
-	// Членские собрания
-	CALENDAR_MEMBERS: "👥 Членские собрания",
-	MEMBERS_NEXT: "📅 Следующее членское",
-	MEMBERS_ALL: "📑 Все членские",
-
-	// Календарь (общие события)
-	CALENDAR_EVENTS: "🗓️ Посмотреть все события",
-	NEXT3: "🗓️ Три ближайших события",
-	CALENDAR_NEXT: "🗓️ Ближайшие события",
-	CALENDAR_HOLIDAYS: "🎉 Большие праздники",
-	HOLIDAY_EASTER: "✝️ Когда будет Пасха",
-	CALENDAR_SUBSCRIBE: "🔔 Подписаться на календарь",
-	CALENDAR_SUB_APPLE: "🍏 Apple",
-	CALENDAR_SUB_YANDEX: "📒 Яндекс",
-	CALENDAR_SUB_GOOGLE: "🔎 Google",
-	CALENDAR_SUB_XIOMI: "📱 Xiaomi",
-	CALENDAR_SUB_OTHER: "❓ Другой",
-
-	// Рождественский выезд
-	HOLIDAY_RV: "🎄 Даты РВ",
-
-	// Отцы и дети / Встреча сестер
-	CALENDAR_FAMILY: "👨‍👩‍👧 Отцы и дети / Сестры",
-	FAMILY_NEXT: "📅 Следующая встреча",
-	FAMILY_ALL: "📑 Все встречи",
-
-	// Проповеди
-	SERMONS_PODCASTS: "🎧 Подкасты",
+    // ==== Радел "Проповеди" ====
+    SERMONS_PODCASTS: "🎧 Подкасты",
 };
