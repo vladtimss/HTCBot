@@ -9,10 +9,6 @@ import { InlineKeyboard, Keyboard } from "grammy";
 import { MENU_LABELS }              from "../constants/button-lables";
 import { MyContext }                from "../types/grammy-context";
 
-/* -------------------- Общие inline-кнопки -------------------- */
-/** Возврат в главное меню (inline-режим). */
-export const inlineBackToMain = () => new InlineKeyboard().text(MENU_LABELS.NAV_MAIN, "nav:main");
-
 /* -------------------- Главное меню -------------------- */
 /**
  * Главное меню зависит от прав:
@@ -43,12 +39,6 @@ export const replyAboutMenu = new Keyboard()
     .text(MENU_LABELS.NAV_BACK) // ⬅️ Назад
 	.resized();
 
-/** Назад → к "О нас" или → главное меню */
-export const replyBackToAbout = new Keyboard()
-    .text(MENU_LABELS.NAV_BACK) // ⬅️ Назад
-	.row()
-    .text(MENU_LABELS.NAV_MAIN) // 🏠 В главное меню
-	.resized();
 
 /* -------------------- Малые группы -------------------- */
 export function replyGroupsMenu(ctx: MyContext) {

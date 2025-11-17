@@ -107,11 +107,6 @@ export async function fetchUpcomingEvents(limit = 5): Promise<CalendarEvent[]> {
 		.slice(0, Math.max(0, limit));
 }
 
-/** Первая буква заглавная */
-function capitalize(str: string): string {
-	return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
 /**
  * Форматирование события в карточку Telegram.
  * @param e - событие
@@ -171,6 +166,7 @@ function escapeMd(s: string): string {
 
 /**
  * Найти ближайшее событие по названию.
+ * @param title
  * @param strict - если true, ищем точное совпадение
  */
 export async function fetchNextEventByTitle(title: string, strict = false): Promise<CalendarEvent | null> {

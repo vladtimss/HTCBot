@@ -40,7 +40,7 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 
 		await ctx.reply(SMALL_GROUPS_TEXTS.lmgNotesIntro, {
 			parse_mode: "Markdown",
-			reply_markup: replyLmgNotesMenu(ctx),
+			reply_markup: replyLmgNotesMenu(),
 		});
 	});
 

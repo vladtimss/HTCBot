@@ -14,15 +14,6 @@ function optional(key: string, fallback: string): string {
 	return process.env[key] ?? fallback;
 }
 
-/** Парсим список чисел вида "1,2,3" => number[] */
-function parseNumberList(name: string): number[] {
-	return (process.env[name] ?? "")
-		.split(",")
-		.map((s) => s.trim())
-		.filter(Boolean)
-		.map(Number);
-}
-
 /** Парсер base64-JSON из ENV (для «красивых» многострочных json через кодирование) */
 function parseBase64Json<T>(name: string, fallback: T): T {
 	const raw = process.env[name];
