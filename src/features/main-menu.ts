@@ -4,6 +4,7 @@ import { MyContext } from "../types/grammy-context";
 import { replyMainKeyboard } from "../utils/keyboards";
 import { MENU_LABELS } from "../constants/button-lables";
 import { MAIN } from "../services/texts"; // добавили texts
+import { PARSE_MODE } from "../constants/parse-mode";
 
 /**
  * 📌 Рендер главного меню
@@ -15,7 +16,7 @@ export async function renderMain(ctx: MyContext) {
 	ctx.session.menuStack = ["main"];
 
 	await ctx.reply(MAIN.title, {
-		parse_mode: "Markdown",
+		parse_mode: PARSE_MODE.MARKDOWN_V2,
 		reply_markup: replyMainKeyboard(ctx),
 	});
 }

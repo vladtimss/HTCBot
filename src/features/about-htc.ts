@@ -5,6 +5,8 @@ import { ABOUT, BELIEF, COMMON, HISTORY } from "../services/texts";
 import { env } from "../config/env";
 import { replyAboutMenu } from "../utils/keyboards";
 import { MENU_LABELS } from "../constants/button-lables";
+import { escapeMdV2 } from "../utils/text";
+import { PARSE_MODE } from "../constants/parse-mode";
 
 /**
  * Рендер корня раздела «О нас»
@@ -13,8 +15,9 @@ export async function renderAboutRoot(ctx: MyContext) {
 	ctx.session.menuStack = ["about"];
 	ctx.session.lastSection = "about";
 
-	await ctx.reply(`*Раздел: ${ABOUT.title}*\n\n${COMMON.useButtonBelow}`, {
-		parse_mode: "Markdown",
+	const escapedTitle = escapeMdV2(ABOUT.title);
+	await ctx.reply(`*Раздел: ${escapedTitle}*\n\n${COMMON.useButtonBelow}`, {
+		parse_mode: PARSE_MODE.MARKDOWN_V2,
 		reply_markup: replyAboutMenu,
 	});
 }
@@ -30,7 +33,9 @@ export function registerAboutHTC(bot: Bot<MyContext>) {
 
 	// Канал — отправляем ссылку из env
     bot.hears(MENU_LABELS.ABOUT_CHANNEL, async (ctx) => {
-		await ctx.reply(`Наш канал: ${env.CHANNEL_URL}`, {
+		const escapedUrl = escapeMdV2(env.CHANNEL_URL);
+		await ctx.reply(`Наш канал: ${escapedUrl}`, {
+			parse_mode: PARSE_MODE.MARKDOWN_V2,
 			reply_markup: replyAboutMenu,
 		});
 		ctx.session.menuStack = ["about"];
@@ -41,7 +46,7 @@ export function registerAboutHTC(bot: Bot<MyContext>) {
     bot.hears(MENU_LABELS.ABOUT_BELIEF, async (ctx) => {
 		await ctx.replyWithPhoto("https://disk.yandex.ru/i/D40j3pRDbGGFMw", {
 			caption: BELIEF,
-			parse_mode: "Markdown",
+			parse_mode: PARSE_MODE.MARKDOWN_V2,
 			reply_markup: replyAboutMenu,
 		});
 		ctx.session.menuStack = ["about"];
@@ -51,7 +56,7 @@ export function registerAboutHTC(bot: Bot<MyContext>) {
 	// Наша история
     bot.hears(MENU_LABELS.ABOUT_HISTORY, async (ctx) => {
 		await ctx.reply(HISTORY, {
-			parse_mode: "Markdown",
+			parse_mode: PARSE_MODE.MARKDOWN_V2,
 			reply_markup: replyAboutMenu,
 			link_preview_options: { is_disabled: true },
 		});

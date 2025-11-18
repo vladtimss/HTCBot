@@ -4,6 +4,7 @@ import { COMMON, greet } from "../services/texts";
 import { env } from "../config/env";
 import { replyMainKeyboard } from "../utils/keyboards";
 import { MENU_LABELS } from "../constants/button-lables";
+import { PARSE_MODE } from "../constants/parse-mode";
 
 /**
  * Регистрирует обработчик команды /start.
@@ -21,12 +22,12 @@ export function registerStart(bot: Bot<MyContext>) {
 		try {
 			await ctx.replyWithPhoto(env.START_IMAGE, {
 				caption: greet(ctx),
-				parse_mode: "Markdown",
+				parse_mode: PARSE_MODE.MARKDOWN_V2,
 				reply_markup: kb,
 			});
 		} catch (e) {
 			await ctx.reply(greet(ctx), {
-				parse_mode: "Markdown",
+				parse_mode: PARSE_MODE.MARKDOWN_V2,
 				reply_markup: kb,
 			});
 		}

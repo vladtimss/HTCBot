@@ -2,6 +2,7 @@
 import { Bot } from "grammy";
 import { MyContext } from "../types/grammy-context";
 import { MENU_LABELS } from "../constants/button-lables";
+import { PARSE_MODE } from "../constants/parse-mode";
 import { replyMainKeyboard } from "../utils/keyboards";
 import { MAIN } from "../services/texts";
 
@@ -18,7 +19,7 @@ export function registerNavigation(bot: Bot<MyContext>) {
 		// Если стека нет или в нём только один элемент → кидаем в главное меню
 		if (!ctx.session.menuStack || ctx.session.menuStack.length <= 1) {
 			await ctx.reply(MAIN.title, {
-				parse_mode: "Markdown",
+				parse_mode: PARSE_MODE.MARKDOWN_V2,
 				reply_markup: replyMainKeyboard(ctx),
 			});
 			ctx.session.lastSection = "main";
@@ -53,7 +54,7 @@ export function registerNavigation(bot: Bot<MyContext>) {
 			default:
 				// если не знаем что это → кидаем в главное меню
 				await ctx.reply(MAIN.title, {
-					parse_mode: "Markdown",
+					parse_mode: PARSE_MODE.MARKDOWN_V2,
 					reply_markup: replyMainKeyboard(ctx),
 				});
 				ctx.session.lastSection = "main";

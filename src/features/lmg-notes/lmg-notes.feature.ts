@@ -5,9 +5,10 @@ import { MENU_LABELS } from "../../constants/button-lables";
 import { SMALL_GROUPS_TEXTS } from "../../services/texts";
 import { replyLmgNotesMenu } from "../../utils/keyboards";
 import { withLoadingAndMsg } from "../../utils/loading";
-import * as buildin from "../../services/buildin";
+import { queryDatabase } from "../../services/buildin";
 import { BuildinFile, Meeting } from "../../types/buildin";
 import { requirePrivileged } from "../../utils/guards";
+import { PARSE_MODE } from "../../constants/parse-mode";
 
 function normalizeDate(dateStr: string): string {
 	if (!dateStr) return dateStr;
@@ -39,7 +40,7 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 		ctx.session.lastSection = "lmg-notes";
 
 		await ctx.reply(SMALL_GROUPS_TEXTS.lmgNotesIntro, {
-			parse_mode: "Markdown",
+			parse_mode: PARSE_MODE.MARKDOWN_V2,
 			reply_markup: replyLmgNotesMenu(),
 		});
 	});
@@ -51,7 +52,7 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 		try {
 			const { result, loadingMsg } = await withLoadingAndMsg(
 				ctx,
-				() => buildin.queryDatabase(LMG_NOTES_DATABASE_ID, { page_size: 100 }),
+				() => queryDatabase(LMG_NOTES_DATABASE_ID, { page_size: 100 }),
 				{ text: "⏳ Ищу конспект с последней встречи…" }
 			);
 

@@ -74,11 +74,11 @@ export const replySermonsMenu = new Keyboard().text(MENU_LABELS.SERMONS_PODCASTS
 /* -------------------- Церковный календарь -------------------- */
 export const replyCalendarMenu = {
 	keyboard: [
-        [MENU_LABELS.CAL_EVENTS],
+		[MENU_LABELS.CAL_SUBSCRIBE],
+        [MENU_LABELS.CAL_NEXT, MENU_LABELS.CAL_EVENTS],
         [MENU_LABELS.CAL_MEMBERS, MENU_LABELS.CAL_PRAYER],
         [MENU_LABELS.CAL_LMG, MENU_LABELS.CAL_FAMILY],
-        [MENU_LABELS.CAL_NEXT, MENU_LABELS.CAL_HOLIDAYS],
-        [MENU_LABELS.NAV_BACK, MENU_LABELS.CAL_SUBSCRIBE],
+        [MENU_LABELS.NAV_BACK, MENU_LABELS.CAL_HOLIDAYS],
 	],
 	resize_keyboard: true,
 };

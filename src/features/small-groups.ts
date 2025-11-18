@@ -20,33 +20,51 @@ import {
 import { MENU_LABELS } from "../constants/button-lables";
 import { requirePrivileged } from "../utils/guards";
 import { withLoading } from "../utils/loading";
+import { escapeMdV2, escapeUrlV2 } from "../utils/text";
+import { PARSE_MODE } from "../constants/parse-mode";
 
 /**
- * Форматирует информацию об одной малой группе в виде «карточки» (Markdown).
+ * Форматирует информацию об одной малой группе в виде «карточки» (MarkdownV2).
  */
 function formatGroup(g: SmallGroup): string {
+	// Экранируем внешние данные для MarkdownV2
+	const escapedTitle = escapeMdV2(g.title);
+	const escapedWeekday = escapeMdV2(WEEKDAY_TITLE[g.weekday]);
+	const escapedTime = escapeMdV2(g.time);
+
 	const leaders = g.leaders
 		.map((l) => {
+			const escapedFirstName = escapeMdV2(l.firstName);
 			if (l.tgUserName) {
-				return `👤 [${l.firstName}](https://t.me/${l.tgUserName})`;
+				// В MarkdownV2 ссылки: [текст](url), текст внутри ссылки экранируем, URL тоже
+				const escapedUrl = escapeUrlV2(`https://t.me/${l.tgUserName}`);
+				return `👤 [${escapedFirstName}](${escapedUrl})`;
 			}
 			if (l.tgId) {
-				return `👤 [${l.firstName}](tg://user?id=${l.tgId})`;
+				const escapedUrl = escapeUrlV2(`tg://user?id=${l.tgId}`);
+				return `👤 [${escapedFirstName}](${escapedUrl})`;
 			}
-			return `👤 ${l.firstName}`;
+			return `👤 ${escapedFirstName}`;
 		})
 		.join("\n");
 
-	const addresses = g.addresses.map((a) => `📍 [${a.address}](${a.mapUrl})`).join("\n");
+	const addresses = g.addresses
+		.map((a) => {
+			const escapedAddress = escapeMdV2(a.address);
+			// Экранируем URL для MarkdownV2 (только ) и \)
+			const escapedUrl = escapeUrlV2(a.mapUrl);
+			return `📍 [${escapedAddress}](${escapedUrl})`;
+		})
+		.join("\n");
 
 	return [
-		`*✨ ${g.title}*`,
+		`*✨ ${escapedTitle}*`,
 		"",
-		`🗓 _${WEEKDAY_TITLE[g.weekday]}, начало в ${g.time}_`,
+		`🗓 _${escapedWeekday}, начало в ${escapedTime}_`,
 		"",
 		addresses,
 		"",
-		"_(Напишите ведущим, если хотите что-то уточнить - нажмите на имя 👇)_\n",
+		"_\\(Напишите ведущим, если хотите что\\-то уточнить \\- нажмите на имя 👇\\)_\n",
 		leaders,
 	].join("\n");
 }
@@ -87,7 +105,7 @@ export async function renderGroupsRoot(ctx: MyContext) {
 			isPrivileged ? SMALL_GROUPS_TEXTS.descriptionForMembers : SMALL_GROUPS_TEXTS.descriptionForOther
 		}\n\n${COMMON.useButtonBelow}`,
 		{
-			parse_mode: "Markdown",
+			parse_mode: PARSE_MODE.MARKDOWN_V2,
 			reply_markup: replyGroupsMenu(ctx),
 		}
 	);
@@ -109,7 +127,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 		ctx.session.lastSection = "groups/byday";
 
 		await ctx.reply(`*${SMALL_GROUPS_TEXTS.chooseDay}*`, {
-			parse_mode: "Markdown",
+			parse_mode: PARSE_MODE.MARKDOWN_V2,
 			reply_markup: makeWeekdaysKeyboard(),
 		});
 	});
@@ -121,7 +139,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 		ctx.session.lastSection = "groups/bydistrict";
 
 		await ctx.reply(`*${SMALL_GROUPS_TEXTS.chooseDistrict}*`, {
-			parse_mode: "Markdown",
+			parse_mode: PARSE_MODE.MARKDOWN_V2,
 			reply_markup: makeDistrictsKeyboard(),
 		});
 	});
@@ -134,7 +152,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 		const list = SMALL_GROUPS.filter((g) => g.weekday === day);
 
 		await ctx.reply(`*${WEEKDAY_TITLE[day]} — группы:*`, {
-			parse_mode: "Markdown",
+			parse_mode: PARSE_MODE.MARKDOWN_V2,
 			link_preview_options: { is_disabled: true },
 		});
 
@@ -143,7 +161,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 			const isLast = i === list.length - 1;
 
             await ctx.reply(formatGroup(g), {
-				parse_mode: "Markdown",
+				parse_mode: PARSE_MODE.MARKDOWN_V2,
 				link_preview_options: { is_disabled: true },
                 reply_markup: isLast ? new InlineKeyboard().text(MENU_LABELS.LMG_GROUPS_BACK_TO_DAYS, "groups:byday") : undefined,
 			});
@@ -154,7 +172,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 	bot.callbackQuery("groups:byday", async (ctx) => {
 		await ctx.answerCallbackQuery().catch(() => {});
 		await ctx.reply(`*${SMALL_GROUPS_TEXTS.chooseDay}*`, {
-			parse_mode: "Markdown",
+			parse_mode: PARSE_MODE.MARKDOWN_V2,
 			reply_markup: makeWeekdaysKeyboard(),
 		});
 	});
@@ -169,7 +187,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 		const list = SMALL_GROUPS.filter((g) => g.region === districtKey);
 
 		await ctx.reply(`*${districtName} — группы:*`, {
-			parse_mode: "Markdown",
+			parse_mode: PARSE_MODE.MARKDOWN_V2,
 			link_preview_options: { is_disabled: true },
 		});
 
@@ -178,7 +196,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 			const isLast = i === list.length - 1;
 
             await ctx.reply(formatGroup(g), {
-				parse_mode: "Markdown",
+				parse_mode: PARSE_MODE.MARKDOWN_V2,
 				link_preview_options: { is_disabled: true },
                 reply_markup: isLast ? new InlineKeyboard().text(MENU_LABELS.LMG_GROUPS_BACK_TO_DISTRICTS, "groups:bydistrict") : undefined,
 			});
@@ -189,7 +207,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 	bot.callbackQuery("groups:bydistrict", async (ctx) => {
 		await ctx.answerCallbackQuery().catch(() => {});
 		await ctx.reply(`*${SMALL_GROUPS_TEXTS.chooseDistrict}*`, {
-			parse_mode: "Markdown",
+			parse_mode: PARSE_MODE.MARKDOWN_V2,
 			reply_markup: makeDistrictsKeyboard(),
 		});
 	});
@@ -206,7 +224,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 			await ctx.reply(SMALL_GROUPS_TEXTS.noNextLmg);
 			return;
 		}
-		await ctx.reply(formatEvent(nextLm), { parse_mode: "Markdown" });
+		await ctx.reply(formatEvent(nextLm), { parse_mode: PARSE_MODE.MARKDOWN_V2 });
 	});
 
 	// Все встречи ЛМГ до конца сезона
@@ -223,7 +241,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 		}
 		const list = lmEvents.map((e) => formatEvent(e, true)).join("\n\n");
 		await ctx.reply(`${SMALL_GROUPS_TEXTS.lmgSeasonList}\n\n${list}`, {
-			parse_mode: "Markdown",
+			parse_mode: PARSE_MODE.MARKDOWN_V2,
 		});
 	});
 
@@ -231,7 +249,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
     bot.hears(MENU_LABELS.LMG_CAL_TRIP, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 		await ctx.reply("*Выезд ЛМГ*", {
-			parse_mode: "Markdown",
+			parse_mode: PARSE_MODE.MARKDOWN_V2,
 			reply_markup: inlineLmgTrip,
 		});
 	});
@@ -255,7 +273,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 				? `Последний выезд был:\n\n${formatEvent(res.event)}`
 				: "Нет данных по выезду";
 
-		await ctx.reply(msg, { parse_mode: "Markdown" });
+		await ctx.reply(msg, { parse_mode: PARSE_MODE.MARKDOWN_V2 });
 		await ctx.answerCallbackQuery();
 	});
 }

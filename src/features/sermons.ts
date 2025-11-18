@@ -4,6 +4,7 @@ import { MyContext } from "../types/grammy-context";
 import { env } from "../config/env";
 import { replySermonsMenu } from "../utils/keyboards";
 import { MENU_LABELS } from "../constants/button-lables";
+import { PARSE_MODE } from "../constants/parse-mode";
 import { COMMON, SERMONS } from "../services/texts";
 
 /**
@@ -14,7 +15,7 @@ export async function renderSermonsRoot(ctx: MyContext) {
 	ctx.session.lastSection = "sermons";
 
 	await ctx.reply(`${SERMONS.title}\n\n${COMMON.useButtonBelow}`, {
-		parse_mode: "Markdown",
+		parse_mode: PARSE_MODE.MARKDOWN_V2,
 		reply_markup: replySermonsMenu,
 	});
 }
@@ -31,7 +32,7 @@ export function registerSermons(bot: Bot<MyContext>) {
 	// Подкасты
 	bot.hears(MENU_LABELS.SERMONS_PODCASTS, async (ctx) => {
 		await ctx.reply(SERMONS.podcasts(env.SERMONS_YANDEX_URL, env.SERMONS_PODSTER_URL), {
-			parse_mode: "Markdown",
+			parse_mode: PARSE_MODE.MARKDOWN_V2,
 			link_preview_options: { is_disabled: true },
 			reply_markup: replySermonsMenu,
 		});

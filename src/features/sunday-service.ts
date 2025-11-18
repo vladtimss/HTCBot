@@ -3,6 +3,7 @@ import { MyContext } from "../types/grammy-context";
 import { SUNDAY } from "../services/texts";
 import { MENU_LABELS } from "../constants/button-lables";
 import { env } from "../config/env";
+import { PARSE_MODE } from "../constants/parse-mode";
 
 /**
  * Отрисовывает экран «Воскресное богослужение».
@@ -12,7 +13,7 @@ export async function renderSunday(ctx: MyContext) {
 
 	await ctx.replyWithPhoto(env.SUNDAY_SERVICE_IMG, {
 		caption: SUNDAY.text,
-		parse_mode: "MarkdownV2",
+		parse_mode: PARSE_MODE.MARKDOWN_V2,
 	});
 }
 

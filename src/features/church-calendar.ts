@@ -21,6 +21,8 @@ import {
 import { requirePrivileged } from "../utils/guards";
 import { env } from "../config/env";
 import { withLoading } from "../utils/loading";
+import { escapeMdV2 } from "../utils/text";
+import { PARSE_MODE } from "../constants/parse-mode";
 import puppeteer from "puppeteer";
 import os from "os";
 
@@ -90,7 +92,7 @@ export async function renderCalendarRoot(ctx: MyContext) {
 
 	await ctx.reply(`${CALENDAR.title}\n\n${COMMON.useButtonBelow}`, {
 		reply_markup: replyCalendarMenu,
-		parse_mode: "Markdown",
+		parse_mode: PARSE_MODE.MARKDOWN_V2,
 	});
 }
 
@@ -103,10 +105,15 @@ export async function renderCalendarRoot(ctx: MyContext) {
 async function replyInstruction(ctx: MyContext, title: string, body: string) {
 	if (!requirePrivileged(ctx)) return;
 
+	// Экранируем title для MarkdownV2
+	const escapedTitle = escapeMdV2(title);
+	// body уже содержит правильный MarkdownV2 синтаксис (subscribeInstructions), не экранируем его
+	const escapedUrlText = escapeMdV2(env.CALENDAR_SUBSCRIBE_URL);
+
 	await ctx.editMessageText(
-		`*${title}*\n\n${body}\n\n*Ссылка для подписки:*\n\n\`${env.CALENDAR_SUBSCRIBE_URL}\`\n`,
+		`*${escapedTitle}*\n\n${body}\n\n*Ссылка для подписки:*\n\n\`${escapedUrlText}\`\n`,
 		{
-			parse_mode: "Markdown",
+			parse_mode: PARSE_MODE.MARKDOWN_V2,
 			reply_markup: new InlineKeyboard().text("⬅️ Назад", "calendar:instructions"),
 			link_preview_options: { is_disabled: true },
 		}
@@ -135,7 +142,7 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 			return ctx.reply(CALENDAR.noEvents);
 		}
 		await ctx.reply(CALENDAR.nextEventsTitle + "\n\n" + events.map((e) => formatEvent(e, true)).join("\n\n"), {
-			parse_mode: "Markdown",
+			parse_mode: PARSE_MODE.MARKDOWN_V2,
 		});
 	});
 
@@ -146,7 +153,7 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		ctx.session.menuStack.push("lmg");
 		await ctx.reply(`${CALENDAR.lmgTitle}\n\n${COMMON.useButtonBelow}`, {
 			reply_markup: replyCalendarLmgMenu,
-			parse_mode: "Markdown",
+			parse_mode: PARSE_MODE.MARKDOWN_V2,
 		});
 	});
 
@@ -157,7 +164,7 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 			text: "⏳ Ищу ближайшую встречу ЛМГ…",
 		});
 		if (!ev) return ctx.reply(CALENDAR.lmgNone);
-		await ctx.reply(CALENDAR.lmgNext + "\n\n" + formatEvent(ev), { parse_mode: "Markdown" });
+		await ctx.reply(CALENDAR.lmgNext + "\n\n" + formatEvent(ev), { parse_mode: PARSE_MODE.MARKDOWN_V2 });
 	});
 
     bot.hears(MENU_LABELS.LMG_CAL_ALL, async (ctx) => {
@@ -167,7 +174,7 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 			text: "⏳ Получаю расписание ЛМГ…",
 		});
 		if (events.length === 0) return ctx.reply(CALENDAR.lmgNoneAll);
-		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: "Markdown" });
+		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: PARSE_MODE.MARKDOWN_V2 });
 	});
 
 	// === Молитвенные собрания ===
@@ -177,7 +184,7 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		ctx.session.menuStack.push("prayers");
 		await ctx.reply(`${CALENDAR.prayersTitle}\n\n${COMMON.useButtonBelow}`, {
 			reply_markup: replyCalendarPrayerMenu,
-			parse_mode: "Markdown",
+			parse_mode: PARSE_MODE.MARKDOWN_V2,
 		});
 	});
 
@@ -189,7 +196,7 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		});
 		if (!ev) return ctx.reply(CALENDAR.prayersNone);
 		await ctx.reply(CALENDAR.prayersNext + "\n\n" + formatEvent(ev), {
-			parse_mode: "Markdown",
+			parse_mode: PARSE_MODE.MARKDOWN_V2,
 		});
 	});
 
@@ -200,7 +207,7 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 			text: "⏳ Получаю список молитвенных…",
 		});
 		if (events.length === 0) return ctx.reply(CALENDAR.prayersNoneAll);
-		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: "Markdown" });
+		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: PARSE_MODE.MARKDOWN_V2 });
 	});
 
 	// === Членские собрания ===
@@ -210,7 +217,7 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		ctx.session.menuStack.push("members");
 		await ctx.reply(`${CALENDAR.membersTitle}\n\n${COMMON.useButtonBelow}`, {
 			reply_markup: replyCalendarMembersMenu,
-			parse_mode: "Markdown",
+			parse_mode: PARSE_MODE.MARKDOWN_V2,
 		});
 	});
 
@@ -222,7 +229,7 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		});
 		if (!ev) return ctx.reply(CALENDAR.membersNone);
 		await ctx.reply(CALENDAR.membersNext + "\n\n" + formatEvent(ev), {
-			parse_mode: "Markdown",
+			parse_mode: PARSE_MODE.MARKDOWN_V2,
 		});
 	});
 
@@ -233,7 +240,7 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 			text: "⏳ Получаю список членских…",
 		});
 		if (events.length === 0) return ctx.reply(CALENDAR.membersNoneAll);
-		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: "Markdown" });
+		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: PARSE_MODE.MARKDOWN_V2 });
 	});
 
 	// === ЛМГ Выезд ===
@@ -246,13 +253,13 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		});
 
 		if (res.status === "not_found") {
-			return ctx.reply(`В ${year} году даты выезда ЛМГ пока не запланированы.`, { parse_mode: "Markdown" });
+			return ctx.reply(`В ${year} году даты выезда ЛМГ пока не запланированы\\.`, { parse_mode: PARSE_MODE.MARKDOWN_V2 });
 		}
 		if (res.status === "past") {
-			return ctx.reply(formatEvent(res.event, false, true), { parse_mode: "Markdown" });
+			return ctx.reply(formatEvent(res.event, false, true), { parse_mode: PARSE_MODE.MARKDOWN_V2 });
 		}
 		if (res.status === "future") {
-			return ctx.reply(formatEvent(res.event, false, true), { parse_mode: "Markdown" });
+			return ctx.reply(formatEvent(res.event, false, true), { parse_mode: PARSE_MODE.MARKDOWN_V2 });
 		}
 	});
 
@@ -263,7 +270,7 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		ctx.session.menuStack.push("holidays");
 		await ctx.reply(`${CALENDAR.holidaysTitle}\n\n${COMMON.useButtonBelow}`, {
 			reply_markup: replyCalendarHolidaysMenu,
-			parse_mode: "Markdown",
+			parse_mode: PARSE_MODE.MARKDOWN_V2,
 		});
 	});
 
@@ -280,10 +287,10 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 			return ctx.reply(CALENDAR.rvNotPlanned(year));
 		}
 		if (res.status === "past") {
-			return ctx.reply(formatEvent(res.event, false, true), { parse_mode: "Markdown" });
+			return ctx.reply(formatEvent(res.event, false, true), { parse_mode: PARSE_MODE.MARKDOWN_V2 });
 		}
 		if (res.status === "future") {
-			return ctx.reply(formatEvent(res.event, false, true), { parse_mode: "Markdown" });
+			return ctx.reply(formatEvent(res.event, false, true), { parse_mode: PARSE_MODE.MARKDOWN_V2 });
 		}
 	});
 
@@ -293,17 +300,17 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 
 		const year = new Date().getFullYear();
 		const res = await withLoading(ctx, () => fetchHolidayEvent("Пасха"), {
-			text: "🐣 Сверяю даты Пасхи…",
+			text: "🐣 Уточняю даты Пасхи…",
 		});
 
 		if (res.status === "not_found") {
 			return ctx.reply(CALENDAR.easterNotPlanned(year));
 		}
 		if (res.status === "past") {
-			return ctx.reply(formatEvent(res.event, false, true), { parse_mode: "Markdown" });
+			return ctx.reply(formatEvent(res.event, false, true), { parse_mode: PARSE_MODE.MARKDOWN_V2 });
 		}
 		if (res.status === "future") {
-			return ctx.reply(formatEvent(res.event, false, true), { parse_mode: "Markdown" });
+			return ctx.reply(formatEvent(res.event, false, true), { parse_mode: PARSE_MODE.MARKDOWN_V2 });
 		}
 	});
 
@@ -314,7 +321,7 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		ctx.session.menuStack.push("family");
 		await ctx.reply(`${CALENDAR.familyTitle}\n\n${COMMON.useButtonBelow}`, {
 			reply_markup: replyCalendarFamilyMenu,
-			parse_mode: "Markdown",
+			parse_mode: PARSE_MODE.MARKDOWN_V2,
 		});
 	});
 
@@ -325,7 +332,7 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 			text: "⏳ Ищу ближайшую встречу «Отцы и дети»…",
 		});
 		if (!ev) return ctx.reply(CALENDAR.familyNone);
-		await ctx.reply(CALENDAR.familyNext + "\n\n" + formatEvent(ev), { parse_mode: "Markdown" });
+		await ctx.reply(CALENDAR.familyNext + "\n\n" + formatEvent(ev), { parse_mode: PARSE_MODE.MARKDOWN_V2 });
 	});
 
     bot.hears(MENU_LABELS.CAL_FAMILY_ALL, async (ctx) => {
@@ -335,14 +342,14 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 			text: "⏳ Получаю расписание «Отцы и дети»…",
 		});
 		if (events.length === 0) return ctx.reply(CALENDAR.familyNoneAll);
-		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: "Markdown" });
+		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: PARSE_MODE.MARKDOWN_V2 });
 	});
 
     bot.hears(MENU_LABELS.CAL_SUBSCRIBE, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
 		await ctx.reply(CALENDAR.yourCalendarUsing, {
-			parse_mode: "Markdown",
+			parse_mode: PARSE_MODE.MARKDOWN_V2,
 			reply_markup: subscribeKeyboard(),
 		});
 	});
@@ -354,7 +361,7 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		await ctx.answerCallbackQuery().catch(() => {});
 
 		await ctx.reply(CALENDAR.yourCalendarUsing, {
-			parse_mode: "Markdown",
+			parse_mode: PARSE_MODE.MARKDOWN_V2,
 			reply_markup: subscribeKeyboard(),
 		});
 	});
@@ -401,7 +408,7 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 	});
 
 	// --- Обработка inline-кнопок ---
-	// === Сформировать компактный PDF со списком событий (без адресов) ===
+	// === Сформировать компактный PDF со списком событий ===
 	bot.callbackQuery("calendar:view:list", async (ctx) => {
 		await ctx.answerCallbackQuery().catch(() => {});
 
@@ -458,7 +465,7 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 			// Отправляем PDF (используем конструктор InputFile — чтобы имя файла было в кириллице)
 			const input = new InputFile(Buffer.from(pdfBuffer), "Церковный_календарь.pdf");
 			await ctx.replyWithDocument(input, {
-				caption: "🗓 Список ближайших событий (без адресов)",
+				caption: "🗓 Список ближайших событий",
 			});
 		} catch (err) {
 			console.error("[calendar:view:list] error:", err);
@@ -478,7 +485,7 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		await ctx.reply(
 			"📅 [Посмотреть календарь](https://calendar.yandex.ru/embed/month?&layer_ids=30582246&tz_id=Europe/Moscow&layer_names=Церковь%20Святой%20Троицы)",
 			{
-				parse_mode: "Markdown",
+				parse_mode: PARSE_MODE.MARKDOWN_V2,
 				link_preview_options: { is_disabled: true },
 			}
 		);

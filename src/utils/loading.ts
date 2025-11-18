@@ -8,12 +8,13 @@
 
 import type { Message } from "grammy/types";
 import type { MyContext } from "../types/grammy-context";
+import type { ParseMode } from "../constants/parse-mode";
 
 /** Опции показа сообщения об ожидании */
 export interface LoadingOptions {
 	text?: string; // текст сообщения (по умолчанию: "⏳ Загружаю…")
 	delayMs?: number; // задержка перед показом (мс)
-	parseMode?: "Markdown" | "MarkdownV2" | "HTML"; // режим парсинга текста
+	parseMode?: ParseMode; // режим парсинга текста
 }
 
 /**

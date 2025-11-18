@@ -70,9 +70,3 @@ export async function queryDatabase(databaseId: string, body: any = { page_size:
 	return apiFetch(`/databases/${databaseId}/query`, { method: "POST", body });
 }
 
-export const buildin = {
-	apiFetch,
-	queryDatabase,
-};
-
-export default buildin;
