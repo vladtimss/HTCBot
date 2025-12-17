@@ -17,41 +17,81 @@ export interface LoadingOptions {
 	parseMode?: ParseMode; // режим парсинга текста
 }
 
+/** Состояние загрузки */
+interface LoadingState {
+	timer: ReturnType<typeof setTimeout>;
+	loadingMsg: Message.TextMessage | undefined;
+	shown: boolean;
+}
+
 /**
- * Обёртка для асинхронной операции с "ожиданием".
+ * Создаёт таймер для показа сообщения загрузки
  */
-export async function withLoading<T>(ctx: MyContext, task: () => Promise<T>, options: LoadingOptions = {}): Promise<T> {
-	const { text = "⏳ Загружаю…", delayMs = 300, parseMode } = options;
+function createLoadingTimer(
+	ctx: MyContext,
+	text: string,
+	delayMs: number,
+	parseMode?: ParseMode
+): LoadingState {
+	const state: LoadingState = {
+		timer: undefined!,
+		loadingMsg: undefined,
+		shown: false,
+	};
 
-	let timer: ReturnType<typeof setTimeout> | undefined;
-	let loadingMsg: Message.TextMessage | undefined;
-	let shown = false;
-
-	// Запланировать показ сообщения, если операция долгая
-	timer = setTimeout(async () => {
+	state.timer = setTimeout(async () => {
 		try {
-			shown = true;
-			loadingMsg = await ctx.reply(text, {
+			state.shown = true;
+			state.loadingMsg = await ctx.reply(text, {
 				parse_mode: parseMode,
-				link_preview_options: { is_disabled: true }, // отключаем превью
+				link_preview_options: { is_disabled: true },
 			});
 		} catch {
 			// Игнорируем ошибки отправки
 		}
 	}, delayMs);
 
+	return state;
+}
+
+/**
+ * Обрабатывает ошибку загрузки: редактирует сообщение или игнорирует
+ */
+async function handleLoadingError(ctx: MyContext, state: LoadingState): Promise<void> {
+	if (state.timer) clearTimeout(state.timer);
+	if (state.shown && state.loadingMsg) {
+		try {
+			await ctx.api.editMessageText(
+				state.loadingMsg.chat.id,
+				state.loadingMsg.message_id,
+				"⚠️ Не удалось загрузить данные"
+			);
+		} catch {
+			// Игнорируем ошибки редактирования
+		}
+	}
+}
+
+/**
+ * Обёртка для асинхронной операции с "ожиданием".
+ * После завершения удаляет сообщение загрузки.
+ */
+export async function withLoading<T>(ctx: MyContext, task: () => Promise<T>, options: LoadingOptions = {}): Promise<T> {
+	const { text = "⏳ Загружаю…", delayMs = 300, parseMode } = options;
+	const state = createLoadingTimer(ctx, text, delayMs, parseMode);
+
 	try {
 		const result = await task();
 
 		// Операция завершилась → убираем сообщение
-		if (timer) clearTimeout(timer);
-		if (shown && loadingMsg) {
+		if (state.timer) clearTimeout(state.timer);
+		if (state.shown && state.loadingMsg) {
 			try {
-				await ctx.api.deleteMessage(loadingMsg.chat.id, loadingMsg.message_id);
+				await ctx.api.deleteMessage(state.loadingMsg.chat.id, state.loadingMsg.message_id);
 			} catch {
 				// Если удалить нельзя → заменяем текст
 				try {
-					await ctx.api.editMessageText(loadingMsg.chat.id, loadingMsg.message_id, "✅ Готово");
+					await ctx.api.editMessageText(state.loadingMsg.chat.id, state.loadingMsg.message_id, "✅ Готово");
 				} catch {
 					// Игнорируем любые ошибки
 				}
@@ -60,60 +100,29 @@ export async function withLoading<T>(ctx: MyContext, task: () => Promise<T>, opt
 
 		return result;
 	} catch (err) {
-		if (timer) clearTimeout(timer);
-		if (shown && loadingMsg) {
-			try {
-				await ctx.api.editMessageText(
-					loadingMsg.chat.id,
-					loadingMsg.message_id,
-					"⚠️ Не удалось загрузить данные"
-				);
-			} catch {
-				// Игнорируем
-			}
-		}
+		await handleLoadingError(ctx, state);
 		throw err;
 	}
 }
 
-// utils/loading.ts
-
+/**
+ * Обёртка для асинхронной операции с "ожиданием".
+ * После завершения возвращает сообщение загрузки для дальнейшего редактирования.
+ */
 export async function withLoadingAndMsg<T>(
 	ctx: MyContext,
 	task: () => Promise<T>,
 	options: LoadingOptions = {}
 ): Promise<{ result: T; loadingMsg?: Message.TextMessage }> {
 	const { text = "⏳ Загружаю…", delayMs = 300, parseMode } = options;
-
-	let timer: ReturnType<typeof setTimeout> | undefined;
-	let loadingMsg: Message.TextMessage | undefined;
-	let shown = false;
-
-	timer = setTimeout(async () => {
-		try {
-			shown = true;
-			loadingMsg = await ctx.reply(text, {
-				parse_mode: parseMode,
-				link_preview_options: { is_disabled: true },
-			});
-		} catch {}
-	}, delayMs);
+	const state = createLoadingTimer(ctx, text, delayMs, parseMode);
 
 	try {
 		const result = await task();
-		if (timer) clearTimeout(timer);
-		return { result, loadingMsg };
+		if (state.timer) clearTimeout(state.timer);
+		return { result, loadingMsg: state.loadingMsg };
 	} catch (err) {
-		if (timer) clearTimeout(timer);
-		if (shown && loadingMsg) {
-			try {
-				await ctx.api.editMessageText(
-					loadingMsg.chat.id,
-					loadingMsg.message_id,
-					"⚠️ Не удалось загрузить данные"
-				);
-			} catch {}
-		}
+		await handleLoadingError(ctx, state);
 		throw err;
 	}
 }
