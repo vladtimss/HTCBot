@@ -1,7 +1,7 @@
 /**
- * features/navigation/navigation.feature.ts
+ * features/global-back-button-navigation/global-back-button-navigation.feature.ts
  * --------------------------
- * Логика навигации (кнопка "Назад")
+ * Глобальный обработчик кнопки «⬅️ Назад»
  */
 
 import { Bot } from "grammy";
@@ -15,10 +15,10 @@ import { renderCalendarRoot } from "../church-calendar/church-calendar.feature";
 import { renderGroupsRoot } from "../small-groups/small-groups.feature";
 
 /**
- * 📌 Универсальный обработчик кнопки «⬅️ Назад»
- * - Использует menuStack для навигации
+ * 📌 Глобальный обработчик кнопки «⬅️ Назад»
+ * - Использует menuStack для навигации назад
  */
-export function registerNavigation(bot: Bot<MyContext>) {
+export function registerBackButton(bot: Bot<MyContext>) {
 	bot.hears(NAVIGATION_LABELS.NAV_BACK, async (ctx) => {
 		// Если стека нет или в нём только один элемент → кидаем в главное меню
 		if (!ctx.session.menuStack || ctx.session.menuStack.length <= 1) {
