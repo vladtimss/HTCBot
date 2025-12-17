@@ -7,7 +7,7 @@
 export const CALENDAR_BUTTON_LABELS = {
 	CAL_EVENTS: "🗓️ Посмотреть все события",
 	CAL_NEXT3: "🗓️ Три ближайших события",
-	CAL_NEXT: "🗓️ Посмотреть ближайшие события",
+	CAL_NEXT: "🗓️ Узнать ближайшие события",
 	CAL_HOLIDAYS: "🎉 Большие праздники",
 	CAL_HOLIDAYS_EASTER: "✝️ Когда будет Пасха",
 	CAL_HOLIDAYS_RV: "🎄 Даты РВ",
