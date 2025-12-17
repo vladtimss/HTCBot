@@ -19,13 +19,14 @@
 		"typescript": "5.4.3"
 	},
 	"dependencies": {
+		"@grammyjs/parse-mode": "^2.2.0",
 		"@types/dav": "1.7.7",
 		"axios": "1.7.9",
 		"date-fns": "^4.1.0",
 		"date-fns-tz": "^3.2.0",
 		"dotenv": "16.4.5",
 		"envalid": "8.0.0",
-		"grammy": "1.22.4",
+		"grammy": "^1.38.4",
 		"html-escaper": "^3.0.3",
 		"i": "0.3.7",
 		"ical.js": "2.1.0",

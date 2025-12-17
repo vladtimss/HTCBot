@@ -1,25 +1,29 @@
-// src/features/navigation.ts
-import { Bot } from "grammy";
-import { MyContext } from "../types/grammy-context";
-import { MENU_LABELS } from "../constants/button-lables";
-import { PARSE_MODE } from "../constants/parse-mode";
-import { replyMainKeyboard } from "../utils/keyboards";
-import { MAIN } from "../services/texts";
+/**
+ * features/navigation/navigation.feature.ts
+ * --------------------------
+ * Логика навигации (кнопка "Назад")
+ */
 
-import { renderAboutRoot } from "./about-htc";
-import { renderCalendarRoot } from "./church-calendar";
-import { renderGroupsRoot } from "./small-groups";
+import { Bot } from "grammy";
+import { MyContext } from "../../types/grammy-context";
+import { NAVIGATION_LABELS } from "../../constants/navigation";
+import { replyMainKeyboard } from "../main-menu/main-menu.keyboard";
+import { MAIN_TEXTS } from "../main-menu/main-menu.texts";
+
+import { renderAboutRoot } from "../about-htc/about-htc.feature";
+import { renderCalendarRoot } from "../church-calendar/church-calendar.feature";
+import { renderGroupsRoot } from "../small-groups/small-groups.feature";
 
 /**
  * 📌 Универсальный обработчик кнопки «⬅️ Назад»
  * - Использует menuStack для навигации
  */
 export function registerNavigation(bot: Bot<MyContext>) {
-    bot.hears(MENU_LABELS.NAV_BACK, async (ctx) => {
+	bot.hears(NAVIGATION_LABELS.NAV_BACK, async (ctx) => {
 		// Если стека нет или в нём только один элемент → кидаем в главное меню
 		if (!ctx.session.menuStack || ctx.session.menuStack.length <= 1) {
-			await ctx.reply(MAIN.title, {
-				parse_mode: PARSE_MODE.MARKDOWN_V2,
+			await ctx.reply(MAIN_TEXTS.title.text, {
+				entities: MAIN_TEXTS.title.entities,
 				reply_markup: replyMainKeyboard(ctx),
 			});
 			ctx.session.lastSection = "main";
@@ -53,8 +57,8 @@ export function registerNavigation(bot: Bot<MyContext>) {
 
 			default:
 				// если не знаем что это → кидаем в главное меню
-				await ctx.reply(MAIN.title, {
-					parse_mode: PARSE_MODE.MARKDOWN_V2,
+				await ctx.reply(MAIN_TEXTS.title.text, {
+					entities: MAIN_TEXTS.title.entities,
 					reply_markup: replyMainKeyboard(ctx),
 				});
 				ctx.session.lastSection = "main";

@@ -1,14 +1,23 @@
+/**
+ * features/church-calendar/church-calendar.feature.ts
+ * --------------------------
+ * Логика раздела "Церковный календарь"
+ */
+
 import { Bot, InlineKeyboard, InputFile } from "grammy";
-import { MyContext } from "../types/grammy-context";
+import { MyContext } from "../../types/grammy-context";
 import {
 	fetchUpcomingEvents,
 	fetchNextEventByTitle,
 	fetchAllFutureEventsByTitle,
 	fetchHolidayEvent,
 	formatEvent,
-} from "../services/calendar";
-import { MENU_LABELS } from "../constants/button-lables";
-import { CALENDAR, COMMON } from "../services/texts";
+} from "../../services/calendar";
+import { MENU_LABELS } from "../../constants/button-lables"; // Глобальные константы главного меню (MAIN_CALENDAR)
+import { CALENDAR_TEXTS } from "./church-calendar.texts";
+import { CALENDAR_BUTTON_LABELS } from "./church-calendar.constants";
+import { SMALL_GROUPS_BUTTON_LABELS } from "../small-groups/small-groups.constants";
+import { COMMON } from "../../services/texts"; // Глобальный текст, используется во множестве фич
 import {
 	replyCalendarMenu,
 	replyCalendarLmgMenu,
@@ -17,71 +26,15 @@ import {
 	replyCalendarHolidaysMenu,
 	replyCalendarFamilyMenu,
 	subscribeKeyboard,
-} from "../utils/keyboards";
-import { requirePrivileged } from "../utils/guards";
-import { env } from "../config/env";
-import { withLoading } from "../utils/loading";
-import { escapeMdV2 } from "../utils/text";
-import { PARSE_MODE } from "../constants/parse-mode";
+} from "./church-calendar.keyboard";
+import { requirePrivileged } from "../../utils/guards";
+import { env } from "../../config/env";
+import { withLoading } from "../../utils/loading";
+import { buildHtmlForEvents } from "./church-calendar.util";
+import { fmt, bold, code, link, type FormattedString } from "@grammyjs/parse-mode";
+import { replyFormatted } from "../../utils/format-helpers";
 import puppeteer from "puppeteer";
 import os from "os";
-
-// Удаляем markdown-знаки вроде * _ `
-function stripMarkdown(s: string): string {
-	return String(s ?? "")
-		.replace(/[*_`~]/g, "")
-		.trim();
-}
-
-// Экранируем текст для вставки в HTML
-function escapeHtml(s: string): string {
-	return String(s ?? "")
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;")
-		.replace(/"/g, "&quot;")
-		.replace(/'/g, "&#039;");
-}
-
-// Собираем HTML — событие жирным, дата под ним
-function buildHtmlForEvents(title: string, items: { dateLine: string; title: string }[]) {
-	const rows = items
-		.map(
-			(it) => `
-      <li>
-        <div class="ttl">${escapeHtml(stripMarkdown(it.title))}</div>
-        <div class="date">${escapeHtml(stripMarkdown(it.dateLine))}</div>
-      </li>`
-		)
-		.join("\n");
-
-	return `<!doctype html>
-<html lang="ru">
-  <head>
-    <meta charset="utf-8"/>
-    <style>
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        color:#111; padding:30px; max-width:700px; margin:0 auto;
-      }
-      h1 {
-        font-size:20px; margin-bottom:20px; text-align:center;
-        border-bottom:1px solid #ddd; padding-bottom:10px;
-      }
-      ul { list-style:none; padding:0; margin:0; }
-      li { margin:14px 0 20px 0; }
-      .ttl { font-size:14px; font-weight:600; color:#000; margin-bottom:2px; }
-      .date { font-size:12px; color:#666; }
-    </style>
-  </head>
-  <body>
-    <h1>${escapeHtml(title)}</h1>
-    <ul>
-      ${rows}
-    </ul>
-  </body>
-</html>`;
-}
 
 /**
  * 📌 Отрисовка корня раздела «Церковный календарь»
@@ -90,9 +43,12 @@ export async function renderCalendarRoot(ctx: MyContext) {
 	ctx.session.lastSection = "calendar";
 	ctx.session.menuStack = ["calendar"];
 
-	await ctx.reply(`${CALENDAR.title}\n\n${COMMON.useButtonBelow}`, {
+	const text = fmt`${CALENDAR_TEXTS.title}
+
+${COMMON.useButtonBelow}`;
+
+	await replyFormatted(ctx, text, {
 		reply_markup: replyCalendarMenu,
-		parse_mode: PARSE_MODE.MARKDOWN_V2,
 	});
 }
 
@@ -102,36 +58,38 @@ export async function renderCalendarRoot(ctx: MyContext) {
  * @param title
  * @param body
  */
-async function replyInstruction(ctx: MyContext, title: string, body: string) {
+async function replyInstruction(ctx: MyContext, title: string, body: FormattedString) {
 	if (!requirePrivileged(ctx)) return;
 
-	// Экранируем title для MarkdownV2
-	const escapedTitle = escapeMdV2(title);
-	// body уже содержит правильный MarkdownV2 синтаксис (subscribeInstructions), не экранируем его
-	const escapedUrlText = escapeMdV2(env.CALENDAR_SUBSCRIBE_URL);
+	const text = fmt`${bold()}${title}${bold()}
 
-	await ctx.editMessageText(
-		`*${escapedTitle}*\n\n${body}\n\n*Ссылка для подписки:*\n\n\`${escapedUrlText}\`\n`,
-		{
-			parse_mode: PARSE_MODE.MARKDOWN_V2,
-			reply_markup: new InlineKeyboard().text("⬅️ Назад", "calendar:instructions"),
-			link_preview_options: { is_disabled: true },
-		}
-	);
+${body}
+
+${bold()}Ссылка для подписки:${bold()}
+
+${code()}${env.CALENDAR_SUBSCRIBE_URL}${code()}
+`;
+
+	await ctx.editMessageText(text.text, {
+		entities: text.entities,
+		reply_markup: new InlineKeyboard().text("⬅️ Назад", "calendar:instructions"),
+		link_preview_options: { is_disabled: true },
+	});
 }
+
 /**
  * 📌 Регистрируем все обработчики для календаря
  */
 export function registerChurchCalendar(bot: Bot<MyContext>) {
 	// --- Корень календаря ---
-    bot.hears(MENU_LABELS.MAIN_CALENDAR, async (ctx) => {
+	bot.hears(MENU_LABELS.MAIN_CALENDAR, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
 		await renderCalendarRoot(ctx);
 	});
 
 	// --- Ближайшие события ---
-    bot.hears(MENU_LABELS.CAL_NEXT, async (ctx) => {
+	bot.hears(CALENDAR_BUTTON_LABELS.CAL_NEXT, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
 		const events = await withLoading(ctx, () => fetchUpcomingEvents(5), {
@@ -139,112 +97,137 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		});
 
 		if (events.length === 0) {
-			return ctx.reply(CALENDAR.noEvents);
+			return replyFormatted(ctx, CALENDAR_TEXTS.noEvents);
 		}
-		await ctx.reply(CALENDAR.nextEventsTitle + "\n\n" + events.map((e) => formatEvent(e, true)).join("\n\n"), {
-			parse_mode: PARSE_MODE.MARKDOWN_V2,
+		const eventsText = events.map((e) => formatEvent(e, true)).join("\n\n");
+		const text = fmt`${CALENDAR_TEXTS.nextEventsTitle}
+
+${eventsText}`;
+		await ctx.reply(text.text, {
+			entities: text.entities,
+			parse_mode: "MarkdownV2",
 		});
 	});
 
 	// === ЛМГ ===
-    bot.hears(MENU_LABELS.CAL_LMG, async (ctx) => {
+	bot.hears(CALENDAR_BUTTON_LABELS.CAL_LMG, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
 		ctx.session.menuStack.push("lmg");
-		await ctx.reply(`${CALENDAR.lmgTitle}\n\n${COMMON.useButtonBelow}`, {
+		const text = fmt`${CALENDAR_TEXTS.lmgTitle}
+
+${COMMON.useButtonBelow}`;
+		await replyFormatted(ctx, text, {
 			reply_markup: replyCalendarLmgMenu,
-			parse_mode: PARSE_MODE.MARKDOWN_V2,
 		});
 	});
 
-    bot.hears(MENU_LABELS.LMG_CAL_NEXT, async (ctx) => {
+	bot.hears(SMALL_GROUPS_BUTTON_LABELS.LMG_CAL_NEXT, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
 		const ev = await withLoading(ctx, () => fetchNextEventByTitle("лмг"), {
 			text: "⏳ Ищу ближайшую встречу ЛМГ…",
 		});
-		if (!ev) return ctx.reply(CALENDAR.lmgNone);
-		await ctx.reply(CALENDAR.lmgNext + "\n\n" + formatEvent(ev), { parse_mode: PARSE_MODE.MARKDOWN_V2 });
+		if (!ev) return replyFormatted(ctx, CALENDAR_TEXTS.lmgNone);
+		const text = fmt`${CALENDAR_TEXTS.lmgNext}
+
+${formatEvent(ev)}`;
+		await ctx.reply(text.text, {
+			entities: text.entities,
+			parse_mode: "MarkdownV2",
+		});
 	});
 
-    bot.hears(MENU_LABELS.LMG_CAL_ALL, async (ctx) => {
+	bot.hears(SMALL_GROUPS_BUTTON_LABELS.LMG_CAL_ALL, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
 		const events = await withLoading(ctx, () => fetchAllFutureEventsByTitle("лмг"), {
 			text: "⏳ Получаю расписание ЛМГ…",
 		});
-		if (events.length === 0) return ctx.reply(CALENDAR.lmgNoneAll);
-		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: PARSE_MODE.MARKDOWN_V2 });
+		if (events.length === 0) return replyFormatted(ctx, CALENDAR_TEXTS.lmgNoneAll);
+		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: "MarkdownV2" });
 	});
 
 	// === Молитвенные собрания ===
-    bot.hears(MENU_LABELS.CAL_PRAYER, async (ctx) => {
+	bot.hears(CALENDAR_BUTTON_LABELS.CAL_PRAYER, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
 		ctx.session.menuStack.push("prayers");
-		await ctx.reply(`${CALENDAR.prayersTitle}\n\n${COMMON.useButtonBelow}`, {
+		const text = fmt`${CALENDAR_TEXTS.prayersTitle}
+
+${COMMON.useButtonBelow}`;
+		await replyFormatted(ctx, text, {
 			reply_markup: replyCalendarPrayerMenu,
-			parse_mode: PARSE_MODE.MARKDOWN_V2,
 		});
 	});
 
-    bot.hears(MENU_LABELS.CAL_PRAYER_NEXT, async (ctx) => {
+	bot.hears(CALENDAR_BUTTON_LABELS.CAL_PRAYER_NEXT, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
 		const ev = await withLoading(ctx, () => fetchNextEventByTitle("молитвенное собрание"), {
 			text: "⏳ Ищу ближайшее молитвенное…",
 		});
-		if (!ev) return ctx.reply(CALENDAR.prayersNone);
-		await ctx.reply(CALENDAR.prayersNext + "\n\n" + formatEvent(ev), {
-			parse_mode: PARSE_MODE.MARKDOWN_V2,
+		if (!ev) return replyFormatted(ctx, CALENDAR_TEXTS.prayersNone);
+		const text = fmt`${CALENDAR_TEXTS.prayersNext}
+
+${formatEvent(ev)}`;
+		await ctx.reply(text.text, {
+			entities: text.entities,
+			parse_mode: "MarkdownV2",
 		});
 	});
 
-    bot.hears(MENU_LABELS.CAL_PRAYER_ALL, async (ctx) => {
+	bot.hears(CALENDAR_BUTTON_LABELS.CAL_PRAYER_ALL, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
 		const events = await withLoading(ctx, () => fetchAllFutureEventsByTitle("молитвенное собрание"), {
 			text: "⏳ Получаю список молитвенных…",
 		});
-		if (events.length === 0) return ctx.reply(CALENDAR.prayersNoneAll);
-		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: PARSE_MODE.MARKDOWN_V2 });
+		if (events.length === 0) return replyFormatted(ctx, CALENDAR_TEXTS.prayersNoneAll);
+		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: "MarkdownV2" });
 	});
 
 	// === Членские собрания ===
-    bot.hears(MENU_LABELS.CAL_MEMBERS, async (ctx) => {
+	bot.hears(CALENDAR_BUTTON_LABELS.CAL_MEMBERS, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
 		ctx.session.menuStack.push("members");
-		await ctx.reply(`${CALENDAR.membersTitle}\n\n${COMMON.useButtonBelow}`, {
+		const text = fmt`${CALENDAR_TEXTS.membersTitle}
+
+${COMMON.useButtonBelow}`;
+		await replyFormatted(ctx, text, {
 			reply_markup: replyCalendarMembersMenu,
-			parse_mode: PARSE_MODE.MARKDOWN_V2,
 		});
 	});
 
-    bot.hears(MENU_LABELS.CAL_MEMBERS_NEXT, async (ctx) => {
+	bot.hears(CALENDAR_BUTTON_LABELS.CAL_MEMBERS_NEXT, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
 		const ev = await withLoading(ctx, () => fetchNextEventByTitle("членское собрание"), {
 			text: "⏳ Ищу ближайшее членское…",
 		});
-		if (!ev) return ctx.reply(CALENDAR.membersNone);
-		await ctx.reply(CALENDAR.membersNext + "\n\n" + formatEvent(ev), {
-			parse_mode: PARSE_MODE.MARKDOWN_V2,
+		if (!ev) return replyFormatted(ctx, CALENDAR_TEXTS.membersNone);
+		const text = fmt`${CALENDAR_TEXTS.membersNext}
+
+${formatEvent(ev)}`;
+		await ctx.reply(text.text, {
+			entities: text.entities,
+			parse_mode: "MarkdownV2",
 		});
 	});
 
-    bot.hears(MENU_LABELS.CAL_MEMBERS_ALL, async (ctx) => {
+	bot.hears(CALENDAR_BUTTON_LABELS.CAL_MEMBERS_ALL, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
 		const events = await withLoading(ctx, () => fetchAllFutureEventsByTitle("членское собрание"), {
 			text: "⏳ Получаю список членских…",
 		});
-		if (events.length === 0) return ctx.reply(CALENDAR.membersNoneAll);
-		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: PARSE_MODE.MARKDOWN_V2 });
+		if (events.length === 0) return replyFormatted(ctx, CALENDAR_TEXTS.membersNoneAll);
+		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: "MarkdownV2" });
 	});
 
 	// === ЛМГ Выезд ===
-    bot.hears(MENU_LABELS.LMG_CAL_TRIP, async (ctx) => {
+	bot.hears(SMALL_GROUPS_BUTTON_LABELS.LMG_CAL_TRIP, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
 		const year = new Date().getFullYear();
@@ -253,29 +236,30 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		});
 
 		if (res.status === "not_found") {
-			return ctx.reply(`В ${year} году даты выезда ЛМГ пока не запланированы\\.`, { parse_mode: PARSE_MODE.MARKDOWN_V2 });
+			return ctx.reply(fmt`В ${year} году даты выезда ЛМГ пока не запланированы.`.text, {
+				entities: fmt`В ${year} году даты выезда ЛМГ пока не запланированы.`.entities,
+			});
 		}
-		if (res.status === "past") {
-			return ctx.reply(formatEvent(res.event, false, true), { parse_mode: PARSE_MODE.MARKDOWN_V2 });
-		}
-		if (res.status === "future") {
-			return ctx.reply(formatEvent(res.event, false, true), { parse_mode: PARSE_MODE.MARKDOWN_V2 });
+		if (res.status === "past" || res.status === "future") {
+			return ctx.reply(formatEvent(res.event, false, true), { parse_mode: "MarkdownV2" });
 		}
 	});
 
 	// === Большие праздники ===
-    bot.hears(MENU_LABELS.CAL_HOLIDAYS, async (ctx) => {
+	bot.hears(CALENDAR_BUTTON_LABELS.CAL_HOLIDAYS, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
 		ctx.session.menuStack.push("holidays");
-		await ctx.reply(`${CALENDAR.holidaysTitle}\n\n${COMMON.useButtonBelow}`, {
+		const text = fmt`${CALENDAR_TEXTS.holidaysTitle}
+
+${COMMON.useButtonBelow}`;
+		await replyFormatted(ctx, text, {
 			reply_markup: replyCalendarHolidaysMenu,
-			parse_mode: PARSE_MODE.MARKDOWN_V2,
 		});
 	});
 
 	// 🎄 Рождественский выезд
-    bot.hears(MENU_LABELS.CAL_HOLIDAYS_RV, async (ctx) => {
+	bot.hears(CALENDAR_BUTTON_LABELS.CAL_HOLIDAYS_RV, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
 		const year = new Date().getFullYear();
@@ -284,18 +268,15 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		});
 
 		if (res.status === "not_found") {
-			return ctx.reply(CALENDAR.rvNotPlanned(year));
+			return replyFormatted(ctx, CALENDAR_TEXTS.rvNotPlanned(year));
 		}
-		if (res.status === "past") {
-			return ctx.reply(formatEvent(res.event, false, true), { parse_mode: PARSE_MODE.MARKDOWN_V2 });
-		}
-		if (res.status === "future") {
-			return ctx.reply(formatEvent(res.event, false, true), { parse_mode: PARSE_MODE.MARKDOWN_V2 });
+		if (res.status === "past" || res.status === "future") {
+			return ctx.reply(formatEvent(res.event, false, true), { parse_mode: "MarkdownV2" });
 		}
 	});
 
 	// 🐣 Пасха
-    bot.hears(MENU_LABELS.CAL_HOLIDAYS_EASTER, async (ctx) => {
+	bot.hears(CALENDAR_BUTTON_LABELS.CAL_HOLIDAYS_EASTER, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
 		const year = new Date().getFullYear();
@@ -304,64 +285,67 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		});
 
 		if (res.status === "not_found") {
-			return ctx.reply(CALENDAR.easterNotPlanned(year));
+			return replyFormatted(ctx, CALENDAR_TEXTS.easterNotPlanned(year));
 		}
-		if (res.status === "past") {
-			return ctx.reply(formatEvent(res.event, false, true), { parse_mode: PARSE_MODE.MARKDOWN_V2 });
-		}
-		if (res.status === "future") {
-			return ctx.reply(formatEvent(res.event, false, true), { parse_mode: PARSE_MODE.MARKDOWN_V2 });
+		if (res.status === "past" || res.status === "future") {
+			return ctx.reply(formatEvent(res.event, false, true), { parse_mode: "MarkdownV2" });
 		}
 	});
 
 	// === Отцы и дети / Сёстры ===
-    bot.hears(MENU_LABELS.CAL_FAMILY, async (ctx) => {
+	bot.hears(CALENDAR_BUTTON_LABELS.CAL_FAMILY, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
 		ctx.session.menuStack.push("family");
-		await ctx.reply(`${CALENDAR.familyTitle}\n\n${COMMON.useButtonBelow}`, {
+		const text = fmt`${CALENDAR_TEXTS.familyTitle}
+
+${COMMON.useButtonBelow}`;
+		await replyFormatted(ctx, text, {
 			reply_markup: replyCalendarFamilyMenu,
-			parse_mode: PARSE_MODE.MARKDOWN_V2,
 		});
 	});
 
-    bot.hears(MENU_LABELS.CAL_FAMILY_NEXT, async (ctx) => {
+	bot.hears(CALENDAR_BUTTON_LABELS.CAL_FAMILY_NEXT, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
 		const ev = await withLoading(ctx, () => fetchNextEventByTitle("отцы и дети"), {
 			text: "⏳ Ищу ближайшую встречу «Отцы и дети»…",
 		});
-		if (!ev) return ctx.reply(CALENDAR.familyNone);
-		await ctx.reply(CALENDAR.familyNext + "\n\n" + formatEvent(ev), { parse_mode: PARSE_MODE.MARKDOWN_V2 });
+		if (!ev) return replyFormatted(ctx, CALENDAR_TEXTS.familyNone);
+		const text = fmt`${CALENDAR_TEXTS.familyNext}
+
+${formatEvent(ev)}`;
+		await ctx.reply(text.text, {
+			entities: text.entities,
+			parse_mode: "MarkdownV2",
+		});
 	});
 
-    bot.hears(MENU_LABELS.CAL_FAMILY_ALL, async (ctx) => {
+	bot.hears(CALENDAR_BUTTON_LABELS.CAL_FAMILY_ALL, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
 		const events = await withLoading(ctx, () => fetchAllFutureEventsByTitle("отцы и дети"), {
 			text: "⏳ Получаю расписание «Отцы и дети»…",
 		});
-		if (events.length === 0) return ctx.reply(CALENDAR.familyNoneAll);
-		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: PARSE_MODE.MARKDOWN_V2 });
+		if (events.length === 0) return replyFormatted(ctx, CALENDAR_TEXTS.familyNoneAll);
+		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: "MarkdownV2" });
 	});
 
-    bot.hears(MENU_LABELS.CAL_SUBSCRIBE, async (ctx) => {
+	bot.hears(CALENDAR_BUTTON_LABELS.CAL_SUBSCRIBE, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
-		await ctx.reply(CALENDAR.yourCalendarUsing, {
-			parse_mode: PARSE_MODE.MARKDOWN_V2,
+		await replyFormatted(ctx, CALENDAR_TEXTS.yourCalendarUsing, {
 			reply_markup: subscribeKeyboard(),
 		});
 	});
 
-	// Список инстуркций
+	// Список инструкций
 	bot.callbackQuery("calendar:instructions", async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
 		await ctx.answerCallbackQuery().catch(() => {});
 
-		await ctx.reply(CALENDAR.yourCalendarUsing, {
-			parse_mode: PARSE_MODE.MARKDOWN_V2,
+		await replyFormatted(ctx, CALENDAR_TEXTS.yourCalendarUsing, {
 			reply_markup: subscribeKeyboard(),
 		});
 	});
@@ -370,31 +354,31 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 
 	bot.callbackQuery("calendar:sub:apple", async (ctx) => {
 		await ctx.answerCallbackQuery().catch(() => {});
-		await replyInstruction(ctx, "Подписка — Apple", CALENDAR.subscribeInstructions.apple);
+		await replyInstruction(ctx, "Подписка — Apple", CALENDAR_TEXTS.subscribeInstructions.apple);
 	});
 
 	bot.callbackQuery("calendar:sub:google", async (ctx) => {
 		await ctx.answerCallbackQuery().catch(() => {});
-		await replyInstruction(ctx, "Подписка — Google", CALENDAR.subscribeInstructions.google);
+		await replyInstruction(ctx, "Подписка — Google", CALENDAR_TEXTS.subscribeInstructions.google);
 	});
 
 	bot.callbackQuery("calendar:sub:yandex", async (ctx) => {
 		await ctx.answerCallbackQuery().catch(() => {});
-		await replyInstruction(ctx, "Подписка — Яндекс", CALENDAR.subscribeInstructions.yandex);
+		await replyInstruction(ctx, "Подписка — Яндекс", CALENDAR_TEXTS.subscribeInstructions.yandex);
 	});
 
 	bot.callbackQuery("calendar:sub:xiomi", async (ctx) => {
 		await ctx.answerCallbackQuery().catch(() => {});
-		await replyInstruction(ctx, "Подписка — Xiaomi / MIUI", CALENDAR.subscribeInstructions.xiaomi);
+		await replyInstruction(ctx, "Подписка — Xiaomi / MIUI", CALENDAR_TEXTS.subscribeInstructions.xiaomi);
 	});
 
 	bot.callbackQuery("calendar:sub:other", async (ctx) => {
 		await ctx.answerCallbackQuery().catch(() => {});
-		await replyInstruction(ctx, "Подписка — Другие приложения", CALENDAR.subscribeInstructions.other);
+		await replyInstruction(ctx, "Подписка — Другие приложения", CALENDAR_TEXTS.subscribeInstructions.other);
 	});
 
 	// === Посмотреть все события ===
-    bot.hears(MENU_LABELS.CAL_EVENTS, async (ctx) => {
+	bot.hears(CALENDAR_BUTTON_LABELS.CAL_EVENTS, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
 		const keyboard = new InlineKeyboard()
@@ -482,12 +466,9 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 
 	bot.callbackQuery("calendar:view:calendar", async (ctx) => {
 		await ctx.answerCallbackQuery().catch(() => {});
-		await ctx.reply(
-			"📅 [Посмотреть календарь](https://calendar.yandex.ru/embed/month?&layer_ids=30582246&tz_id=Europe/Moscow&layer_names=Церковь%20Святой%20Троицы)",
-			{
-				parse_mode: PARSE_MODE.MARKDOWN_V2,
-				link_preview_options: { is_disabled: true },
-			}
-		);
+		const calendarLink = fmt`📅 ${link("https://calendar.yandex.ru/embed/month?&layer_ids=30582246&tz_id=Europe/Moscow&layer_names=Церковь%20Святой%20Троицы")}Посмотреть календарь${link("https://calendar.yandex.ru/embed/month?&layer_ids=30582246&tz_id=Europe/Moscow&layer_names=Церковь%20Святой%20Троицы")}`;
+		await replyFormatted(ctx, calendarLink, {
+			link_preview_options: { is_disabled: true },
+		});
 	});
 }

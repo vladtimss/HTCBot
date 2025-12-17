@@ -15,15 +15,17 @@ import { logger } from "./utils/logger";
 import { withErrorBoundary } from "./middlewares/error";
 import { authMiddleware, sessionMiddleware } from "./middlewares/auth";
 
-import { registerStart } from "./features/start";
-import { registerMainMenu, renderMain } from "./features/main-menu";
-import { registerSunday } from "./features/sunday-service";
-import { registerSmallGroups } from "./features/small-groups";
+import { registerStart } from "./features/start/start.feature";
+import { registerMainMenu, renderMain } from "./features/main-menu/main-menu.feature";
+import { registerSunday } from "./features/sunday-service/sunday-service.feature";
+import { registerSmallGroups } from "./features/small-groups/small-groups.feature";
 import { MENU_LABELS } from "./constants/button-lables";
-import { registerChurchCalendar } from "./features/church-calendar";
-import { registerNavigation } from "./features/navigation";
-import { registerSermons } from "./features/sermons";
-import { registerAboutHTC } from "./features/about-htc";
+import { NAVIGATION_LABELS } from "./constants/navigation";
+import { ABOUT_BUTTON_LABELS } from "./features/about-htc/about-htc.constants";
+import { registerChurchCalendar } from "./features/church-calendar/church-calendar.feature";
+import { registerNavigation } from "./features/navigation/navigation.feature";
+import { registerSermons } from "./features/sermons/sermons.feature";
+import { registerAboutHTC } from "./features/about-htc/about-htc.feature";
 import { registerLmgNotesFeature } from "./features/lmg-notes/lmg-notes.feature";
 
 /** Создание инстанса бота */
@@ -80,16 +82,16 @@ bot.on("message", async (ctx) => {
 	if (ctx.chat.type !== "private") return;
 
 	// Известные кнопки главного меню
-	const known = new Set([
+	const known = new Set<string>([
 		MENU_LABELS.MAIN_SUNDAY,
 		MENU_LABELS.MAIN_GROUPS,
-		MENU_LABELS.CAL_NEXT3,
+		MENU_LABELS.CAL_NEXT3, // TODO: Перенести в константы календаря
 		MENU_LABELS.MAIN_ABOUT,
-		MENU_LABELS.NAV_MAIN,
-		MENU_LABELS.NAV_BACK,
-		MENU_LABELS.ABOUT_CHANNEL,
-		MENU_LABELS.ABOUT_BELIEF,
-		MENU_LABELS.ABOUT_HISTORY,
+		NAVIGATION_LABELS.NAV_MAIN,
+		NAVIGATION_LABELS.NAV_BACK,
+		ABOUT_BUTTON_LABELS.ABOUT_CHANNEL,
+		ABOUT_BUTTON_LABELS.ABOUT_BELIEF,
+		ABOUT_BUTTON_LABELS.ABOUT_HISTORY,
 	]);
 
 	// Если пришёл неизвестный текст — возвращаем пользователя в главное меню

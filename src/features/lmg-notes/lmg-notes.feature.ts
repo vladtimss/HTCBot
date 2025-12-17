@@ -1,30 +1,19 @@
-// src/features/lmg-notes/lmg-notes.feature.ts
-import { Bot, InputFile } from "grammy";
+/**
+ * features/lmg-notes/lmg-notes.feature.ts
+ * --------------------------
+ * Логика раздела "Конспекты ЛМГ"
+ */
+
+import { Bot } from "grammy";
 import { MyContext } from "../../types/grammy-context";
-import { MENU_LABELS } from "../../constants/button-lables";
-import { SMALL_GROUPS_TEXTS } from "../../services/texts";
-import { replyLmgNotesMenu } from "../../utils/keyboards";
+import { SMALL_GROUPS_BUTTON_LABELS } from "../small-groups/small-groups.constants";
+import { SMALL_GROUPS_TEXTS } from "../small-groups/small-groups.texts";
+import { replyLmgNotesMenu } from "./lmg-notes.keyboard";
 import { withLoadingAndMsg } from "../../utils/loading";
 import { queryDatabase } from "../../services/buildin";
 import { BuildinFile, Meeting } from "../../types/buildin";
 import { requirePrivileged } from "../../utils/guards";
-import { PARSE_MODE } from "../../constants/parse-mode";
-
-function normalizeDate(dateStr: string): string {
-	if (!dateStr) return dateStr;
-	// убираем время
-	let clean = dateStr.split("T")[0];
-	// бывают "2024/03-11" → заменяем второй разделитель на "/"
-	clean = clean.replace(/(\d{4})[/-](\d{2})[-/](\d{2})/, "$1-$2-$3");
-	return clean;
-}
-
-async function fetchFileAsInput(url: string, fileName: string): Promise<InputFile> {
-	const res = await fetch(url);
-	if (!res.ok) throw new Error(`Не удалось скачать файл: ${res.status}`);
-	const buffer = Buffer.from(await res.arrayBuffer());
-	return new InputFile(buffer, fileName);
-}
+import { normalizeDate, fetchFileAsInput } from "./lmg-notes.util";
 
 /**
  * ID базы с конспектами ЛМГ
@@ -33,20 +22,20 @@ const LMG_NOTES_DATABASE_ID = "d8ddec27-c395-4c7c-a229-850d579ef7b3";
 
 export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 	// Открыть раздел "Конспекты ЛМГ"
-    bot.hears(MENU_LABELS.LMG_NOTES, async (ctx) => {
+	bot.hears(SMALL_GROUPS_BUTTON_LABELS.LMG_NOTES, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
 		ctx.session.menuStack.push("lmg-notes");
 		ctx.session.lastSection = "lmg-notes";
 
-		await ctx.reply(SMALL_GROUPS_TEXTS.lmgNotesIntro, {
-			parse_mode: PARSE_MODE.MARKDOWN_V2,
+		await ctx.reply(SMALL_GROUPS_TEXTS.lmgNotesIntro.text, {
+			entities: SMALL_GROUPS_TEXTS.lmgNotesIntro.entities,
 			reply_markup: replyLmgNotesMenu(),
 		});
 	});
 
 	// 2) Конспект с прошлой встречи — получить PDF из поля "Конспект"
-    bot.hears(MENU_LABELS.LMG_NOTES_PREV, async (ctx) => {
+	bot.hears(SMALL_GROUPS_BUTTON_LABELS.LMG_NOTES_PREV, async (ctx) => {
 		if (!requirePrivileged(ctx)) return;
 
 		try {
