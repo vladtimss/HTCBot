@@ -12,9 +12,8 @@ import { fmt, bold, link } from "@grammyjs/parse-mode";
 
 function sermonsTextsPodcasts(yandexUrl: string, podsterUrl: string) {
 	return fmt`🎧 ${bold()}Наши проповеди доступны в подкастах:${bold()}
-
-\\- ${link(yandexUrl)}Яндекс.Музыка${link(yandexUrl)}
-\\- ${link(podsterUrl)}Podster.fm${link(podsterUrl)}`;
+- ${link(yandexUrl)}Яндекс.Музыка${link(yandexUrl)}
+- ${link(podsterUrl)}Podster.fm${link(podsterUrl)}`;
 }
 
 // ============================================================================
