@@ -7,18 +7,34 @@
 import { fmt, bold } from "@grammyjs/parse-mode";
 import { COMMON } from "../../services/texts";
 
-export const SMALL_GROUPS_TEXTS = {
-	title: "Раздел: Малые группы",
-	descriptionForMembers: fmt`Здесь вы можете:
+// ============================================================================
+// Block тексты (большие многострочные)
+// ============================================================================
+
+const smallGroupsTextsDescriptionForMembers = fmt`Здесь вы можете:
 
 • 📅 Посмотреть группы по дням недели
 • 📍 Найти группу рядом с вами (по району)
 • ⏱️ Узнать ближайшую встречу ЛМГ
-• 🗓️ Посмотреть все будущие встречи ЛМГ`,
-	descriptionForOther: fmt`Здесь вы можете:
+• 🗓️ Посмотреть все будущие встречи ЛМГ`;
+
+const smallGroupsTextsDescriptionForOther = fmt`Здесь вы можете:
 
 • 📅 Посмотреть группы по дням недели
-• 📍 Найти группу рядом с вами (по району)`,
+• 📍 Найти группу рядом с вами (по району)`;
+
+const smallGroupsTextsLmgNotesIntro = fmt`Здесь вы можете найти полезные материалы для лидеров малых групп, а также найти конспекты для проведения МГ.
+
+${COMMON.useButtonBelow}`;
+
+// ============================================================================
+// Основной объект (inline тексты)
+// ============================================================================
+
+export const SMALL_GROUPS_TEXTS = {
+	title: "Раздел: Малые группы",
+	descriptionForMembers: smallGroupsTextsDescriptionForMembers,
+	descriptionForOther: smallGroupsTextsDescriptionForOther,
 
 	// Промпты
 	chooseDay: fmt`Выберите день:`,
@@ -30,7 +46,5 @@ export const SMALL_GROUPS_TEXTS = {
 
 	// Списки
 	lmgSeasonList: fmt`📖 ${bold()}Список встреч ЛМГ до конца сезона:${bold()}`,
-	lmgNotesIntro: fmt`Здесь вы можете найти полезные материалы для лидеров малых групп, а также найти конспекты для проведения МГ.
-
-${COMMON.useButtonBelow}`,
+	lmgNotesIntro: smallGroupsTextsLmgNotesIntro,
 };
