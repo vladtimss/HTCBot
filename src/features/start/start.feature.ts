@@ -1,9 +1,16 @@
-import { Bot, InlineKeyboard, InputFile } from "grammy";
-import { MyContext } from "../types/grammy-context";
-import { COMMON, greet } from "../services/texts";
-import { env } from "../config/env";
-import { replyMainKeyboard } from "../utils/keyboards";
-import { MENU_LABELS } from "../constants/button-lables";
+/**
+ * features/start/start.feature.ts
+ * --------------------------
+ * Логика команды /start
+ */
+
+import { Bot, InlineKeyboard } from "grammy";
+import { MyContext }           from "../../types/grammy-context";
+import { COMMON }              from "../../services/texts";
+import { greet }               from "./start.texts";
+import { env }                 from "../../config/env";
+import { replyMainKeyboard }   from "../main-menu/main-menu.keyboard";
+import { NAVIGATION_LABELS }   from "../../constants/navigation";
 
 /**
  * Регистрирует обработчик команды /start.
@@ -16,17 +23,18 @@ export function registerStart(bot: Bot<MyContext>) {
 		ctx.session.lastSection = "main";
 
 		// Кнопка «🏠 Главное меню»
-		const kb = new InlineKeyboard().text(MENU_LABELS.START, "nav:main");
+		const kb = new InlineKeyboard().text(NAVIGATION_LABELS.GLOBAL_START, "nav:main");
 
+		const greeting = greet(ctx);
 		try {
 			await ctx.replyWithPhoto(env.START_IMAGE, {
-				caption: greet(ctx),
-				parse_mode: "Markdown",
+				caption: greeting.text,
+				caption_entities: greeting.entities,
 				reply_markup: kb,
 			});
 		} catch (e) {
-			await ctx.reply(greet(ctx), {
-				parse_mode: "Markdown",
+			await ctx.reply(greeting.text, {
+				entities: greeting.entities,
 				reply_markup: kb,
 			});
 		}

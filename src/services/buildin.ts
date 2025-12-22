@@ -65,32 +65,8 @@ async function apiFetch(path: string, init: RequestInit = {}): Promise<any> {
 	return data;
 }
 
-/** GET /databases/{databaseId} — возвращает полную структуру базы (properties, title и т.д.) */
-export async function getDatabase(databaseId: string): Promise<any> {
-	return apiFetch(`/databases/${databaseId}`, { method: "GET" });
-}
-
-/** POST /databases/{databaseId}/query — запрос записей (если понадобится) */
+/** POST /databases/{databaseId}/query — запрос записей */
 export async function queryDatabase(databaseId: string, body: any = { page_size: 50 }): Promise<any> {
 	return apiFetch(`/databases/${databaseId}/query`, { method: "POST", body });
 }
 
-/** GET /blocks/{id} — если потребуется работать с блоками/pages */
-export async function getBlock(blockId: string): Promise<any> {
-	return apiFetch(`/blocks/${blockId}`, { method: "GET" });
-}
-
-/** GET /blocks/{id}/children */
-export async function getBlockChildren(blockId: string): Promise<any> {
-	return apiFetch(`/blocks/${blockId}/children`, { method: "GET" });
-}
-
-export const buildin = {
-	apiFetch,
-	getDatabase,
-	queryDatabase,
-	getBlock,
-	getBlockChildren,
-};
-
-export default buildin;

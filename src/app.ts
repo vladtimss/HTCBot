@@ -15,15 +15,18 @@ import { logger } from "./utils/logger";
 import { withErrorBoundary } from "./middlewares/error";
 import { authMiddleware, sessionMiddleware } from "./middlewares/auth";
 
-import { registerStart } from "./features/start";
-import { registerMainMenu, renderMain } from "./features/main-menu";
-import { registerSunday } from "./features/sunday-service";
-import { registerSmallGroups } from "./features/small-groups";
+import { registerStart } from "./features/start/start.feature";
+import { registerMainMenu, renderMain } from "./features/main-menu/main-menu.feature";
+import { registerSunday } from "./features/sunday-service/sunday-service.feature";
+import { registerSmallGroups } from "./features/small-groups/small-groups.feature";
 import { MENU_LABELS } from "./constants/button-lables";
-import { registerChurchCalendar } from "./features/church-calendar";
-import { registerNavigation } from "./features/navigation";
-import { registerSermons } from "./features/sermons";
-import { registerAboutHTC } from "./features/about-htc";
+import { NAVIGATION_LABELS } from "./constants/navigation";
+import { ABOUT_BUTTON_LABELS } from "./features/about-htc/about-htc.constants";
+import { CALENDAR_BUTTON_LABELS } from "./features/church-calendar/church-calendar.constants";
+import { registerChurchCalendar } from "./features/church-calendar/church-calendar.feature";
+import { registerBackButton } from "./features/global-back-button-navigation/global-back-button-navigation.feature";
+import { registerSermons } from "./features/sermons/sermons.feature";
+import { registerAboutHTC } from "./features/about-htc/about-htc.feature";
 import { registerLmgNotesFeature } from "./features/lmg-notes/lmg-notes.feature";
 
 /** Создание инстанса бота */
@@ -70,7 +73,7 @@ registerSmallGroups(bot); // Малые группы
 registerLmgNotesFeature(bot);
 registerChurchCalendar(bot); // Церковный календарь
 registerSermons(bot); // Проповеди
-registerNavigation(bot); // Навигация (кнопка "Назад")
+registerBackButton(bot); // Кнопка "Назад"
 
 /* ===================================
  *  Общий обработчик сообщений
@@ -80,16 +83,16 @@ bot.on("message", async (ctx) => {
 	if (ctx.chat.type !== "private") return;
 
 	// Известные кнопки главного меню
-	const known = new Set([
-		MENU_LABELS.SUNDAY,
-		MENU_LABELS.GROUPS,
-		MENU_LABELS.NEXT3,
-		MENU_LABELS.ABOUT,
-		MENU_LABELS.MAIN,
-		MENU_LABELS.BACK,
-		MENU_LABELS.CHANNEL,
-		MENU_LABELS.BELIEF,
-		MENU_LABELS.HISTORY,
+	const known = new Set<string>([
+		MENU_LABELS.MAIN_SUNDAY,
+		MENU_LABELS.MAIN_GROUPS,
+		CALENDAR_BUTTON_LABELS.CAL_NEXT3,
+		MENU_LABELS.MAIN_ABOUT,
+		NAVIGATION_LABELS.NAV_MAIN,
+		NAVIGATION_LABELS.NAV_BACK,
+		ABOUT_BUTTON_LABELS.ABOUT_CHANNEL,
+		ABOUT_BUTTON_LABELS.ABOUT_BELIEF,
+		ABOUT_BUTTON_LABELS.ABOUT_HISTORY,
 	]);
 
 	// Если пришёл неизвестный текст — возвращаем пользователя в главное меню

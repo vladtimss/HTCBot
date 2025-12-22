@@ -6,7 +6,7 @@
  */
 
 import { MyContext } from "../types/grammy-context";
-import { replyMainKeyboard } from "../utils/keyboards";
+import { replyMainKeyboard } from "../features/main-menu/main-menu.keyboard";
 import { COMMON } from "../services/texts";
 
 /**

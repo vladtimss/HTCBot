@@ -13,6 +13,7 @@ docs
 
 # production
 /build
+/dist
 
 # archive
 src/archive

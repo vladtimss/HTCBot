@@ -11,6 +11,7 @@ import { createDAVClient, DAVCalendar, DAVObject } from "tsdav";
 import ICAL from "ical.js";
 import { compareAsc, isAfter, isBefore, isSameYear } from "date-fns";
 import { env } from "../config/env";
+import { escapeMdV2 } from "../utils/text";
 
 export type HolidayEventResult =
 	| { status: "future"; event: CalendarEvent } // событие ещё впереди
@@ -107,11 +108,6 @@ export async function fetchUpcomingEvents(limit = 5): Promise<CalendarEvent[]> {
 		.slice(0, Math.max(0, limit));
 }
 
-/** Первая буква заглавная */
-function capitalize(str: string): string {
-	return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
 /**
  * Форматирование события в карточку Telegram.
  * @param e - событие
@@ -140,37 +136,44 @@ export function formatEvent(e: CalendarEvent, isList = false, shouldShowYear = f
 			minute: "2-digit",
 		});
 
+	// Формируем строки даты и времени (экранируем для MarkdownV2)
 	let dateStr: string;
 	if (endDate && startDate.toDateString() !== endDate.toDateString()) {
 		// Начало и конец в разные дни
-		dateStr = `${dayStr(startDate)}, ${timeStr(startDate)} — ${dayStr(endDate)}, ${timeStr(endDate)}`;
+		const startDay = escapeMdV2(dayStr(startDate));
+		const startTime = escapeMdV2(timeStr(startDate));
+		const endDay = escapeMdV2(dayStr(endDate));
+		const endTime = escapeMdV2(timeStr(endDate));
+		dateStr = `${startDay}, ${startTime} — ${endDay}, ${endTime}`;
 	} else if (endDate) {
 		// Один день, но диапазон времени
-		dateStr = `${dayStr(startDate)}, ${timeStr(startDate)} — ${timeStr(endDate)}`;
+		const day = escapeMdV2(dayStr(startDate));
+		const startTime = escapeMdV2(timeStr(startDate));
+		const endTime = escapeMdV2(timeStr(endDate));
+		dateStr = `${day}, ${startTime} — ${endTime}`;
 	} else {
 		// Только начало
-		dateStr = `${dayStr(startDate)}, ${timeStr(startDate)}`;
+		const day = escapeMdV2(dayStr(startDate));
+		const time = escapeMdV2(timeStr(startDate));
+		dateStr = `${day}, ${time}`;
 	}
 
-	// Заголовок (с годом — опционально)
-	const title = shouldShowYear ? `✨ ${escapeMd(e.title)} (${startDate.getFullYear()})` : `✨ ${escapeMd(e.title)}`;
+	// Заголовок (с годом — опционально) - экранируем title
+	const escapedTitle = escapeMdV2(e.title);
+	const title = shouldShowYear ? `✨ ${escapedTitle} \\(${startDate.getFullYear()}\\)` : `✨ ${escapedTitle}`;
 
-	// Описание (если есть)
-	const descr = e.description ? `\n📝 ${e.description}` : "";
+	// Описание (если есть) - экранируем description
+	const descr = e.description ? `\n📝 ${escapeMdV2(e.description)}` : "";
 
-	// Финальная карточка
+	// Финальная карточка (MarkdownV2 использует * для жирного)
 	const card = [`*${title}*`, `*🗓 ${dateStr}*`, descr].filter(Boolean).join("\n");
 
 	return isList ? card + "\n\n━━━━━━━━━━" : card;
 }
 
-/** Экранирование спецсимволов для Markdown */
-function escapeMd(s: string): string {
-	return s.replace(/([_*[\]()~`>#{.!])/g, "\\$1");
-}
-
 /**
  * Найти ближайшее событие по названию.
+ * @param title
  * @param strict - если true, ищем точное совпадение
  */
 export async function fetchNextEventByTitle(title: string, strict = false): Promise<CalendarEvent | null> {
