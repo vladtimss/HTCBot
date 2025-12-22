@@ -148,6 +148,7 @@ git pull origin master
 npm run build
 
 # Запускаем/перезапускаем бота через PM2
+pm2 stop htc-bot
 pm2 start dist/app.js --name htc-bot --env production
 pm2 restart htc-bot
 
