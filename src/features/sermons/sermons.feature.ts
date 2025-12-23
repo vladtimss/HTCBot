@@ -9,7 +9,7 @@ import { COMMON } from "../../services/texts";
 import { fmt, bold } from "@grammyjs/parse-mode";
 import { replyFormatted } from "../../utils/format-helpers";
 import { escapeMdV2 }                                  from "../../utils/text";
-import { getAllSermonsWithSomeMedia, getPreacherName } from "./sermons.util";
+import { getAllSermonsWithSomeMedia, getPreacherName, buildNormalizedSermonState } from "./sermons.util";
 import { withProgressMessages, withLoading } from "../../utils/loading";
 import { BuildinRelationProperty, Sermon } from "../../types/buildin";
 
@@ -129,32 +129,6 @@ async function formatSermonList(sermons: Sermon[]) {
 /**
  * Сортирует книги: сначала по ALL_BIBLE_BOOKS, остальные — в конце по алфавиту.
  */
-function getSortedBooks(sermons: Sermon[]): string[] {
-	const booksSet = new Set<string>();
-	for (const sermon of sermons) {
-		if (sermon.book) {
-			booksSet.add(sermon.book);
-		}
-	}
-
-	const booksInOrder: string[] = [];
-	const booksNotInList: string[] = [];
-
-	for (const book of ALL_BIBLE_BOOKS) {
-		if (booksSet.has(book)) {
-			booksInOrder.push(book);
-		}
-	}
-
-	for (const book of booksSet) {
-		if (!ALL_BIBLE_BOOKS.includes(book)) {
-			booksNotInList.push(book);
-		}
-	}
-
-	return [...booksInOrder, ...booksNotInList.sort()];
-}
-
 export function registerSermons(bot: Bot<MyContext>) {
 	bot.hears(MENU_LABELS.MAIN_SERMONS, async (ctx) => {
 		await renderSermonsRoot(ctx);
@@ -189,8 +163,13 @@ export function registerSermons(bot: Bot<MyContext>) {
 			}
 
 			ctx.session.sermons = sermons;
+			ctx.session.sermonsState = buildNormalizedSermonState(sermons);
 
-			const books = getSortedBooks(sermons);
+			// console.log(JSON.parse(JSON.stringify(ctx.session.sermonsState, null, 4)));
+			// console.log(ctx.session.sermonsState);
+			console.log(ctx.session.sermonsState.books.byIndex.get(42)?.byChapter);
+
+			const books = ctx.session.sermonsState?.books.allNames || [];
 
 			const text = fmt`${bold()}${SERMONS_INLINE_LABELS.SELECT_BOOK}${bold()}
 
@@ -211,12 +190,19 @@ ${COMMON.useButtonBelow}`;
 		await ctx.answerCallbackQuery();
 
 		const sermons = ctx.session.sermons;
-		if (!sermons || sermons.length === 0) {
+		const state = ctx.session.sermonsState || (sermons ? buildNormalizedSermonState(sermons) : undefined);
+
+		if (!sermons || sermons.length === 0 || !state) {
 			await ctx.reply("❌ Проповеди не загружены\\. Попробуйте выбрать раздел снова\\.");
 			return;
 		}
 
-		const books = getSortedBooks(sermons);
+		// Сохраняем состояние в сессию, если его не было
+		if (!ctx.session.sermonsState) {
+			ctx.session.sermonsState = state;
+		}
+
+		const books = state.books.allNames;
 		const book = books[bookIndex];
 
 		if (!book) {
@@ -228,9 +214,16 @@ ${COMMON.useButtonBelow}`;
 			await withLoading(
 				ctx,
 				async () => {
-					const filteredSermons = sermons
-						.filter((s) => s.book === book)
-						.sort((a, b) => {
+					const bookIdx = state.books.byName.get(book);
+					const bookRec = bookIdx ? state.books.byIndex.get(bookIdx) : undefined;
+					const sermonIds = bookRec?.sermonIds ?? [];
+					const filteredSermons: Sermon[] = sermonIds
+						.map((id) => state.sermons.byId.get(id))
+						.filter((s): s is Sermon => Boolean(s));
+
+					const sortedSermons = filteredSermons
+						.slice()
+						.sort((a: Sermon, b: Sermon) => {
 							if (a.chapter && b.chapter) {
 								return a.chapter - b.chapter;
 							}
@@ -240,7 +233,7 @@ ${COMMON.useButtonBelow}`;
 							return 0;
 						});
 
-					const text = await formatSermonList(filteredSermons);
+					const text = await formatSermonList(sortedSermons);
 
 					await ctx.reply(text, {
 						parse_mode: "MarkdownV2",

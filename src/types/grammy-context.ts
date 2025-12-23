@@ -8,6 +8,7 @@
 
 import { Context, SessionFlavor } from "grammy";
 import { Sermon } from "./buildin";
+import type { NormalizedSermonState } from "../features/sermons/sermons.util";
 
 /** Данные сессии для навигации */
 export interface SessionData {
@@ -19,6 +20,8 @@ export interface SessionData {
 
 	/** Загруженные проповеди (для раздела "Проповеди") */
 	sermons?: Sermon[];
+	/** Нормализованное состояние проповедей (книги/серии/проповедники) */
+	sermonsState?: NormalizedSermonState;
 }
 
 /** Данные о доступе пользователя */
