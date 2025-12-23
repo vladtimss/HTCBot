@@ -22,7 +22,5 @@ export function inlineBibleBooksMenu(books: string[]): InlineKeyboard {
 		keyboard.row();
 	}
 
-	keyboard.text(SERMONS_INLINE_LABELS.BACK, "sermons:back");
-
 	return keyboard;
 }

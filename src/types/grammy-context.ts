@@ -22,6 +22,8 @@ export interface SessionData {
 	sermons?: Sermon[];
 	/** Нормализованное состояние проповедей (книги/серии/проповедники) */
 	sermonsState?: NormalizedSermonState;
+	/** Кеш проповедников по ID страницы */
+	preachersById?: Record<string, string>;
 }
 
 /** Данные о доступе пользователя */

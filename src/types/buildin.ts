@@ -234,8 +234,9 @@ export type Sermon = {
 	chapter?: number;
 	sermonText?: string;
 	series?: string;
+	/** ID проповедника (из relation), если доступен */
+	preacherId?: string;
 	preacher?: string;
 	date?: string;
 	media: SermonMedia;
-	raw: BuildinDatabaseRecord; // Вся оригинальная запись
 };

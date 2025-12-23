@@ -21,7 +21,7 @@ import {
 	extractUrl,
 	extractDate,
 } from "../../helpers/buildin-helpers";
-import { ALL_BIBLE_BOOKS } from "./sermons.constants";
+import { BIBLE_BOOK_INDEXES } from "./sermons.constants";
 
 const SERMON_FIELDS = {
 	TITLE: "title",
@@ -38,7 +38,9 @@ const SERMON_FIELDS = {
 } as const;
 
 function isValidUrl(url: string | undefined | null): boolean {
-	if (!url || typeof url !== "string") return false;
+	if (!url) {
+		return false;
+	}
 	try {
 		const parsed = new URL(url);
 		return parsed.protocol === "http:" || parsed.protocol === "https:";
@@ -59,7 +61,7 @@ function normalizeBookName(name: string): string {
 }
 
 /**
- * Алиасы: нормализованное имя -> каноническое название (как в ALL_BIBLE_BOOKS).
+ * Алиасы: нормализованное имя -> каноническое название (как в BIBLE_BOOK_INDEXES).
  * Дополняем по мере необходимости, чтобы ловить разные варианты написаний.
  */
 const BOOK_ALIASES: Record<string, string> = {
@@ -69,14 +71,6 @@ const BOOK_ALIASES: Record<string, string> = {
 	"2тимофею": "2 Тимофею",
 	"отлуки": "От Луки",
 };
-
-/**
- * Карта канонических названий -> индекс (1-based) для быстрого сопоставления.
- */
-const BIBLE_BOOK_INDEXES: Record<string, number> = ALL_BIBLE_BOOKS.reduce((acc, book, idx) => {
-	acc[book] = idx + 1;
-	return acc;
-}, {} as Record<string, number>);
 
 /**
  * Получает канонический индекс книги, учитывая алиасы и нормализацию.
@@ -93,7 +87,7 @@ function getBookIndex(bookName: string | undefined): number | undefined {
 	}
 
 	// Пробуем прямое сопоставление с каноном через нормализацию
-	for (const canonical of ALL_BIBLE_BOOKS) {
+	for (const canonical in BIBLE_BOOK_INDEXES) {
 		if (normalizeBookName(canonical) === normalized) {
 			return BIBLE_BOOK_INDEXES[canonical];
 		}
@@ -156,6 +150,7 @@ function hasSomeMedia(properties: BuildinDatabaseRecord["properties"]): boolean 
  * Поле "Проповедник" может быть типа relation - в этом случае там хранится только id страницы,
  * поэтому нужно дополнительно запросить страницу с человеком, чтобы получить его ФИО.
  */
+/** Возвращает имя проповедника из relation-поля записи */
 export async function getPreacherName(relationField: BuildinRelationProperty): Promise<string | undefined> {
 	if (!relationField.relation || relationField.relation.length === 0) {
 		return;
@@ -187,6 +182,25 @@ export async function getPreacherName(relationField: BuildinRelationProperty): P
 	}
 }
 
+/** Получить имя проповедника по ID страницы (когда relation уже известен) */
+export async function getPreacherNameById(preacherId: string): Promise<string | undefined> {
+	try {
+		const page: BuildinPage = await getPage(preacherId);
+		const parentDbId = page.parent?.database_id;
+		if (parentDbId !== PEOPLE_DATABASE_ID) {
+			return;
+		}
+		return extractTitle(page.properties?.title as BuildinTitleProperty | undefined);
+	} catch (error) {
+		const errorMessage = error instanceof Error ? error.message : String(error);
+		if (errorMessage.includes("403")) {
+			console.error(`[sermons] 403 Forbidden - нет доступа к странице проповедника: ${preacherId}`);
+		} else {
+			console.error(`[sermons] Ошибка получения проповедника ${preacherId}:`, errorMessage);
+		}
+	}
+}
+
 function extractSermonProperties(record: BuildinDatabaseRecord): Sermon {
 	const { properties } = record;
 
@@ -212,9 +226,7 @@ function extractSermonProperties(record: BuildinDatabaseRecord): Sermon {
 	// Парсим главу из текста проповеди
 	const chapter = parseChapterFromText(sermonText)?.[0];
 
-	// Извлекаем проповедника
-	// Поле "Проповедник" может быть типа relation (только id, нужно дополнительно запрашивать ФИО),
-	// select или rich_text
+	// Извлекаем проповедника: relation ID и/или имя (select/rich_text)
 	const preacherField = properties[SERMON_FIELDS.PREACHER] as
 		| BuildinSelectProperty
 		| BuildinRichTextProperty
@@ -222,10 +234,14 @@ function extractSermonProperties(record: BuildinDatabaseRecord): Sermon {
 		| undefined;
 
 	let preacher: string | undefined;
+	let preacherId: string | undefined;
+
 	if (preacherField?.type === "select") {
 		preacher = extractSelect(preacherField);
 	} else if (preacherField?.type === "rich_text") {
 		preacher = extractRichText(preacherField);
+	} else if (preacherField?.type === "relation" && preacherField.relation.length > 0) {
+		preacherId = preacherField.relation[0]?.id;
 	}
 
 	// Извлекаем дату (пробуем два поля)
@@ -243,10 +259,10 @@ function extractSermonProperties(record: BuildinDatabaseRecord): Sermon {
 		chapter,
 		sermonText,
 		series,
+		preacherId,
 		preacher,
 		date,
 		media,
-		raw: record,
 	};
 }
 
@@ -271,26 +287,26 @@ export async function getAllSermonsWithSomeMedia(): Promise<Sermon[]> {
 export type NormalizedBook = {
 	name: string;
 	sermonIds: string[];
-	byChapter: Map<number, string[]>;
+	byChapter: Record<number, string[]>;
 };
 
 export type NormalizedSermonState = {
 	sermons: {
-		byId: Map<string, Sermon>;
+		byId: Record<string, Sermon>;
 		allIds: string[];
 	};
 	books: {
-		byIndex: Map<number, NormalizedBook>;
-		byName: Map<string, number>;
+		byIndex: Record<number, NormalizedBook>;
+		byName: Record<string, number>;
 		allIndexes: number[];
 		allNames: string[];
 	};
 	series: {
-		byName: Map<string, string[]>;
+		byName: Record<string, string[]>;
 		allNames: string[];
 	};
 	preachers: {
-		byName: Map<string, string[]>;
+		byName: Record<string, string[]>;
 		allNames: string[];
 	};
 };
@@ -302,19 +318,20 @@ export type NormalizedSermonState = {
  * - проповедники (по имени)
  */
 export function buildNormalizedSermonState(sermons: Sermon[]): NormalizedSermonState {
-	const sermonsById = new Map<string, Sermon>();
+	const sermonsById: Record<string, Sermon> = {};
 	const sermonsAllIds: string[] = [];
-	const booksByIndex = new Map<number, NormalizedBook>();
-	const booksByName = new Map<string, number>();
-	const seriesByName = new Map<string, string[]>();
-	const preachersByName = new Map<string, string[]>();
+	const booksByIndex: Record<number, NormalizedBook> = {};
+	const booksByName: Record<string, number> = {};
+	const seriesByName: Record<string, string[]> = {};
+	const preachersByName: Record<string, string[]> = {};
 
 	const extrasIndex = new Map<string, number>();
-	let nextExtraIndex = ALL_BIBLE_BOOKS.length + 1;
+	const maxCanonicalIndex = Math.max(...Object.values(BIBLE_BOOK_INDEXES));
+	let nextExtraIndex = maxCanonicalIndex + 1;
 
 	for (const sermon of sermons) {
 		// сохраняем проповедь в таблицу
-		sermonsById.set(sermon.id, sermon);
+		sermonsById[sermon.id] = sermon;
 		sermonsAllIds.push(sermon.id);
 
 		const bookName = sermon.book;
@@ -338,56 +355,62 @@ export function buildNormalizedSermonState(sermons: Sermon[]): NormalizedSermonS
 			continue;
 		}
 
-		const existing = booksByIndex.get(bookIdx);
+		const existing = booksByIndex[bookIdx];
 		if (!existing) {
-			booksByIndex.set(bookIdx, {
+			booksByIndex[bookIdx] = {
 				name: bookName,
 				sermonIds: [sermon.id],
-				byChapter: new Map<number, string[]>(),
-			});
-			booksByName.set(bookName, bookIdx);
+				byChapter: {},
+			};
+			booksByName[bookName] = bookIdx;
 		} else {
 			existing.sermonIds.push(sermon.id);
 		}
 
 		// Серии
 		if (sermon.series) {
-			if (!seriesByName.has(sermon.series)) {
-				seriesByName.set(sermon.series, []);
+			if (!seriesByName[sermon.series]) {
+				seriesByName[sermon.series] = [];
 			}
-			seriesByName.get(sermon.series)!.push(sermon.id);
+			seriesByName[sermon.series]!.push(sermon.id);
 		}
 
 		// Проповедники (по имени)
 		if (sermon.preacher) {
 			const key = sermon.preacher.trim();
-			if (!preachersByName.has(key)) {
-				preachersByName.set(key, []);
+			if (!preachersByName[key]) {
+				preachersByName[key] = [];
 			}
-			preachersByName.get(key)!.push(sermon.id);
+			preachersByName[key]!.push(sermon.id);
 		}
 
 		// Главы внутри книги
-		if (sermon.chapter && booksByIndex.has(bookIdx)) {
-			const bookRec = booksByIndex.get(bookIdx)!;
-			const chapterList = bookRec.byChapter.get(sermon.chapter) || [];
+		if (sermon.chapter && booksByIndex[bookIdx]) {
+			const bookRec = booksByIndex[bookIdx]!;
+			const chapterList = bookRec.byChapter[sermon.chapter] || [];
 			chapterList.push(sermon.id);
-			bookRec.byChapter.set(sermon.chapter, chapterList);
+			bookRec.byChapter[sermon.chapter] = chapterList;
 		}
 	}
 
 	// Сортируем книги: канон -> прочие (по имени)
 	const idxToName: Record<number, string | undefined> = {};
-	for (const [idx, book] of booksByIndex.entries()) {
+	Object.entries(booksByIndex).forEach(([idxStr, book]) => {
+		const idx = Number(idxStr);
 		if (!idxToName[idx]) {
 			idxToName[idx] = book.name;
 		}
-	}
+	});
+
+	// Получаем порядок книг из объекта (сортируем по индексам)
+	const canonicalBooks = Object.keys(BIBLE_BOOK_INDEXES).sort(
+		(a, b) => BIBLE_BOOK_INDEXES[a]! - BIBLE_BOOK_INDEXES[b]!
+	);
 
 	const booksInOrder: number[] = [];
-	for (const canonical of ALL_BIBLE_BOOKS) {
+	for (const canonical of canonicalBooks) {
 		const idx = BIBLE_BOOK_INDEXES[canonical];
-		if (idxToName[idx]) {
+		if (idx && idxToName[idx]) {
 			booksInOrder.push(idx);
 		}
 	}
@@ -413,18 +436,18 @@ export function buildNormalizedSermonState(sermons: Sermon[]): NormalizedSermonS
 		},
 		series: {
 			byName: seriesByName,
-			allNames: Array.from(seriesByName.keys()).sort(),
+			allNames: Object.keys(seriesByName).sort(),
 		},
 		preachers: {
 			byName: preachersByName,
-			allNames: Array.from(preachersByName.keys()).sort(),
+			allNames: Object.keys(preachersByName).sort(),
 		},
 	};
 }
 
 
 /**
- * Возвращает список книг, отсортированных по канону ALL_BIBLE_BOOKS,
+ * Возвращает список книг, отсортированных по канону (порядок из BIBLE_BOOK_INDEXES),
  * а книги вне канона — в конце по алфавиту (по исходным названиям из БД).
  */
 export function getSortedBooks(sermons: Sermon[]): string[] {
@@ -445,10 +468,15 @@ export function getSortedBooks(sermons: Sermon[]): string[] {
 		}
 	}
 
+	// Получаем порядок книг из объекта (сортируем по индексам)
+	const canonicalBooks = Object.keys(BIBLE_BOOK_INDEXES).sort(
+		(a, b) => BIBLE_BOOK_INDEXES[a]! - BIBLE_BOOK_INDEXES[b]!
+	);
+
 	const booksInOrder: string[] = [];
-	for (const canonical of ALL_BIBLE_BOOKS) {
+	for (const canonical of canonicalBooks) {
 		const idx = BIBLE_BOOK_INDEXES[canonical];
-		const name = idxToName[idx];
+		const name = idx ? idxToName[idx] : undefined;
 		if (name) {
 			booksInOrder.push(name);
 		}

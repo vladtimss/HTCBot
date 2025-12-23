@@ -61,13 +61,18 @@ async function handleLoadingError(ctx: MyContext, state: LoadingState): Promise<
 	if (state.timer) clearTimeout(state.timer);
 	if (state.shown && state.loadingMsg) {
 		try {
-			await ctx.api.editMessageText(
-				state.loadingMsg.chat.id,
-				state.loadingMsg.message_id,
-				"⚠️ Не удалось загрузить данные"
-			);
+			await ctx.api.deleteMessage(state.loadingMsg.chat.id, state.loadingMsg.message_id);
 		} catch {
-			// Игнорируем ошибки редактирования
+			// Если удалить нельзя — пробуем заменить текст
+			try {
+				await ctx.api.editMessageText(
+					state.loadingMsg.chat.id,
+					state.loadingMsg.message_id,
+					"⚠️ Не удалось загрузить данные"
+				);
+			} catch {
+				// Игнорируем ошибки редактирования
+			}
 		}
 	}
 }
