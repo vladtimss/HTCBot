@@ -13,6 +13,7 @@ import {
 	BuildinRelationProperty,
 	BuildinPage,
 } from "../../types/buildin";
+
 import {
 	extractTitle,
 	extractRichText,
@@ -83,8 +84,20 @@ function parseDate(dateStr: string | undefined): string | undefined {
 }
 
 /**
+ * Проверяет, есть ли у записи хотя бы одно валидное медиа-поле
+ */
+function hasSomeMedia(properties: BuildinDatabaseRecord["properties"]): boolean {
+	return (
+		isValidUrl(extractUrl(properties[SERMON_FIELDS.MEDIA_YANDEX] as BuildinUrlProperty | undefined)) ||
+		isValidUrl(extractUrl(properties[SERMON_FIELDS.MEDIA_YOUTUBE] as BuildinUrlProperty | undefined)) ||
+		isValidUrl(extractUrl(properties[SERMON_FIELDS.MEDIA_VK] as BuildinUrlProperty | undefined)) ||
+		isValidUrl(extractUrl(properties[SERMON_FIELDS.MEDIA_PODSTER] as BuildinUrlProperty | undefined))
+	);
+}
+
+/**
  * Получает имя проповедника из relation поля.
- * 
+ *
  * Поле "Проповедник" может быть типа relation - в этом случае там хранится только id страницы,
  * поэтому нужно дополнительно запросить страницу с человеком, чтобы получить его ФИО.
  */
@@ -122,7 +135,7 @@ export async function getPreacherName(relationField: BuildinRelationProperty): P
 function extractSermonProperties(record: BuildinDatabaseRecord): Sermon {
 	const { properties } = record;
 
-	// Извлекаем медиа-ссылки
+	// Извлекаем медиа-ссылки (проверяем валидность URL)
 	const yandexUrl = extractUrl(properties[SERMON_FIELDS.MEDIA_YANDEX] as BuildinUrlProperty | undefined);
 	const youtubeUrl = extractUrl(properties[SERMON_FIELDS.MEDIA_YOUTUBE] as BuildinUrlProperty | undefined);
 	const vkUrl = extractUrl(properties[SERMON_FIELDS.MEDIA_VK] as BuildinUrlProperty | undefined);
@@ -137,17 +150,12 @@ function extractSermonProperties(record: BuildinDatabaseRecord): Sermon {
 
 	// Извлекаем основные поля
 	const title = extractTitle(properties[SERMON_FIELDS.TITLE] as BuildinTitleProperty | undefined);
-
-	const bookItems = extractMultiSelect(properties[SERMON_FIELDS.BOOK] as BuildinMultiSelectProperty | undefined);
-	const book = bookItems[0];
-
+	const book = extractMultiSelect(properties[SERMON_FIELDS.BOOK] as BuildinMultiSelectProperty | undefined)[0];
 	const sermonText = extractRichText(properties[SERMON_FIELDS.SERMON_TEXT] as BuildinRichTextProperty | undefined);
-
 	const series = extractSelect(properties[SERMON_FIELDS.SERIES] as BuildinSelectProperty | undefined);
 
 	// Парсим главу из текста проповеди
-	const chapters = parseChapterFromText(sermonText);
-	const chapter = chapters?.[0];
+	const chapter = parseChapterFromText(sermonText)?.[0];
 
 	// Извлекаем проповедника
 	// Поле "Проповедник" может быть типа relation (только id, нужно дополнительно запрашивать ФИО),
@@ -166,11 +174,12 @@ function extractSermonProperties(record: BuildinDatabaseRecord): Sermon {
 	}
 
 	// Извлекаем дату (пробуем два поля)
-	const dateProperty =
-		(properties[SERMON_FIELDS.DATE] as BuildinDateProperty | undefined) ||
-		(properties[SERMON_FIELDS.DATE_ALT] as BuildinDateProperty | undefined);
-	const rawDate = extractDate(dateProperty);
-	const date = parseDate(rawDate);
+	const date = parseDate(
+		extractDate(
+			(properties[SERMON_FIELDS.DATE] as BuildinDateProperty | undefined) ||
+				(properties[SERMON_FIELDS.DATE_ALT] as BuildinDateProperty | undefined)
+		)
+	);
 
 	return {
 		id: record.id,
@@ -194,23 +203,11 @@ export async function getAllSermonsWithSomeMedia(): Promise<Sermon[]> {
 	const sermons: Sermon[] = [];
 
 	for (const record of allRecords) {
-		const yandexProperty = record.properties[SERMON_FIELDS.MEDIA_YANDEX] as BuildinUrlProperty | undefined;
-		const youtubeProperty = record.properties[SERMON_FIELDS.MEDIA_YOUTUBE] as BuildinUrlProperty | undefined;
-		const vkProperty = record.properties[SERMON_FIELDS.MEDIA_VK] as BuildinUrlProperty | undefined;
-		const podsterProperty = record.properties[SERMON_FIELDS.MEDIA_PODSTER] as BuildinUrlProperty | undefined;
-
-		const hasSomeMedia =
-			(isValidUrl(yandexProperty?.url)) ||
-			(isValidUrl(youtubeProperty?.url)) ||
-			(isValidUrl(vkProperty?.url)) ||
-			(isValidUrl(podsterProperty?.url));
-
-		if (!hasSomeMedia) {
+		if (!hasSomeMedia(record.properties)) {
 			continue;
 		}
 
-		const sermon = extractSermonProperties(record);
-		sermons.push(sermon);
+		sermons.push(extractSermonProperties(record));
 	}
 
 	return sermons;
