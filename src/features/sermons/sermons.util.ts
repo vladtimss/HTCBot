@@ -23,6 +23,12 @@ import {
 } from "../../helpers/buildin-helpers";
 import { BIBLE_BOOK_INDEXES } from "./sermons.constants";
 
+/**
+ * Кэш страниц, к которым нет доступа (403 Forbidden).
+ * Используется для предотвращения повторных запросов к недоступным страницам.
+ */
+const forbiddenPagesCache = new Set<string>();
+
 const SERMON_FIELDS = {
 	TITLE: "title",
 	BOOK: "Книга Библии",
@@ -144,46 +150,13 @@ function hasSomeMedia(properties: BuildinDatabaseRecord["properties"]): boolean 
 	);
 }
 
-/**
- * Получает имя проповедника из relation поля.
- *
- * Поле "Проповедник" может быть типа relation - в этом случае там хранится только id страницы,
- * поэтому нужно дополнительно запросить страницу с человеком, чтобы получить его ФИО.
- */
-/** Возвращает имя проповедника из relation-поля записи */
-export async function getPreacherName(relationField: BuildinRelationProperty): Promise<string | undefined> {
-	if (!relationField.relation || relationField.relation.length === 0) {
-		return;
-	}
-
-	for (const relation of relationField.relation) {
-		if (!relation.id) {
-			continue;
-		}
-
-		try {
-			const page: BuildinPage = await getPage(relation.id);
-			const parentDbId = page.parent?.database_id;
-			if (parentDbId === PEOPLE_DATABASE_ID) {
-				const title = extractTitle(page.properties?.title as BuildinTitleProperty | undefined);
-				if (title) {
-					return title;
-				}
-			}
-		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : String(error);
-			// Логируем ошибки 403 с ID страницы, к которой нет доступа
-			if (errorMessage.includes("403")) {
-				console.error(`[sermons] 403 Forbidden - нет доступа к странице проповедника: ${relation.id}`);
-			} else {
-				console.error(`[sermons] Ошибка получения проповедника ${relation.id}:`, errorMessage);
-			}
-		}
-	}
-}
-
 /** Получить имя проповедника по ID страницы (когда relation уже известен) */
 export async function getPreacherNameById(preacherId: string): Promise<string | undefined> {
+	// Проверяем кэш недоступных страниц - если страница уже в кэше, не делаем запрос
+	if (forbiddenPagesCache.has(preacherId)) {
+		return undefined;
+	}
+
 	try {
 		const page: BuildinPage = await getPage(preacherId);
 		const parentDbId = page.parent?.database_id;
@@ -193,11 +166,14 @@ export async function getPreacherNameById(preacherId: string): Promise<string | 
 		return extractTitle(page.properties?.title as BuildinTitleProperty | undefined);
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : String(error);
+		// Если получили 403 - добавляем в кэш недоступных страниц
 		if (errorMessage.includes("403")) {
-			console.error(`[sermons] 403 Forbidden - нет доступа к странице проповедника: ${preacherId}`);
+			forbiddenPagesCache.add(preacherId);
+			console.error(`[sermons] 403 Forbidden - нет доступа к странице проповедника: ${preacherId} (добавлено в кэш, повторные запросы будут пропущены)`);
 		} else {
 			console.error(`[sermons] Ошибка получения проповедника ${preacherId}:`, errorMessage);
 		}
+		return undefined;
 	}
 }
 
