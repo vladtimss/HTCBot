@@ -61,7 +61,7 @@ function normalizeBookName(name: string): string {
 }
 
 /**
- * Алиасы: нормализованное имя -> каноническое название (как в BIBLE_BOOK_INDEXES).
+ * Алиасы: нормализованное имя -> эталонное название (как в `BIBLE_BOOK_INDEXES`).
  * Дополняем по мере необходимости, чтобы ловить разные варианты написаний.
  */
 const BOOK_ALIASES: Record<string, string> = {
@@ -73,7 +73,7 @@ const BOOK_ALIASES: Record<string, string> = {
 };
 
 /**
- * Получает канонический индекс книги, учитывая алиасы и нормализацию.
+ * Получает индекс книги из `BIBLE_BOOK_INDEXES`, учитывая алиасы и нормализацию.
  */
 function getBookIndex(bookName: string | undefined): number | undefined {
 	if (!bookName) return undefined;
@@ -86,7 +86,7 @@ function getBookIndex(bookName: string | undefined): number | undefined {
 		return BIBLE_BOOK_INDEXES[aliasTarget];
 	}
 
-	// Пробуем прямое сопоставление с каноном через нормализацию
+	// Пробуем прямое сопоставление с эталонными названиями через нормализацию
 	for (const canonical in BIBLE_BOOK_INDEXES) {
 		if (normalizeBookName(canonical) === normalized) {
 			return BIBLE_BOOK_INDEXES[canonical];
@@ -284,12 +284,25 @@ export async function getAllSermonsWithSomeMedia(): Promise<Sermon[]> {
 	return sermons;
 }
 
+/**
+ * Нормализованная информация о книгах:
+ * - `name` — исходное название книги из Buildin
+ * - `sermonIds` — все ID проповедей по этой книге
+ * - `byChapter` — индекс: номер главы → список ID проповедей
+ */
 export type NormalizedBook = {
 	name: string;
 	sermonIds: string[];
 	byChapter: Record<number, string[]>;
 };
 
+/**
+ * Нормализованное состояние проповедей для быстрого доступа:
+ * - `sermons` — все проповеди по ID
+ * - `books` — книги по индексам/названиям и общий порядок
+ * - `series` — серии проповедей
+ * - `preachers` — проповедники по имени
+ */
 export type NormalizedSermonState = {
 	sermons: {
 		byId: Record<string, Sermon>;
@@ -313,9 +326,13 @@ export type NormalizedSermonState = {
 
 /**
  * Строит нормализованное состояние для быстрого доступа:
- * - книги по индексам (канон + прочие)
+ * - книги по индексам (с учётом возможных разных написаний названий)
  * - серии
  * - проповедники (по имени)
+ *
+ * Важно:
+ * - каждая проповедь всегда попадает в `sermons.byId`
+ * - книга без названия или без сопоставляемого индекса игнорируется при построении индексов
  */
 export function buildNormalizedSermonState(sermons: Sermon[]): NormalizedSermonState {
 	const sermonsById: Record<string, Sermon> = {};
@@ -325,23 +342,24 @@ export function buildNormalizedSermonState(sermons: Sermon[]): NormalizedSermonS
 	const seriesByName: Record<string, string[]> = {};
 	const preachersByName: Record<string, string[]> = {};
 
+	// Книги, которые не удалось сопоставить с `BIBLE_BOOK_INDEXES`, получают новые индексы "поверх" известных
 	const extrasIndex = new Map<string, number>();
 	const maxCanonicalIndex = Math.max(...Object.values(BIBLE_BOOK_INDEXES));
 	let nextExtraIndex = maxCanonicalIndex + 1;
 
 	for (const sermon of sermons) {
-		// сохраняем проповедь в таблицу
+		// Всегда сохраняем проповедь в общую таблицу
 		sermonsById[sermon.id] = sermon;
 		sermonsAllIds.push(sermon.id);
 
 		const bookName = sermon.book;
 
-		// Книга не указана — пропускаем
+		// Книга не указана — пропускаем только индексацию по книгам
 		if (!bookName) {
 			continue;
 		}
 
-		// Определяем индекс книги: либо канон, либо доп. индекс для прочих
+		// Определяем индекс книги: либо из `BIBLE_BOOK_INDEXES`, либо создаём новый (для несовпадающих названий)
 		let bookIdx = getBookIndex(bookName);
 		if (!bookIdx) {
 			if (!extrasIndex.has(bookName)) {
@@ -350,7 +368,7 @@ export function buildNormalizedSermonState(sermons: Sermon[]): NormalizedSermonS
 			bookIdx = extrasIndex.get(bookName);
 		}
 
-		// Если индекс не получился — пропускаем
+		// Если индекс не получился — пропускаем индексацию по книгам
 		if (!bookIdx) {
 			continue;
 		}
@@ -393,7 +411,7 @@ export function buildNormalizedSermonState(sermons: Sermon[]): NormalizedSermonS
 		}
 	}
 
-	// Сортируем книги: канон -> прочие (по имени)
+	// Сортируем книги: сначала по известному порядку (`BIBLE_BOOK_INDEXES`), затем по имени для остальных
 	const idxToName: Record<number, string | undefined> = {};
 	Object.entries(booksByIndex).forEach(([idxStr, book]) => {
 		const idx = Number(idxStr);
@@ -447,8 +465,8 @@ export function buildNormalizedSermonState(sermons: Sermon[]): NormalizedSermonS
 
 
 /**
- * Возвращает список книг, отсортированных по канону (порядок из BIBLE_BOOK_INDEXES),
- * а книги вне канона — в конце по алфавиту (по исходным названиям из БД).
+ * Возвращает список книг, отсортированных по порядку из `BIBLE_BOOK_INDEXES`,
+ * а книги без сопоставления — в конце по алфавиту (по исходным названиям из БД).
  */
 export function getSortedBooks(sermons: Sermon[]): string[] {
 	const idxToName: Record<number, string | undefined> = {};

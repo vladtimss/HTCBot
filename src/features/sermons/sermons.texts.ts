@@ -10,6 +10,9 @@ import { fmt, bold, link } from "@grammyjs/parse-mode";
 // Динамические тексты (функции)
 // ============================================================================
 
+/**
+ * Строит текст о подкастах с проповедями.
+ */
 function sermonsTextsPodcasts(yandexUrl: string, podsterUrl: string) {
 	return fmt`🎧 ${bold()}Наши проповеди доступны в подкастах:${bold()}
 - ${link(yandexUrl)}Яндекс.Музыка${link(yandexUrl)}

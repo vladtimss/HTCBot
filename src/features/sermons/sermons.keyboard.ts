@@ -1,7 +1,13 @@
+/**
+ * Клавиатуры для раздела «Проповеди».
+ * - replySermonsMenu — основное меню раздела
+ * - inlineBibleBooksMenu — inline-список книг Библии
+ */
 import { InlineKeyboard, Keyboard } from "grammy";
 import { SERMONS_BUTTON_LABELS, SERMONS_INLINE_LABELS } from "./sermons.constants";
 import { NAVIGATION_LABELS } from "../../constants/navigation";
 
+/** Reply-клавиатура раздела «Проповеди». */
 export const replySermonsMenu = new Keyboard()
 	.text(SERMONS_BUTTON_LABELS.SERMONS_PODCASTS)
 	.row()
@@ -10,6 +16,10 @@ export const replySermonsMenu = new Keyboard()
 	.text(NAVIGATION_LABELS.NAV_BACK)
 	.resized();
 
+/**
+ * Строит inline-клавиатуру с книгами Библии.
+ * Книги раскладываются по 3 в ряд, каждая ведёт к callback `sermons:book:{index}`.
+ */
 export function inlineBibleBooksMenu(books: string[]): InlineKeyboard {
 	const keyboard = new InlineKeyboard();
 

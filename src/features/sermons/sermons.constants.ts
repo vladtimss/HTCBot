@@ -22,7 +22,7 @@ export const SERMONS_DATABASE_ID = "e20b989f-2439-46d1-90a3-d92471d6bb79";
 export const PEOPLE_DATABASE_ID = "9fd75185-3dd8-459c-9c58-23de1998c3a6";
 
 /**
- * Карта канонических названий книг -> индекс (1-based).
+ * Карта эталонных названий книг -> индекс (1-based).
  * Индекс определяет порядок: ВЗ (1-39), затем НЗ (40-66).
  */
 export const BIBLE_BOOK_INDEXES: Record<string, number> = {
