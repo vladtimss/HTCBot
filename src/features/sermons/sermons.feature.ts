@@ -165,10 +165,6 @@ export function registerSermons(bot: Bot<MyContext>) {
 			ctx.session.sermons = sermons;
 			ctx.session.sermonsState = buildNormalizedSermonState(sermons);
 
-			// console.log(JSON.parse(JSON.stringify(ctx.session.sermonsState, null, 4)));
-			// console.log(ctx.session.sermonsState);
-			console.log(ctx.session.sermonsState.books.byIndex.get(42)?.byChapter);
-
 			const books = ctx.session.sermonsState?.books.allNames || [];
 
 			const text = fmt`${bold()}${SERMONS_INLINE_LABELS.SELECT_BOOK}${bold()}
@@ -241,7 +237,7 @@ ${COMMON.useButtonBelow}`;
 						reply_markup: inlineBibleBooksMenu(books),
 					});
 				},
-				{ text: "⏳ Загружаю проповеди…" }
+				{ text: "⏳ Готовлю список проповедей по выбранной книге…" }
 			);
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error);
