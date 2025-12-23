@@ -126,6 +126,35 @@ async function formatSermonList(sermons: Sermon[]) {
 	return text;
 }
 
+/**
+ * Сортирует книги: сначала по ALL_BIBLE_BOOKS, остальные — в конце по алфавиту.
+ */
+function getSortedBooks(sermons: Sermon[]): string[] {
+	const booksSet = new Set<string>();
+	for (const sermon of sermons) {
+		if (sermon.book) {
+			booksSet.add(sermon.book);
+		}
+	}
+
+	const booksInOrder: string[] = [];
+	const booksNotInList: string[] = [];
+
+	for (const book of ALL_BIBLE_BOOKS) {
+		if (booksSet.has(book)) {
+			booksInOrder.push(book);
+		}
+	}
+
+	for (const book of booksSet) {
+		if (!ALL_BIBLE_BOOKS.includes(book)) {
+			booksNotInList.push(book);
+		}
+	}
+
+	return [...booksInOrder, ...booksNotInList.sort()];
+}
+
 export function registerSermons(bot: Bot<MyContext>) {
 	bot.hears(MENU_LABELS.MAIN_SERMONS, async (ctx) => {
 		await renderSermonsRoot(ctx);
@@ -161,29 +190,7 @@ export function registerSermons(bot: Bot<MyContext>) {
 
 			ctx.session.sermons = sermons;
 
-			const booksSet = new Set<string>();
-			for (const sermon of sermons) {
-				if (sermon.book) {
-					booksSet.add(sermon.book);
-				}
-			}
-
-			const booksInOrder: string[] = [];
-			const booksNotInList: string[] = [];
-
-			for (const book of ALL_BIBLE_BOOKS) {
-				if (booksSet.has(book)) {
-					booksInOrder.push(book);
-				}
-			}
-
-			for (const book of booksSet) {
-				if (!ALL_BIBLE_BOOKS.includes(book)) {
-					booksNotInList.push(book);
-				}
-			}
-
-			const books = [...booksInOrder, ...booksNotInList.sort()];
+			const books = getSortedBooks(sermons);
 
 			const text = fmt`${bold()}${SERMONS_INLINE_LABELS.SELECT_BOOK}${bold()}
 
@@ -209,29 +216,7 @@ ${COMMON.useButtonBelow}`;
 			return;
 		}
 
-		const booksSet = new Set<string>();
-		for (const sermon of sermons) {
-			if (sermon.book) {
-				booksSet.add(sermon.book);
-			}
-		}
-
-		const booksInOrder: string[] = [];
-		const booksNotInList: string[] = [];
-
-		for (const book of ALL_BIBLE_BOOKS) {
-			if (booksSet.has(book)) {
-				booksInOrder.push(book);
-			}
-		}
-
-		for (const book of booksSet) {
-			if (!ALL_BIBLE_BOOKS.includes(book)) {
-				booksNotInList.push(book);
-			}
-		}
-
-		const books = [...booksInOrder, ...booksNotInList.sort()];
+		const books = getSortedBooks(sermons);
 		const book = books[bookIndex];
 
 		if (!book) {
