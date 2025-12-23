@@ -11,7 +11,13 @@ import { SMALL_GROUPS_TEXTS } from "../small-groups/small-groups.texts";
 import { replyLmgNotesMenu } from "./lmg-notes.keyboard";
 import { withLoadingAndMsg } from "../../utils/loading";
 import { queryDatabase } from "../../services/buildin";
-import { BuildinFile, Meeting } from "../../types/buildin";
+import {
+	BuildinFile,
+	Meeting,
+	BuildinDatabaseRecord,
+	BuildinDateProperty,
+	BuildinFilesProperty,
+} from "../../types/buildin";
 import { requirePrivileged } from "../../utils/guards";
 import { normalizeDate, fetchFileAsInput } from "./lmg-notes.util";
 
@@ -46,11 +52,13 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 			);
 
 			// Мапим страницы и сразу отбрасываем без даты
-			const meetings: Meeting[] = (result.results ?? []).flatMap((page: any): Meeting[] => {
-				const rawDate = page.properties?.["Дата встречи"]?.date?.start ?? null;
+			const meetings: Meeting[] = (result.results ?? []).flatMap((page: BuildinDatabaseRecord): Meeting[] => {
+				const dateProperty = page.properties["Дата встречи"] as BuildinDateProperty | undefined;
+				const rawDate = dateProperty?.date?.start ?? null;
 				if (!rawDate) return []; // ⬅️ вместо null возвращаем пустой массив
 				const date = normalizeDate(rawDate);
-				const files: BuildinFile[] = page.properties?.["Конспект"]?.files ?? [];
+				const filesProperty = page.properties["Конспект"] as BuildinFilesProperty | undefined;
+				const files: BuildinFile[] = filesProperty?.files ?? [];
 				return [{ date, files, raw: page }];
 			});
 

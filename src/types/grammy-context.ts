@@ -7,6 +7,7 @@
  */
 
 import { Context, SessionFlavor } from "grammy";
+import { Sermon } from "./buildin";
 
 /** Данные сессии для навигации */
 export interface SessionData {
@@ -15,6 +16,9 @@ export interface SessionData {
 
 	/** Последний раздел */
 	lastSection: string;
+
+	/** Загруженные проповеди (для раздела "Проповеди") */
+	sermons?: Sermon[];
 }
 
 /** Данные о доступе пользователя */
