@@ -10,7 +10,7 @@ import { fmt, bold } from "@grammyjs/parse-mode";
 import { replyFormatted } from "../../utils/format-helpers";
 import { escapeMdV2 }                                  from "../../utils/text";
 import { getAllSermonsWithSomeMedia, getPreacherName } from "./sermons.util";
-import { withLoadingAndMsg, withLoading }              from "../../utils/loading";
+import { withProgressMessages, withLoading } from "../../utils/loading";
 import { BuildinRelationProperty, Sermon } from "../../types/buildin";
 
 export async function renderSermonsRoot(ctx: MyContext) {
@@ -144,15 +144,15 @@ export function registerSermons(bot: Bot<MyContext>) {
 		ctx.session.lastSection = "sermons-books";
 
 		try {
-			const { result: sermons, loadingMsg } = await withLoadingAndMsg(
+			const { result: sermons } = await withProgressMessages(
 				ctx,
 				() => getAllSermonsWithSomeMedia(),
-				{ text: "⏳ Загружаю проповеди…" }
+				{
+					firstMessageText: "⏳ Загружаю проповеди…",
+					secondMessageText: "📊 Записей много, выгрузка продолжается\\. Пожалуйста, подождите еще немного\\.\\.\\.",
+					parseMode: "MarkdownV2",
+				}
 			);
-
-			if (loadingMsg) {
-				await ctx.api.deleteMessage(loadingMsg.chat.id, loadingMsg.message_id).catch(() => {});
-			}
 
 			if (sermons.length === 0) {
 				await ctx.reply("❌ Проповеди с медиа не найдены\\.");
