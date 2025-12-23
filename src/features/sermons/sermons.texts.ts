@@ -30,6 +30,7 @@ export const SERMONS_TEXTS = {
 	notLoaded: "❌ Проповеди не загружены. Попробуйте выбрать раздел снова.",
 	bookNotFound: "❌ Книга не найдена.",
 	selectBookTitle: "Выберите книгу Библии:",
+	selectChapterTitle: (bookName: string) => `Выберите главу книги "${bookName}":`,
 	prepareBookList: "⏳ Готовлю список проповедей по выбранной книге…",
 	progressFirst: "⏳ Загружаю проповеди…",
 	progressSecond: "📊 Записей много, выгрузка продолжается. Пожалуйста, подождите еще немного...",

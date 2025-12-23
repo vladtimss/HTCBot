@@ -15,6 +15,7 @@ import {
 	getPreacherNameById,
 	buildNormalizedSermonState,
 	NormalizedSermonState,
+	NormalizedBook,
 } from "./sermons.util";
 import { withProgressMessages } from "../../utils/loading";
 import { Sermon } from "../../types/buildin";
@@ -196,5 +197,63 @@ export async function generatePreachersCache(ctx: MyContext, sermons: Sermon[]):
 	);
 
 	return preachersById;
+}
+
+/**
+ * Получает объект книги (NormalizedBook) по индексу книги в списке.
+ * Возвращает undefined, если книга не найдена.
+ */
+export function getBookByIndex(
+	state: NormalizedSermonState,
+	bookIndex: number
+): { book: string; bookRec: NormalizedBook } | undefined {
+	const books = state.books.allNames;
+	const book = books[bookIndex];
+
+	if (!book) {
+		return undefined;
+	}
+
+	const bookIdx = state.books.byName[book];
+	const bookRec = bookIdx ? state.books.byIndex[bookIdx] : undefined;
+
+	if (!bookRec) {
+		return undefined;
+	}
+
+	return { book, bookRec };
+}
+
+/**
+ * Извлекает список глав из объекта книги (NormalizedBook).
+ * Возвращает отсортированный массив номеров глав.
+ */
+export function getChaptersFromBook(bookRec: NormalizedBook): number[] {
+	return Object.keys(bookRec.byChapter)
+		.map((ch) => parseInt(ch, 10))
+		.filter((ch) => !isNaN(ch))
+		.sort((a, b) => a - b);
+}
+
+/**
+ * Получает список проповедей для книги и опционально для конкретной главы.
+ * Если chapterNumber не указан, возвращает все проповеди книги.
+ */
+export function getSermonsByBookAndChapter(
+	state: NormalizedSermonState,
+	bookRec: NormalizedBook,
+	chapterNumber?: number
+): Sermon[] {
+	let sermonIds: string[];
+
+	if (chapterNumber !== undefined) {
+		// Получаем проповеди для конкретной главы
+		sermonIds = bookRec.byChapter[chapterNumber] ?? [];
+	} else {
+		// Получаем все проповеди книги
+		sermonIds = bookRec.sermonIds ?? [];
+	}
+
+	return sermonIds.map((id) => state.sermons.byId[id]!).filter((sermon) => sermon !== undefined);
 }
 

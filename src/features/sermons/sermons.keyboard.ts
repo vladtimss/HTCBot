@@ -2,9 +2,10 @@
  * Клавиатуры для раздела «Проповеди».
  * - replySermonsMenu — основное меню раздела
  * - inlineBibleBooksMenu — inline-список книг Библии
+ * - inlineChaptersMenu — inline-список глав выбранной книги
  */
 import { InlineKeyboard, Keyboard } from "grammy";
-import { SERMONS_BUTTON_LABELS, SERMONS_INLINE_LABELS } from "./sermons.constants";
+import { SERMONS_BUTTON_LABELS } from "./sermons.constants";
 import { NAVIGATION_LABELS } from "../../constants/navigation";
 
 /** Reply-клавиатура раздела «Проповеди». */
@@ -31,6 +32,32 @@ export function inlineBibleBooksMenu(books: string[]): InlineKeyboard {
 		}
 		keyboard.row();
 	}
+
+	return keyboard;
+}
+
+/**
+ * Строит inline-клавиатуру с главами выбранной книги.
+ * Главы раскладываются по 4 в ряд, каждая ведёт к callback `sermons:book:{bookIndex}:chapter:{chapterNumber}`.
+ * Также добавляет кнопку "Назад к книгам" с callback `sermons:books`.
+ */
+export function inlineChaptersMenu(chapters: number[], bookIndex: number): InlineKeyboard {
+	const keyboard = new InlineKeyboard();
+
+	// Сортируем главы по возрастанию
+	const sortedChapters = [...chapters].sort((a, b) => a - b);
+
+	// Раскладываем главы по 4 в ряд
+	for (let i = 0; i < sortedChapters.length; i += 4) {
+		const chaptersInRow = sortedChapters.slice(i, i + 4);
+		for (const chapter of chaptersInRow) {
+			keyboard.text(`${chapter}`, `sermons:book:${bookIndex}:chapter:${chapter}`);
+		}
+		keyboard.row();
+	}
+
+	// Добавляем кнопку "Назад к книгам"
+	keyboard.text(NAVIGATION_LABELS.NAV_BACK, "sermons:books");
 
 	return keyboard;
 }

@@ -1,7 +1,7 @@
 import { Bot } from "grammy";
 import { MyContext } from "../../types/grammy-context";
 import { env } from "../../config/env";
-import { replySermonsMenu, inlineBibleBooksMenu } from "./sermons.keyboard";
+import { replySermonsMenu, inlineBibleBooksMenu, inlineChaptersMenu } from "./sermons.keyboard";
 import { MENU_LABELS } from "../../constants/button-lables";
 import { SERMONS_TEXTS } from "./sermons.texts";
 import { SERMONS_BUTTON_LABELS } from "./sermons.constants";
@@ -10,8 +10,15 @@ import { fmt } from "@grammyjs/parse-mode";
 import { replyFormatted } from "../../utils/format-helpers";
 import { getAllSermonsWithSomeMedia, buildNormalizedSermonState } from "./sermons.util";
 import { withProgressMessages } from "../../utils/loading";
-import { Sermon } from "../../types/buildin";
-import { formatSermonList, generateSermonsState, generatePreachersCache, sortSermons } from "./sermons.helpers";
+import {
+	formatSermonList,
+	generateSermonsState,
+	generatePreachersCache,
+	sortSermons,
+	getBookByIndex,
+	getChaptersFromBook,
+	getSermonsByBookAndChapter,
+} from "./sermons.helpers";
 
 /**
  * Рендерит корень раздела «Проповеди»:
@@ -100,9 +107,8 @@ export function registerSermons(bot: Bot<MyContext>) {
 	/**
 	 * Обработка выбора книги из inline-списка:
 	 * - гарантирует наличие состояния проповедей
-	 * - находит все проповеди по выбранной книге
-	 * - подгружает недостающие имена проповедников
-	 * - выводит отформатированный список проповедей
+	 * - находит все главы по выбранной книге
+	 * - показывает inline-клавиатуру с главами (4 в строку)
 	 */
 	bot.callbackQuery(/^sermons:book:(\d+)$/, async (ctx) => {
 		const bookIndex = parseInt(ctx.match[1], 10);
@@ -111,13 +117,85 @@ export function registerSermons(bot: Bot<MyContext>) {
 		const state = await generateSermonsState(ctx);
 		if (!state) return;
 
-		const books = state.books.allNames;
-		const book = books[bookIndex];
-
-		if (!book) {
+		const bookData = getBookByIndex(state, bookIndex);
+		if (!bookData) {
 			await ctx.reply(SERMONS_TEXTS.bookNotFound);
 			return;
 		}
+
+		const { book, bookRec } = bookData;
+
+		try {
+			const chapters = getChaptersFromBook(bookRec);
+
+			if (chapters.length === 0) {
+				// Если глав нет, показываем все проповеди книги (без фильтрации по главам)
+				const sermonsByBook = getSermonsByBookAndChapter(state, bookRec);
+				const sortedSermons = sortSermons(sermonsByBook);
+
+				const preachersById = await generatePreachersCache(ctx, sortedSermons);
+				const text = await formatSermonList(sortedSermons, preachersById);
+
+				await ctx.reply(text, {
+					parse_mode: "MarkdownV2",
+					link_preview_options: { is_disabled: true },
+					reply_markup: inlineBibleBooksMenu(state.books.allNames),
+				});
+				return;
+			}
+
+			// Показываем список глав
+			const text = fmt`${SERMONS_TEXTS.selectChapterTitle(book)}${COMMON.useButtonBelow}`;
+
+			await replyFormatted(ctx, text, {
+				reply_markup: inlineChaptersMenu(chapters, bookIndex),
+			});
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			console.error(`[sermons] Ошибка получения глав для книги ${book}:`, errorMessage);
+			await ctx.reply(`❌ Ошибка при загрузке глав: ${errorMessage}`);
+		}
+	});
+
+	/**
+	 * Обработка возврата к списку книг.
+	 */
+	bot.callbackQuery(/^sermons:books$/, async (ctx) => {
+		await ctx.answerCallbackQuery();
+
+		const state = await generateSermonsState(ctx);
+		if (!state) return;
+
+		const books = state.books.allNames || [];
+		const text = fmt`${SERMONS_TEXTS.selectBookTitle}${COMMON.useButtonBelow}`;
+
+		await replyFormatted(ctx, text, {
+			reply_markup: inlineBibleBooksMenu(books),
+		});
+	});
+
+	/**
+	 * Обработка выбора главы из inline-списка:
+	 * - гарантирует наличие состояния проповедей
+	 * - находит все проповеди по выбранной книге и главе
+	 * - подгружает недостающие имена проповедников
+	 * - выводит отформатированный список проповедей
+	 */
+	bot.callbackQuery(/^sermons:book:(\d+):chapter:(\d+)$/, async (ctx) => {
+		const bookIndex = parseInt(ctx.match[1], 10);
+		const chapterNumber = parseInt(ctx.match[2], 10);
+		await ctx.answerCallbackQuery();
+
+		const state = await generateSermonsState(ctx);
+		if (!state) return;
+
+		const bookData = getBookByIndex(state, bookIndex);
+		if (!bookData) {
+			await ctx.reply(SERMONS_TEXTS.bookNotFound);
+			return;
+		}
+
+		const { book, bookRec } = bookData;
 
 		// Явно показываем сообщение о подготовке списка и гарантированно его удаляем
 		const loadingMsg = await ctx.reply(SERMONS_TEXTS.prepareBookList, {
@@ -125,24 +203,31 @@ export function registerSermons(bot: Bot<MyContext>) {
 		});
 
 		try {
-			const bookIdx = state.books.byName[book];
-			const bookRec = bookIdx ? state.books.byIndex[bookIdx] : undefined;
-			const sermonIds = bookRec?.sermonIds ?? [];
-			const sermonsByBook: Sermon[] = sermonIds.map((id) => state.sermons.byId[id]!);
-			const sortedSermons = sortSermons(sermonsByBook);
+			const sermonsByChapter = getSermonsByBookAndChapter(state, bookRec, chapterNumber);
+			const sortedSermons = sortSermons(sermonsByChapter);
+
+			if (sortedSermons.length === 0) {
+				const chapters = getChaptersFromBook(bookRec);
+				await ctx.reply(SERMONS_TEXTS.notFoundInBook, {
+					link_preview_options: { is_disabled: true },
+					reply_markup: inlineChaptersMenu(chapters, bookIndex),
+				});
+				return;
+			}
 
 			const preachersById = await generatePreachersCache(ctx, sortedSermons);
-
 			const text = await formatSermonList(sortedSermons, preachersById);
+
+			const chapters = getChaptersFromBook(bookRec);
 
 			await ctx.reply(text, {
 				parse_mode: "MarkdownV2",
 				link_preview_options: { is_disabled: true },
-				reply_markup: inlineBibleBooksMenu(books),
+				reply_markup: inlineChaptersMenu(chapters, bookIndex),
 			});
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error);
-			console.error(`[sermons] Ошибка получения проповедей для книги ${book}:`, errorMessage);
+			console.error(`[sermons] Ошибка получения проповедей для книги ${book}, глава ${chapterNumber}:`, errorMessage);
 			await ctx.reply(`❌ Ошибка при загрузке проповедей: ${errorMessage}`);
 		} finally {
 			try {
