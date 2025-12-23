@@ -13,6 +13,14 @@ import {
 	BuildinRelationProperty,
 	BuildinPage,
 } from "../../types/buildin";
+import {
+	extractTitle,
+	extractRichText,
+	extractSelect,
+	extractMultiSelect,
+	extractUrl,
+	extractDate,
+} from "../../helpers/buildin-helpers";
 
 const SERMON_FIELDS = {
 	TITLE: "title",
@@ -74,6 +82,12 @@ function parseDate(dateStr: string | undefined): string | undefined {
 	}
 }
 
+/**
+ * Получает имя проповедника из relation поля.
+ * 
+ * Поле "Проповедник" может быть типа relation - в этом случае там хранится только id страницы,
+ * поэтому нужно дополнительно запросить страницу с человеком, чтобы получить его ФИО.
+ */
 export async function getPreacherName(relationField: BuildinRelationProperty): Promise<string | undefined> {
 	if (!relationField.relation || relationField.relation.length === 0) {
 		return;
@@ -88,13 +102,7 @@ export async function getPreacherName(relationField: BuildinRelationProperty): P
 			const page: BuildinPage = await getPage(relation.id);
 			const parentDbId = page.parent?.database_id;
 			if (parentDbId === PEOPLE_DATABASE_ID) {
-				const titleProperty = page.properties?.title as BuildinTitleProperty | undefined;
-				const titleField = titleProperty?.title?.[0];
-				const title =
-					titleField?.plain_text ||
-					titleField?.text?.content ||
-					undefined;
-
+				const title = extractTitle(page.properties?.title as BuildinTitleProperty | undefined);
 				if (title) {
 					return title;
 				}
@@ -114,38 +122,36 @@ export async function getPreacherName(relationField: BuildinRelationProperty): P
 function extractSermonProperties(record: BuildinDatabaseRecord): Sermon {
 	const { properties } = record;
 
-	const yandexProperty = properties[SERMON_FIELDS.MEDIA_YANDEX] as BuildinUrlProperty | undefined;
-	const youtubeProperty = properties[SERMON_FIELDS.MEDIA_YOUTUBE] as BuildinUrlProperty | undefined;
-	const vkProperty = properties[SERMON_FIELDS.MEDIA_VK] as BuildinUrlProperty | undefined;
-	const podsterProperty = properties[SERMON_FIELDS.MEDIA_PODSTER] as BuildinUrlProperty | undefined;
-
-	const yandexUrl = yandexProperty?.url ?? null;
-	const youtubeUrl = youtubeProperty?.url ?? null;
-	const vkUrl = vkProperty?.url ?? null;
-	const podsterUrl = podsterProperty?.url ?? null;
+	// Извлекаем медиа-ссылки
+	const yandexUrl = extractUrl(properties[SERMON_FIELDS.MEDIA_YANDEX] as BuildinUrlProperty | undefined);
+	const youtubeUrl = extractUrl(properties[SERMON_FIELDS.MEDIA_YOUTUBE] as BuildinUrlProperty | undefined);
+	const vkUrl = extractUrl(properties[SERMON_FIELDS.MEDIA_VK] as BuildinUrlProperty | undefined);
+	const podsterUrl = extractUrl(properties[SERMON_FIELDS.MEDIA_PODSTER] as BuildinUrlProperty | undefined);
 
 	const media: SermonMedia = {
-		yandex: isValidUrl(yandexUrl) ? (yandexUrl || undefined) : undefined,
-		youtube: isValidUrl(youtubeUrl) ? (youtubeUrl || undefined) : undefined,
-		vk: isValidUrl(vkUrl) ? (vkUrl || undefined) : undefined,
-		podster_fm: isValidUrl(podsterUrl) ? (podsterUrl || undefined) : undefined,
+		yandex: isValidUrl(yandexUrl) ? yandexUrl : undefined,
+		youtube: isValidUrl(youtubeUrl) ? youtubeUrl : undefined,
+		vk: isValidUrl(vkUrl) ? vkUrl : undefined,
+		podster_fm: isValidUrl(podsterUrl) ? podsterUrl : undefined,
 	};
 
-	const titleProperty = properties[SERMON_FIELDS.TITLE] as BuildinTitleProperty | undefined;
-	const title = titleProperty?.title?.[0]?.plain_text || titleProperty?.title?.[0]?.text?.content;
+	// Извлекаем основные поля
+	const title = extractTitle(properties[SERMON_FIELDS.TITLE] as BuildinTitleProperty | undefined);
 
-	const bookProperty = properties[SERMON_FIELDS.BOOK] as BuildinMultiSelectProperty | undefined;
-	const book = bookProperty?.multi_select?.[0]?.name;
+	const bookItems = extractMultiSelect(properties[SERMON_FIELDS.BOOK] as BuildinMultiSelectProperty | undefined);
+	const book = bookItems[0];
 
-	const sermonTextProperty = properties[SERMON_FIELDS.SERMON_TEXT] as BuildinRichTextProperty | undefined;
-	const sermonText = sermonTextProperty?.rich_text?.[0]?.plain_text || sermonTextProperty?.rich_text?.[0]?.text?.content;
+	const sermonText = extractRichText(properties[SERMON_FIELDS.SERMON_TEXT] as BuildinRichTextProperty | undefined);
 
-	const seriesProperty = properties[SERMON_FIELDS.SERIES] as BuildinSelectProperty | undefined;
-	const series = seriesProperty?.select?.name;
+	const series = extractSelect(properties[SERMON_FIELDS.SERIES] as BuildinSelectProperty | undefined);
 
+	// Парсим главу из текста проповеди
 	const chapters = parseChapterFromText(sermonText);
 	const chapter = chapters?.[0];
 
+	// Извлекаем проповедника
+	// Поле "Проповедник" может быть типа relation (только id, нужно дополнительно запрашивать ФИО),
+	// select или rich_text
 	const preacherField = properties[SERMON_FIELDS.PREACHER] as
 		| BuildinSelectProperty
 		| BuildinRichTextProperty
@@ -154,15 +160,16 @@ function extractSermonProperties(record: BuildinDatabaseRecord): Sermon {
 
 	let preacher: string | undefined;
 	if (preacherField?.type === "select") {
-		preacher = preacherField.select?.name;
+		preacher = extractSelect(preacherField);
 	} else if (preacherField?.type === "rich_text") {
-		preacher = preacherField.rich_text?.[0]?.plain_text || preacherField.rich_text?.[0]?.text?.content;
+		preacher = extractRichText(preacherField);
 	}
 
+	// Извлекаем дату (пробуем два поля)
 	const dateProperty =
 		(properties[SERMON_FIELDS.DATE] as BuildinDateProperty | undefined) ||
 		(properties[SERMON_FIELDS.DATE_ALT] as BuildinDateProperty | undefined);
-	const rawDate = dateProperty?.date?.start;
+	const rawDate = extractDate(dateProperty);
 	const date = parseDate(rawDate);
 
 	return {
