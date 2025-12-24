@@ -234,8 +234,10 @@ export type Sermon = {
 	chapter?: number;
 	sermonText?: string;
 	series?: string;
-	/** ID проповедника (из relation), если доступен */
+	/** ID проповедника (из relation), если доступен. Первый из relations. */
 	preacherId?: string;
+	/** Все relation IDs из поля "Проповедник" (для проверки всех вариантов) */
+	preacherIds?: string[];
 	preacher?: string;
 	date?: string;
 	media: SermonMedia;

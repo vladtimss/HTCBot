@@ -138,31 +138,68 @@ function hasSomeMedia(properties: BuildinDatabaseRecord["properties"]): boolean 
 	);
 }
 
-/** Получить имя проповедника по ID страницы (когда relation уже известен) */
-export async function getPreacherNameById(preacherId: string): Promise<string | undefined> {
+/**
+ * Проверяет, является ли страница проповедником из базы "Люди".
+ * Возвращает имя проповедника, если страница доступна и из правильной базы.
+ */
+async function checkPreacherPage(pageId: string): Promise<{ name: string; id: string } | undefined> {
 	// Проверяем кэш недоступных страниц - если страница уже в кэше, не делаем запрос
-	if (forbiddenPagesCache.has(preacherId)) {
+	if (forbiddenPagesCache.has(pageId)) {
 		return undefined;
 	}
 
 	try {
-		const page: BuildinPage = await getPage(preacherId);
+		const page: BuildinPage = await getPage(pageId);
 		const parentDbId = page.parent?.database_id;
 		if (parentDbId !== PEOPLE_DATABASE_ID) {
-			return;
+			return undefined;
 		}
-		return extractTitle(page.properties?.title as BuildinTitleProperty | undefined);
+		const name = extractTitle(page.properties?.title as BuildinTitleProperty | undefined);
+		if (name) {
+			return { name, id: pageId };
+		}
+		return undefined;
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : String(error);
 		// Если получили 403 - добавляем в кэш недоступных страниц
 		if (errorMessage.includes("403")) {
-			forbiddenPagesCache.add(preacherId);
-			console.error(`[sermons] 403 Forbidden - нет доступа к странице проповедника: ${preacherId} (добавлено в кэш, повторные запросы будут пропущены)`);
+			forbiddenPagesCache.add(pageId);
+			console.error(`[sermons] 403 Forbidden - нет доступа к странице проповедника: ${pageId} (добавлено в кэш, повторные запросы будут пропущены)`);
 		} else {
-			console.error(`[sermons] Ошибка получения проповедника ${preacherId}:`, errorMessage);
+			console.error(`[sermons] Ошибка получения проповедника ${pageId}:`, errorMessage);
 		}
 		return undefined;
 	}
+}
+
+/** Получить имя проповедника по ID страницы (когда relation уже известен) */
+export async function getPreacherNameById(preacherId: string): Promise<string | undefined> {
+	const result = await checkPreacherPage(preacherId);
+	return result?.name;
+}
+
+/**
+ * Проверяет все relations и возвращает правильный ID проповедника из базы "Люди".
+ * Если найдено несколько, возвращает первый доступный.
+ */
+export async function findValidPreacherId(relationIds: string[]): Promise<string | undefined> {
+	if (relationIds.length === 0) {
+		return undefined;
+	}
+
+	// Проверяем все relations параллельно
+	const results = await Promise.all(
+		relationIds.map(id => checkPreacherPage(id))
+	);
+
+	// Находим первый валидный результат
+	for (const result of results) {
+		if (result) {
+			return result.id;
+		}
+	}
+
+	return undefined;
 }
 
 function extractSermonProperties(record: BuildinDatabaseRecord): Sermon {
@@ -199,13 +236,21 @@ function extractSermonProperties(record: BuildinDatabaseRecord): Sermon {
 
 	let preacher: string | undefined;
 	let preacherId: string | undefined;
+	let preacherIds: string[] | undefined;
 
 	if (preacherField?.type === "select") {
 		preacher = extractSelect(preacherField);
 	} else if (preacherField?.type === "rich_text") {
 		preacher = extractRichText(preacherField);
 	} else if (preacherField?.type === "relation" && preacherField.relation.length > 0) {
-		preacherId = preacherField.relation[0]?.id;
+		// Сохраняем все relation IDs для проверки всех вариантов
+		preacherIds = preacherField.relation.map(r => r.id);
+		preacherId = preacherIds[0]; // Первый для обратной совместимости
+		
+		// Логируем, если relations несколько
+		if (preacherIds.length > 1) {
+			console.log(`[sermons] Проповедь "${title}" имеет несколько relations:`, preacherIds);
+		}
 	}
 
 	// Извлекаем дату (пробуем два поля)
@@ -224,6 +269,7 @@ function extractSermonProperties(record: BuildinDatabaseRecord): Sermon {
 		sermonText,
 		series,
 		preacherId,
+		preacherIds,
 		preacher,
 		date,
 		media,

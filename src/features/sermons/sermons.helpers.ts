@@ -9,10 +9,11 @@
 
 import { MyContext } from "../../types/grammy-context";
 import { SERMONS_TEXTS } from "./sermons.texts";
-import { escapeMdV2 } from "../../utils/text";
+import { escapeMdV2, escapeUrlV2 } from "../../utils/text";
 import {
 	getAllSermonsWithSomeMedia,
 	getPreacherNameById,
+	findValidPreacherId,
 	buildNormalizedSermonState,
 	NormalizedSermonState,
 	NormalizedBook,
@@ -46,64 +47,75 @@ export function formatDate(dateStr: string | undefined): string | undefined {
 /**
  * Формирует текстовый список проповедей для выбранной книги,
  * используя кеш имён проповедников из `preachersById`.
+ * 
+ * Формат каждой проповеди:
+ * 1. 📌 Название
+ * 2. 📖 Текст проповеди
+ * 3. 📅 дата - Имя автора
+ * 4. 🎧 Слушайте проповедь
+ * 5. 🎵 Яндекс (ссылка)
  */
 export async function formatSermonList(sermons: Sermon[], preachersById: Record<string, string>): Promise<string> {
 	if (sermons.length === 0) {
 		return SERMONS_TEXTS.notFoundInBook;
 	}
 
-	let text = `📖 Найдено проповедей: ${sermons.length}\n\n`;
+	let text = "";
 
 	for (let i = 0; i < sermons.length; i++) {
 		const sermon = sermons[i];
+		// Получаем проповедника: сначала из sermon.preacher, затем из кэша по ID
 		const preacher = sermon.preacher || (sermon.preacherId ? preachersById[sermon.preacherId] : undefined);
-
-		text += `${SERMONS_TEXTS.fields.title}: ${escapeMdV2(sermon.title || SERMONS_TEXTS.fields.defaultTitle)}\n`;
 		
-		if (sermon.chapter) {
-			text += `${SERMONS_TEXTS.fields.chapter}: ${sermon.chapter}\n`;
-		}
-		
-		const formattedDate = formatDate(sermon.date);
-		if (formattedDate) {
-			text += `${SERMONS_TEXTS.fields.date}: ${escapeMdV2(formattedDate)}\n`;
-		}
-		
-		if (preacher) {
-			text += `${SERMONS_TEXTS.fields.preacher}: ${escapeMdV2(preacher)}\n`;
-		}
-		
-		if (sermon.series) {
-			text += `${SERMONS_TEXTS.fields.series}: ${escapeMdV2(sermon.series)}\n`;
+		// Отладочный вывод для диагностики
+		if (sermon.preacherId && !preacher) {
+			console.log(`[sermons] Проповедник не найден для проповеди "${sermon.title}":`, {
+				preacherId: sermon.preacherId,
+				hasPreacherInSermon: !!sermon.preacher,
+				hasPreacherInCache: !!preachersById[sermon.preacherId],
+				cacheKeys: Object.keys(preachersById),
+			});
 		}
 
+		// 1. Иконка + Название (жирным)
+		const title = escapeMdV2(sermon.title || SERMONS_TEXTS.fields.defaultTitle);
+		text += `✨ *${title}*\n\n`;
+
+		// 2. Иконка с Библией/книгой + Текст проповеди
 		if (sermon.sermonText) {
-			const textPreview = sermon.sermonText.length > 100 
-				? sermon.sermonText.substring(0, 100) + "..." 
-				: sermon.sermonText;
-			text += `${SERMONS_TEXTS.fields.text}: ${escapeMdV2(textPreview)}\n`;
+			text += `📖 ${escapeMdV2(sermon.sermonText)}\n`;
 		}
-		
-		const platforms: string[] = [];
+
+		// 3. Иконка даты/автора + дата - Имя и Фамилия автора
+		const formattedDate = formatDate(sermon.date);
+		if (formattedDate || preacher) {
+			const datePart = formattedDate ? escapeMdV2(formattedDate) : "";
+			const preacherPart = preacher ? escapeMdV2(preacher) : "";
+			
+			// Всегда показываем дату и проповедника вместе, если оба есть
+			if (datePart && preacherPart) {
+				text += `📅 ${datePart} \\- ${preacherPart}\n\n`;
+			} else if (datePart) {
+				// Если есть только дата, показываем её
+				text += `📅 ${datePart}\n\n`;
+			} else if (preacherPart) {
+				// Если есть только проповедник, показываем его
+				text += `📅 ${preacherPart}\n\n`;
+			}
+		}
+
+		// 4. Иконка подкастов + "Слушайте проповедь" (жирным)
+		// Показываем только если есть хотя бы одна платформа
+		const hasAnyMedia = sermon.media.yandex || sermon.media.youtube || sermon.media.vk || sermon.media.podster_fm;
+		if (hasAnyMedia) {
+			text += `🎧 *Слушайте проповедь*\n`;
+		}
+
+		// 5. Иконка Яндекс + Яндекс (ссылка)
 		if (sermon.media.yandex) {
-			const url = escapeMdV2(sermon.media.yandex);
-			platforms.push(`${SERMONS_TEXTS.platforms.yandex} \\- ${url}`);
-		}
-		if (sermon.media.youtube) {
-			const url = escapeMdV2(sermon.media.youtube);
-			platforms.push(`${SERMONS_TEXTS.platforms.youtube} \\- ${url}`);
-		}
-		if (sermon.media.vk) {
-			const url = escapeMdV2(sermon.media.vk);
-			platforms.push(`${SERMONS_TEXTS.platforms.vk} \\- ${url}`);
-		}
-		if (sermon.media.podster_fm) {
-			const url = escapeMdV2(sermon.media.podster_fm);
-			platforms.push(`${SERMONS_TEXTS.platforms.podster} \\- ${url}`);
-		}
-		
-		if (platforms.length > 0) {
-			text += `${SERMONS_TEXTS.fields.platforms}:\n${platforms.map(p => `  ${p}`).join("\n")}\n`;
+			const url = escapeUrlV2(sermon.media.yandex);
+			const linkText = escapeMdV2("Яндекс");
+			text += `🎵 [${linkText}](${url})\n`;
 		}
 		
 		text += "\n";
@@ -175,26 +187,56 @@ export async function generateSermonsState(ctx: MyContext): Promise<NormalizedSe
  */
 export async function generatePreachersCache(ctx: MyContext, sermons: Sermon[]): Promise<Record<string, string>> {
 	const preachersById = ctx.session.preachersById ?? (ctx.session.preachersById = {});
-	const missingPreachers = new Set<string>();
 
+	// Для каждой проповеди проверяем всех проповедников
 	for (const sermon of sermons) {
-		if (!sermon.preacher && sermon.preacherId && !preachersById[sermon.preacherId]) {
-			missingPreachers.add(sermon.preacherId);
+		// Если проповедник уже есть в sermon.preacher, используем его
+		if (sermon.preacher) {
+			// Если есть preacherId, сохраняем его в кэш для будущего использования
+			if (sermon.preacherId && !preachersById[sermon.preacherId]) {
+				preachersById[sermon.preacherId] = sermon.preacher;
+			}
+			continue;
+		}
+
+		// Если проповедника нет, проверяем все relation IDs
+		const idsToCheck = sermon.preacherIds && sermon.preacherIds.length > 0 
+			? sermon.preacherIds 
+			: (sermon.preacherId ? [sermon.preacherId] : []);
+
+		if (idsToCheck.length === 0) {
+			continue;
+		}
+
+		// Сначала проверяем кэш - может быть один из IDs уже загружен
+		let foundInCache = false;
+		for (const id of idsToCheck) {
+			if (preachersById[id]) {
+				// Нашли в кэше, обновляем preacherId в sermon
+				(sermon as any).preacherId = id;
+				foundInCache = true;
+				break;
+			}
+		}
+
+		if (foundInCache) {
+			continue;
+		}
+
+		// Если не нашли в кэше, проверяем все IDs и находим правильный
+		const validId = await findValidPreacherId(idsToCheck);
+		if (validId) {
+			const name = await getPreacherNameById(validId);
+			if (name) {
+				preachersById[validId] = name;
+				// Обновляем preacherId в sermon для будущего использования
+				(sermon as any).preacherId = validId;
+			} else {
+				// Логируем, если не удалось загрузить проповедника
+				console.log(`[sermons] Не удалось загрузить проповедника для проповеди "${sermon.title}", проверены IDs:`, idsToCheck);
+			}
 		}
 	}
-
-	if (missingPreachers.size === 0) {
-		return preachersById;
-	}
-
-	await Promise.all(
-		Array.from(missingPreachers).map(async (id: string) => {
-			const name = await getPreacherNameById(id);
-			if (name) {
-				preachersById[id] = name;
-			}
-		})
-	);
 
 	return preachersById;
 }
