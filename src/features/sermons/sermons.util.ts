@@ -1,5 +1,5 @@
 import { getAllDatabaseRecords, getPage } from "../../services/buildin";
-import { SERMONS_DATABASE_ID, PEOPLE_DATABASE_ID } from "./sermons.constants";
+import { SERMONS_DATABASE_ID, PEOPLE_DATABASE_ID, BIBLE_BOOK_INDEXES, BOOK_ALIASES } from "./sermons.constants";
 import {
 	Sermon,
 	SermonMedia,
@@ -21,7 +21,6 @@ import {
 	extractUrl,
 	extractDate,
 } from "../../helpers/buildin-helpers";
-import { BIBLE_BOOK_INDEXES } from "./sermons.constants";
 
 /**
  * Кэш страниц, к которым нет доступа (403 Forbidden).
@@ -67,18 +66,6 @@ function normalizeBookName(name: string): string {
 }
 
 /**
- * Алиасы: нормализованное имя -> эталонное название (как в `BIBLE_BOOK_INDEXES`).
- * Дополняем по мере необходимости, чтобы ловить разные варианты написаний.
- */
-const BOOK_ALIASES: Record<string, string> = {
-	"1етимофею": "1 Тимофею",
-	"1тимофею": "1 Тимофею",
-	"2етимофею": "2 Тимофею",
-	"2тимофею": "2 Тимофею",
-	"отлуки": "От Луки",
-};
-
-/**
  * Получает индекс книги из `BIBLE_BOOK_INDEXES`, учитывая алиасы и нормализацию.
  */
 function getBookIndex(bookName: string | undefined): number | undefined {
@@ -107,9 +94,10 @@ export function parseChapterFromText(text: string | undefined): number[] | undef
 
 	const cleanText = text.trim();
 	const chapterPatterns = [
-		/\.(\d+)[:.]/,
-		/\s(\d+)[:.]/,
-		/^(\d+)[:.]/,
+		/\.(\d+)[:.]/,      // точка перед числом, затем двоеточие или точка (например, ".18:" или ".18.")
+		/\s(\d+)[:.]/,      // пробел перед числом, затем двоеточие или точка (например, " 18:" или " 18.")
+		/^(\d+)[:.]/,       // начало строки с числом, затем двоеточие или точка (например, "18:" или "18.")
+		/\s(\d+)$/,         // пробел перед числом в конце строки (например, " 18" в конце)
 	];
 
 	for (const pattern of chapterPatterns) {
