@@ -27,8 +27,12 @@ export function extractTitle(property: BuildinTitleProperty | undefined): string
 		return undefined;
 	}
 
-	const firstItem = property.title[0];
-	return firstItem?.plain_text || firstItem?.text?.content;
+	// Объединяем все элементы массива, так как title может состоять из нескольких частей
+	const parts = property.title
+		.map((item) => item?.plain_text || item?.text?.content)
+		.filter((text): text is string => Boolean(text));
+
+	return parts.length > 0 ? parts.join("") : undefined;
 }
 
 /**
@@ -42,8 +46,12 @@ export function extractRichText(property: BuildinRichTextProperty | undefined): 
 		return undefined;
 	}
 
-	const firstItem = property.rich_text[0];
-	return firstItem?.plain_text || firstItem?.text?.content;
+	// Объединяем все элементы массива, так как rich_text может состоять из нескольких частей
+	const parts = property.rich_text
+		.map((item) => item?.plain_text || item?.text?.content)
+		.filter((text): text is string => Boolean(text));
+
+	return parts.length > 0 ? parts.join("") : undefined;
 }
 
 /**

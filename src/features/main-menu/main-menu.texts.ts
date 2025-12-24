@@ -15,5 +15,5 @@ import { COMMON } from "../../services/texts";
  * Заголовок главного меню
  */
 export const MAIN_TEXTS = {
-	title: fmt`${bold()}Главное меню${bold()}\n\n${COMMON.useButtonBelow}`,
+	title: fmt`${bold()}Главное меню${bold()}${COMMON.useButtonBelow}`,
 };

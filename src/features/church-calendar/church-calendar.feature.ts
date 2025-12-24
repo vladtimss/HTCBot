@@ -43,9 +43,7 @@ export async function renderCalendarRoot(ctx: MyContext) {
 	ctx.session.lastSection = "calendar";
 	ctx.session.menuStack = ["calendar"];
 
-	const text = fmt`${CALENDAR_TEXTS.title}
-
-${COMMON.useButtonBelow}`;
+	const text = fmt`${CALENDAR_TEXTS.title}${COMMON.useButtonBelow}`;
 
 	await replyFormatted(ctx, text, {
 		reply_markup: replyCalendarMenu,
@@ -114,9 +112,7 @@ ${eventsText}`;
 		if (!requirePrivileged(ctx)) return;
 
 		ctx.session.menuStack.push("lmg");
-		const text = fmt`${CALENDAR_TEXTS.lmgTitle}
-
-${COMMON.useButtonBelow}`;
+		const text = fmt`${CALENDAR_TEXTS.lmgTitle}${COMMON.useButtonBelow}`;
 		await replyFormatted(ctx, text, {
 			reply_markup: replyCalendarLmgMenu,
 		});
@@ -153,9 +149,7 @@ ${formatEvent(ev)}`;
 		if (!requirePrivileged(ctx)) return;
 
 		ctx.session.menuStack.push("prayers");
-		const text = fmt`${CALENDAR_TEXTS.prayersTitle}
-
-${COMMON.useButtonBelow}`;
+		const text = fmt`${CALENDAR_TEXTS.prayersTitle}${COMMON.useButtonBelow}`;
 		await replyFormatted(ctx, text, {
 			reply_markup: replyCalendarPrayerMenu,
 		});
@@ -192,9 +186,7 @@ ${formatEvent(ev)}`;
 		if (!requirePrivileged(ctx)) return;
 
 		ctx.session.menuStack.push("members");
-		const text = fmt`${CALENDAR_TEXTS.membersTitle}
-
-${COMMON.useButtonBelow}`;
+		const text = fmt`${CALENDAR_TEXTS.membersTitle}${COMMON.useButtonBelow}`;
 		await replyFormatted(ctx, text, {
 			reply_markup: replyCalendarMembersMenu,
 		});
@@ -250,9 +242,7 @@ ${formatEvent(ev)}`;
 		if (!requirePrivileged(ctx)) return;
 
 		ctx.session.menuStack.push("holidays");
-		const text = fmt`${CALENDAR_TEXTS.holidaysTitle}
-
-${COMMON.useButtonBelow}`;
+		const text = fmt`${CALENDAR_TEXTS.holidaysTitle}${COMMON.useButtonBelow}`;
 		await replyFormatted(ctx, text, {
 			reply_markup: replyCalendarHolidaysMenu,
 		});
@@ -297,9 +287,7 @@ ${COMMON.useButtonBelow}`;
 		if (!requirePrivileged(ctx)) return;
 
 		ctx.session.menuStack.push("family");
-		const text = fmt`${CALENDAR_TEXTS.familyTitle}
-
-${COMMON.useButtonBelow}`;
+		const text = fmt`${CALENDAR_TEXTS.familyTitle}${COMMON.useButtonBelow}`;
 		await replyFormatted(ctx, text, {
 			reply_markup: replyCalendarFamilyMenu,
 		});

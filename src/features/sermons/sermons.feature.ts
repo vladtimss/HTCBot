@@ -1,24 +1,34 @@
-import { Bot } from "grammy";
-import { MyContext } from "../../types/grammy-context";
-import { env } from "../../config/env";
-import { replySermonsMenu, inlineBibleBooksMenu, inlineChaptersMenu } from "./sermons.keyboard";
-import { MENU_LABELS } from "../../constants/button-lables";
-import { SERMONS_TEXTS } from "./sermons.texts";
-import { SERMONS_BUTTON_LABELS } from "./sermons.constants";
-import { COMMON } from "../../services/texts";
-import { fmt } from "@grammyjs/parse-mode";
-import { replyFormatted } from "../../utils/format-helpers";
-import { getAllSermonsWithSomeMedia, buildNormalizedSermonState } from "./sermons.util";
-import { withProgressMessages, withLoading } from "../../utils/loading";
+import { Bot }                                                    from "grammy";
+import { MyContext }                                              from "../../types/grammy-context";
+import { env }                                                    from "../../config/env";
+import {
+	inlineBibleBooksMenu,
+	inlineBooksBackMenu,
+	inlineChaptersBackMenu,
+	inlineChaptersMenu,
+	inlineSeriesBackMenu,
+	inlineSeriesMenu,
+	replySermonsMenu
+}                                                                 from "./sermons.keyboard";
+import { MENU_LABELS }                                            from "../../constants/button-lables";
+import { SERMONS_TEXTS }                                          from "./sermons.texts";
+import { SERMONS_BUTTON_LABELS }                                  from "./sermons.constants";
+import { COMMON }                                                 from "../../services/texts";
+import { fmt }                                                    from "@grammyjs/parse-mode";
+import { replyFormatted }                                         from "../../utils/format-helpers";
+import { buildNormalizedSermonState, getAllSermonsWithSomeMedia } from "./sermons.util";
+import { withLoading, withProgressMessages }                      from "../../utils/loading";
 import {
 	formatSermonList,
-	generateSermonsState,
 	generatePreachersCache,
-	sortSermons,
+	generateSermonsState,
 	getBookByIndex,
 	getChaptersFromBook,
 	getSermonsByBookAndChapter,
-} from "./sermons.helpers";
+	getSermonsBySeries,
+	getValidSeries,
+	sortSermons,
+}                                                                 from "./sermons.helpers";
 
 /**
  * Рендерит корень раздела «Проповеди»:
@@ -39,11 +49,35 @@ export async function renderSermonsRoot(ctx: MyContext) {
 }
 
 /**
+ * Показывает список серий проповедей.
+ * Используется при входе в раздел серий и при возврате к списку серий.
+ */
+async function renderSeriesList(ctx: MyContext) {
+	const state = await generateSermonsState(ctx);
+	if (!state) return;
+
+	const validSeries = getValidSeries(state);
+
+	if (validSeries.length === 0) {
+		await ctx.reply(SERMONS_TEXTS.noSeriesFound);
+		return;
+	}
+
+	const text = fmt`${SERMONS_TEXTS.selectSeriesTitle}${COMMON.useButtonBelow}`;
+
+	await replyFormatted(ctx, text, {
+		reply_markup: inlineSeriesMenu(validSeries),
+	});
+}
+
+/**
  * Регистрирует все хендлеры раздела «Проповеди»:
  * - вход в раздел
  * - подкасты
  * - поиск по книгам
  * - выбор книги по inline-кнопке
+ * - поиск по сериям
+ * - выбор серии по inline-кнопке
  */
 export function registerSermons(bot: Bot<MyContext>) {
 	/**
@@ -100,7 +134,7 @@ export function registerSermons(bot: Bot<MyContext>) {
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error);
 			console.error(`[sermons] Ошибка получения проповедей:`, errorMessage);
-			await ctx.reply(`❌ Ошибка при загрузке проповедей: ${errorMessage}`);
+			await ctx.reply(`${SERMONS_TEXTS.errorLoadingSermons} ${errorMessage}`);
 		}
 	});
 
@@ -139,21 +173,20 @@ export function registerSermons(bot: Bot<MyContext>) {
 				await ctx.reply(text, {
 					parse_mode: "MarkdownV2",
 					link_preview_options: { is_disabled: true },
-					reply_markup: inlineBibleBooksMenu(state.books.allNames),
+					reply_markup: inlineBooksBackMenu(),
 				});
-				return;
+			} else {
+				// Показываем список глав
+				const text = fmt`${SERMONS_TEXTS.selectChapterTitle(book)}${COMMON.useButtonBelow}`;
+
+				await replyFormatted(ctx, text, {
+					reply_markup: inlineChaptersMenu(chapters, bookIndex),
+				});
 			}
-
-			// Показываем список глав
-			const text = fmt`${SERMONS_TEXTS.selectChapterTitle(book)}${COMMON.useButtonBelow}`;
-
-			await replyFormatted(ctx, text, {
-				reply_markup: inlineChaptersMenu(chapters, bookIndex),
-			});
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error);
 			console.error(`[sermons] Ошибка получения глав для книги ${book}:`, errorMessage);
-			await ctx.reply(`❌ Ошибка при загрузке глав: ${errorMessage}`);
+			await ctx.reply(`${SERMONS_TEXTS.errorLoadingChapters} ${errorMessage}`);
 		}
 	});
 
@@ -172,6 +205,88 @@ export function registerSermons(bot: Bot<MyContext>) {
 		await replyFormatted(ctx, text, {
 			reply_markup: inlineBibleBooksMenu(books),
 		});
+	});
+
+	/**
+	 * Вход в режим поиска проповедей по сериям.
+	 * Загружает и нормализует все проповеди, затем показывает список серий (исключая пустые и "НЕТ").
+	 */
+	bot.hears(SERMONS_BUTTON_LABELS.SERMONS_BY_SERIES, async (ctx) => {
+		ctx.session.menuStack.push("sermons-series");
+		ctx.session.lastSection = "sermons-series";
+
+		try {
+			await renderSeriesList(ctx);
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			console.error(`[sermons] Ошибка получения серий:`, errorMessage);
+			await ctx.reply(`${SERMONS_TEXTS.errorLoadingSeries} ${errorMessage}`);
+		}
+	});
+
+	/**
+	 * Обработка выбора серии из inline-списка:
+	 * - гарантирует наличие состояния проповедей
+	 * - находит все проповеди по выбранной серии
+	 * - подгружает недостающие имена проповедников
+	 * - выводит отформатированный список проповедей
+	 */
+	bot.callbackQuery(/^sermons:series:(\d+)$/, async (ctx) => {
+		const seriesIndex = parseInt(ctx.match[1], 10);
+		await ctx.answerCallbackQuery();
+
+		const state = await generateSermonsState(ctx);
+		if (!state) return;
+
+		const validSeries = getValidSeries(state);
+		const seriesName = validSeries[seriesIndex];
+
+		if (!seriesName) {
+			await ctx.reply(SERMONS_TEXTS.seriesNotFound);
+			return;
+		}
+
+		// Используем withLoading с задержкой - сообщение покажется только если операция длится дольше 500ms
+		await withLoading(
+			ctx,
+			async () => {
+				const sermonsBySeries = getSermonsBySeries(state, seriesName);
+				const sortedSermons = sortSermons(sermonsBySeries);
+
+				if (sortedSermons.length === 0) {
+					await ctx.reply(SERMONS_TEXTS.notFoundInSeries, {
+						link_preview_options: { is_disabled: true },
+						reply_markup: inlineSeriesBackMenu(),
+					});
+					return;
+				}
+
+				const preachersById = await generatePreachersCache(ctx, sortedSermons);
+				const text = await formatSermonList(sortedSermons, preachersById);
+
+				await ctx.reply(text, {
+					parse_mode: "MarkdownV2",
+					link_preview_options: { is_disabled: true },
+					reply_markup: inlineSeriesBackMenu(),
+				});
+			},
+			{
+				text: SERMONS_TEXTS.prepareBookList,
+				delayMs: 500, // Показываем сообщение только если операция длится дольше 500ms
+			}
+		).catch((error) => {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			console.error(`[sermons] Ошибка получения проповедей для серии ${seriesName}:`, errorMessage);
+			return ctx.reply(`${SERMONS_TEXTS.errorLoadingSermons} ${errorMessage}`);
+		});
+	});
+
+	/**
+	 * Обработка возврата к списку серий.
+	 */
+	bot.callbackQuery(/^sermons:series:back$/, async (ctx) => {
+		await ctx.answerCallbackQuery();
+		await renderSeriesList(ctx);
 	});
 
 	/**
@@ -221,7 +336,7 @@ export function registerSermons(bot: Bot<MyContext>) {
 				await ctx.reply(text, {
 					parse_mode: "MarkdownV2",
 					link_preview_options: { is_disabled: true },
-					reply_markup: inlineChaptersMenu(chapters, bookIndex),
+					reply_markup: inlineChaptersBackMenu(chapters, bookIndex),
 				});
 			},
 			{
@@ -231,7 +346,7 @@ export function registerSermons(bot: Bot<MyContext>) {
 		).catch((error) => {
 			const errorMessage = error instanceof Error ? error.message : String(error);
 			console.error(`[sermons] Ошибка получения проповедей для книги ${book}, глава ${chapterNumber}:`, errorMessage);
-			return ctx.reply(`❌ Ошибка при загрузке проповедей: ${errorMessage}`);
+			return ctx.reply(`${SERMONS_TEXTS.errorLoadingSermons} ${errorMessage}`);
 		});
 	});
 }

@@ -22,9 +22,7 @@ export async function renderAboutRoot(ctx: MyContext) {
 	ctx.session.menuStack = ["about"];
 	ctx.session.lastSection = "about";
 
-	const text = fmt`${bold()}Раздел: ${ABOUT_TEXTS.title}${bold()}
-
-${COMMON.useButtonBelow}`;
+	const text = fmt`${bold()}Раздел: ${ABOUT_TEXTS.title}${bold()}${COMMON.useButtonBelow}`;
 
 	await replyFormatted(ctx, text, {
 		reply_markup: replyAboutMenu,

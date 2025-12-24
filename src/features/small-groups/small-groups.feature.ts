@@ -40,9 +40,7 @@ export async function renderGroupsRoot(ctx: MyContext) {
 
 	const text = fmt`${bold()}${SMALL_GROUPS_TEXTS.title}${bold()}
 
-${isPrivileged ? SMALL_GROUPS_TEXTS.descriptionForMembers : SMALL_GROUPS_TEXTS.descriptionForOther}
-
-${COMMON.useButtonBelow}`;
+${isPrivileged ? SMALL_GROUPS_TEXTS.descriptionForMembers : SMALL_GROUPS_TEXTS.descriptionForOther}${COMMON.useButtonBelow}`;
 
 	await replyFormatted(ctx, text, {
 		reply_markup: replyGroupsMenu(ctx),

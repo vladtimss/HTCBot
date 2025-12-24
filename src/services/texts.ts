@@ -17,5 +17,5 @@ export const COMMON = {
 	/** Заголовок главного меню */
 	mainMenuTitle: "Главное меню:",
 	/** Текст "Воспользуйтесь кнопками ниже" в формате MarkdownV2 */
-	useButtonBelow: fmt`👇 ${bold()}ВОСПОЛЬЗУЙТЕСЬ КНОПКАМИ НИЖЕ${bold()} 👇`,
+	useButtonBelow: fmt`\n\n👇 ${bold()}ВОСПОЛЬЗУЙТЕСЬ КНОПКАМИ НИЖЕ${bold()} 👇`,
 };

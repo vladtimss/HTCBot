@@ -305,3 +305,26 @@ export function getSermonsByBookAndChapter(
 	return sermonIds.map((id) => state.sermons.byId[id]!).filter((sermon) => sermon !== undefined);
 }
 
+/**
+ * Получает список проповедей для указанной серии.
+ * Возвращает пустой массив, если серия не найдена.
+ */
+export function getSermonsBySeries(
+	state: NormalizedSermonState,
+	seriesName: string
+): Sermon[] {
+	const sermonIds = state.series.byName[seriesName] ?? [];
+	return sermonIds.map((id) => state.sermons.byId[id]!).filter((sermon) => sermon !== undefined);
+}
+
+/**
+ * Фильтрует список серий, исключая пустые и "НЕТ" серии.
+ * Возвращает отсортированный массив валидных названий серий.
+ */
+export function getValidSeries(state: NormalizedSermonState): string[] {
+	return state.series.allNames.filter((seriesName) => {
+		const trimmed = seriesName.trim();
+		return trimmed.length > 0 && trimmed.toUpperCase() !== "НЕТ";
+	});
+}
+

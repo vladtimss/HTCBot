@@ -3,6 +3,7 @@
  * - replySermonsMenu — основное меню раздела
  * - inlineBibleBooksMenu — inline-список книг Библии
  * - inlineChaptersMenu — inline-список глав выбранной книги
+ * - inlineSeriesMenu — inline-список серий проповедей
  */
 import { InlineKeyboard, Keyboard } from "grammy";
 import { SERMONS_BUTTON_LABELS } from "./sermons.constants";
@@ -13,6 +14,8 @@ export const replySermonsMenu = new Keyboard()
 	.text(SERMONS_BUTTON_LABELS.SERMONS_PODCASTS)
 	.row()
 	.text(SERMONS_BUTTON_LABELS.SERMONS_BY_BOOK)
+	.row()
+	.text(SERMONS_BUTTON_LABELS.SERMONS_BY_SERIES)
 	.row()
 	.text(NAVIGATION_LABELS.NAV_BACK)
 	.resized();
@@ -59,5 +62,52 @@ export function inlineChaptersMenu(chapters: number[], bookIndex: number): Inlin
 	// Добавляем кнопку "Назад к книгам"
 	keyboard.text(NAVIGATION_LABELS.NAV_BACK, "sermons:books");
 
+	return keyboard;
+}
+
+/**
+ * Строит inline-клавиатуру с сериями проповедей.
+ * Серии раскладываются в одну колонку (по одной на строку),
+ * каждая ведёт к callback `sermons:series:{index}`.
+ */
+export function inlineSeriesMenu(series: string[]): InlineKeyboard {
+	const keyboard = new InlineKeyboard();
+
+	// Каждая серия в отдельной строке (одна колонка)
+	for (let i = 0; i < series.length; i++) {
+		keyboard.text(series[i], `sermons:series:${i}`).row();
+	}
+
+	return keyboard;
+}
+
+/**
+ * Строит inline-клавиатуру с кнопкой "Назад к сериям".
+ * Используется когда показываем список проповедей конкретной серии.
+ */
+export function inlineSeriesBackMenu(): InlineKeyboard {
+	const keyboard = new InlineKeyboard();
+	keyboard.text(NAVIGATION_LABELS.NAV_BACK, "sermons:series:back");
+	return keyboard;
+}
+
+/**
+ * Строит inline-клавиатуру с кнопкой "Назад к книгам".
+ * Используется когда показываем список проповедей книги без глав.
+ */
+export function inlineBooksBackMenu(): InlineKeyboard {
+	const keyboard = new InlineKeyboard();
+	keyboard.text(NAVIGATION_LABELS.NAV_BACK, "sermons:books");
+	return keyboard;
+}
+
+/**
+ * Строит inline-клавиатуру с кнопкой "Назад к главам".
+ * Используется когда показываем список проповедей конкретной главы книги.
+ * Кнопка возвращает к списку глав выбранной книги.
+ */
+export function inlineChaptersBackMenu(chapters: number[], bookIndex: number): InlineKeyboard {
+	const keyboard = new InlineKeyboard();
+	keyboard.text(NAVIGATION_LABELS.NAV_BACK, `sermons:book:${bookIndex}`);
 	return keyboard;
 }

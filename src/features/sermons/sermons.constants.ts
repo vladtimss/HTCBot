@@ -6,7 +6,8 @@
 
 export const SERMONS_BUTTON_LABELS = {
 	SERMONS_PODCASTS: "🎧 Подкасты",
-	SERMONS_BY_BOOK: "📖 По книгам Библии",
+	SERMONS_BY_BOOK: "📖 Книги Библии",
+	SERMONS_BY_SERIES: "📚 Серии",
 };
 
 /**
