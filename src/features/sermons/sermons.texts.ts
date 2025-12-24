@@ -23,15 +23,21 @@ function sermonsTextsPodcasts(yandexUrl: string, podsterUrl: string) {
 // Основной объект (inline тексты)
 // ============================================================================
 
+/**
+ * Строит текст выбора главы книги с форматированием.
+ */
+function selectChapterTitleText(bookName: string) {
+	return fmt`Выберите главу книги ${bold()}${bookName}${bold()}:`;
+}
+
 export const SERMONS_TEXTS = {
 	title: fmt`${bold()}Раздел: Проповеди${bold()}`,
 	podcasts: sermonsTextsPodcasts,
 	noMediaFound: "❌ Проповеди с медиа не найдены.",
-	notLoaded: "❌ Проповеди не загружены. Попробуйте выбрать раздел снова.",
 	bookNotFound: "❌ Книга не найдена.",
 	seriesNotFound: "❌ Серия не найдена.",
 	selectBookTitle: "Выберите книгу Библии:",
-	selectChapterTitle: (bookName: string) => `Выберите главу книги "${bookName}":`,
+	selectChapterTitle: selectChapterTitleText,
 	selectSeriesTitle: "Выберите серию:",
 	prepareBookList: "⏳ Готовлю список проповедей по выбранной книге…",
 	progressFirst: "⏳ Загружаю проповеди…",
@@ -39,24 +45,10 @@ export const SERMONS_TEXTS = {
 	notFoundInBook: "❌ Проповеди по этой книге не найдены.",
 	noSeriesFound: "❌ Серии не найдены.",
 	notFoundInSeries: "❌ Проповеди по этой серии не найдены.",
-	errorPrefix: "❌ Ошибка при загрузке проповедей:",
 	errorLoadingSermons: "❌ Ошибка при загрузке проповедей:",
 	errorLoadingChapters: "❌ Ошибка при загрузке глав:",
 	errorLoadingSeries: "❌ Ошибка при загрузке серий:",
 	fields: {
-		title: "📌 Название",
-		chapter: "📄 Глава",
-		date: "📅 Дата",
-		preacher: "👤 Проповедник",
-		series: "📚 Серия",
-		text: "📝 Текст",
-		platforms: "🔗 Платформы",
 		defaultTitle: "Без названия",
-	},
-	platforms: {
-		yandex: "Яндекс",
-		youtube: "YouTube",
-		vk: "VK",
-		podster: "Podster.fm",
 	},
 };

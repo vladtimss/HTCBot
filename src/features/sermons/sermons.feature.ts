@@ -28,6 +28,7 @@ import {
 	getSermonsBySeries,
 	getValidSeries,
 	sortSermons,
+	handleSermonsError,
 }                                                                 from "./sermons.helpers";
 
 /**
@@ -67,6 +68,109 @@ async function renderSeriesList(ctx: MyContext) {
 
 	await replyFormatted(ctx, text, {
 		reply_markup: inlineSeriesMenu(validSeries),
+	});
+}
+
+/**
+ * Обрабатывает выбор книги: показывает либо список глав, либо все проповеди книги.
+ */
+async function handleBookSelection(ctx: MyContext, bookIndex: number) {
+	const state = await generateSermonsState(ctx);
+	if (!state) return;
+
+	const bookData = getBookByIndex(state, bookIndex);
+	if (!bookData) {
+		await ctx.reply(SERMONS_TEXTS.bookNotFound);
+		return;
+	}
+
+	const { book, bookRec } = bookData;
+	const chapters = getChaptersFromBook(bookRec);
+
+	if (chapters.length === 0) {
+		// Если глав нет, показываем все проповеди книги
+		const sermonsByBook = getSermonsByBookAndChapter(state, bookRec);
+		const sortedSermons = sortSermons(sermonsByBook);
+		const preachersById = await generatePreachersCache(ctx, sortedSermons);
+		const text = await formatSermonList(sortedSermons, preachersById);
+
+		await ctx.reply(text, {
+			parse_mode: "MarkdownV2",
+			link_preview_options: { is_disabled: true },
+			reply_markup: inlineBooksBackMenu(),
+		});
+	} else {
+		// Показываем список глав
+		const chapterTitle = SERMONS_TEXTS.selectChapterTitle(book);
+		const text = fmt`${chapterTitle}${COMMON.useButtonBelow}`;
+		await replyFormatted(ctx, text, {
+			reply_markup: inlineChaptersMenu(chapters, bookIndex),
+		});
+	}
+}
+
+/**
+ * Обрабатывает выбор серии: показывает список проповедей серии.
+ */
+async function handleSeriesSelection(ctx: MyContext, seriesName: string) {
+	const state = await generateSermonsState(ctx);
+	if (!state) return;
+
+	const sermonsBySeries = getSermonsBySeries(state, seriesName);
+	const sortedSermons = sortSermons(sermonsBySeries);
+
+	if (sortedSermons.length === 0) {
+		await ctx.reply(SERMONS_TEXTS.notFoundInSeries, {
+			link_preview_options: { is_disabled: true },
+			reply_markup: inlineSeriesBackMenu(),
+		});
+		return;
+	}
+
+	const preachersById = await generatePreachersCache(ctx, sortedSermons);
+	const text = await formatSermonList(sortedSermons, preachersById);
+
+	await ctx.reply(text, {
+		parse_mode: "MarkdownV2",
+		link_preview_options: { is_disabled: true },
+		reply_markup: inlineSeriesBackMenu(),
+	});
+}
+
+/**
+ * Обрабатывает выбор главы: показывает список проповедей главы.
+ */
+async function handleChapterSelection(ctx: MyContext, bookIndex: number, chapterNumber: number) {
+	const state = await generateSermonsState(ctx);
+	if (!state) return;
+
+	const bookData = getBookByIndex(state, bookIndex);
+	if (!bookData) {
+		await ctx.reply(SERMONS_TEXTS.bookNotFound);
+		return;
+	}
+
+	const { bookRec } = bookData;
+	const sermonsByChapter = getSermonsByBookAndChapter(state, bookRec, chapterNumber);
+	const sortedSermons = sortSermons(sermonsByChapter);
+
+	if (sortedSermons.length === 0) {
+		const chapters = getChaptersFromBook(bookRec);
+		await ctx.reply(SERMONS_TEXTS.notFoundInBook, {
+			link_preview_options: { is_disabled: true },
+			reply_markup: inlineChaptersMenu(chapters, bookIndex),
+		});
+		return;
+	}
+
+	const preachersById = await generatePreachersCache(ctx, sortedSermons);
+	const text = await formatSermonList(sortedSermons, preachersById);
+	const chapters = getChaptersFromBook(bookRec);
+
+	await ctx.reply(text, {
+		parse_mode: "MarkdownV2",
+		link_preview_options: { is_disabled: true },
+		reply_markup: inlineChaptersBackMenu(chapters, bookIndex),
 	});
 }
 
@@ -132,9 +236,7 @@ export function registerSermons(bot: Bot<MyContext>) {
 				reply_markup: inlineBibleBooksMenu(books),
 			});
 		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : String(error);
-			console.error(`[sermons] Ошибка получения проповедей:`, errorMessage);
-			await ctx.reply(`${SERMONS_TEXTS.errorLoadingSermons} ${errorMessage}`);
+			await handleSermonsError(ctx, error, SERMONS_TEXTS.errorLoadingSermons, "Ошибка получения проповедей");
 		}
 	});
 
@@ -148,45 +250,10 @@ export function registerSermons(bot: Bot<MyContext>) {
 		const bookIndex = parseInt(ctx.match[1], 10);
 		await ctx.answerCallbackQuery();
 
-		const state = await generateSermonsState(ctx);
-		if (!state) return;
-
-		const bookData = getBookByIndex(state, bookIndex);
-		if (!bookData) {
-			await ctx.reply(SERMONS_TEXTS.bookNotFound);
-			return;
-		}
-
-		const { book, bookRec } = bookData;
-
 		try {
-			const chapters = getChaptersFromBook(bookRec);
-
-			if (chapters.length === 0) {
-				// Если глав нет, показываем все проповеди книги (без фильтрации по главам)
-				const sermonsByBook = getSermonsByBookAndChapter(state, bookRec);
-				const sortedSermons = sortSermons(sermonsByBook);
-
-				const preachersById = await generatePreachersCache(ctx, sortedSermons);
-				const text = await formatSermonList(sortedSermons, preachersById);
-
-				await ctx.reply(text, {
-					parse_mode: "MarkdownV2",
-					link_preview_options: { is_disabled: true },
-					reply_markup: inlineBooksBackMenu(),
-				});
-			} else {
-				// Показываем список глав
-				const text = fmt`${SERMONS_TEXTS.selectChapterTitle(book)}${COMMON.useButtonBelow}`;
-
-				await replyFormatted(ctx, text, {
-					reply_markup: inlineChaptersMenu(chapters, bookIndex),
-				});
-			}
+			await handleBookSelection(ctx, bookIndex);
 		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : String(error);
-			console.error(`[sermons] Ошибка получения глав для книги ${book}:`, errorMessage);
-			await ctx.reply(`${SERMONS_TEXTS.errorLoadingChapters} ${errorMessage}`);
+			await handleSermonsError(ctx, error, SERMONS_TEXTS.errorLoadingChapters, "Ошибка обработки выбора книги");
 		}
 	});
 
@@ -218,9 +285,7 @@ export function registerSermons(bot: Bot<MyContext>) {
 		try {
 			await renderSeriesList(ctx);
 		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : String(error);
-			console.error(`[sermons] Ошибка получения серий:`, errorMessage);
-			await ctx.reply(`${SERMONS_TEXTS.errorLoadingSeries} ${errorMessage}`);
+			await handleSermonsError(ctx, error, SERMONS_TEXTS.errorLoadingSeries, "Ошибка получения серий");
 		}
 	});
 
@@ -250,34 +315,14 @@ export function registerSermons(bot: Bot<MyContext>) {
 		await withLoading(
 			ctx,
 			async () => {
-				const sermonsBySeries = getSermonsBySeries(state, seriesName);
-				const sortedSermons = sortSermons(sermonsBySeries);
-
-				if (sortedSermons.length === 0) {
-					await ctx.reply(SERMONS_TEXTS.notFoundInSeries, {
-						link_preview_options: { is_disabled: true },
-						reply_markup: inlineSeriesBackMenu(),
-					});
-					return;
-				}
-
-				const preachersById = await generatePreachersCache(ctx, sortedSermons);
-				const text = await formatSermonList(sortedSermons, preachersById);
-
-				await ctx.reply(text, {
-					parse_mode: "MarkdownV2",
-					link_preview_options: { is_disabled: true },
-					reply_markup: inlineSeriesBackMenu(),
-				});
+				await handleSeriesSelection(ctx, seriesName);
 			},
 			{
 				text: SERMONS_TEXTS.prepareBookList,
-				delayMs: 500, // Показываем сообщение только если операция длится дольше 500ms
+				delayMs: 500,
 			}
-		).catch((error) => {
-			const errorMessage = error instanceof Error ? error.message : String(error);
-			console.error(`[sermons] Ошибка получения проповедей для серии ${seriesName}:`, errorMessage);
-			return ctx.reply(`${SERMONS_TEXTS.errorLoadingSermons} ${errorMessage}`);
+		).catch(async (error) => {
+			await handleSermonsError(ctx, error, SERMONS_TEXTS.errorLoadingSermons, `Ошибка получения проповедей для серии ${seriesName}`);
 		});
 	});
 
@@ -310,43 +355,18 @@ export function registerSermons(bot: Bot<MyContext>) {
 			return;
 		}
 
-		const { book, bookRec } = bookData;
-
 		// Используем withLoading с задержкой - сообщение покажется только если операция длится дольше 500ms
 		await withLoading(
 			ctx,
 			async () => {
-				const sermonsByChapter = getSermonsByBookAndChapter(state, bookRec, chapterNumber);
-				const sortedSermons = sortSermons(sermonsByChapter);
-
-				if (sortedSermons.length === 0) {
-					const chapters = getChaptersFromBook(bookRec);
-					await ctx.reply(SERMONS_TEXTS.notFoundInBook, {
-						link_preview_options: { is_disabled: true },
-						reply_markup: inlineChaptersMenu(chapters, bookIndex),
-					});
-					return;
-				}
-
-				const preachersById = await generatePreachersCache(ctx, sortedSermons);
-				const text = await formatSermonList(sortedSermons, preachersById);
-
-				const chapters = getChaptersFromBook(bookRec);
-
-				await ctx.reply(text, {
-					parse_mode: "MarkdownV2",
-					link_preview_options: { is_disabled: true },
-					reply_markup: inlineChaptersBackMenu(chapters, bookIndex),
-				});
+				await handleChapterSelection(ctx, bookIndex, chapterNumber);
 			},
 			{
 				text: SERMONS_TEXTS.prepareBookList,
-				delayMs: 500, // Показываем сообщение только если операция длится дольше 500ms
+				delayMs: 500,
 			}
-		).catch((error) => {
-			const errorMessage = error instanceof Error ? error.message : String(error);
-			console.error(`[sermons] Ошибка получения проповедей для книги ${book}, глава ${chapterNumber}:`, errorMessage);
-			return ctx.reply(`${SERMONS_TEXTS.errorLoadingSermons} ${errorMessage}`);
+		).catch(async (error) => {
+			await handleSermonsError(ctx, error, SERMONS_TEXTS.errorLoadingSermons, `Ошибка получения проповедей для главы ${chapterNumber}`);
 		});
 	});
 }

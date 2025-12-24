@@ -22,10 +22,10 @@ import { withProgressMessages } from "../../utils/loading";
 import { Sermon } from "../../types/buildin";
 
 /**
- * Пробует распарсить дату и отформатировать её к виду ДД.ММ.ГГГГ.
- * Если дата некорректна — возвращает undefined.
+ * Нормализует строку даты (заменяет / на -) и проверяет валидность.
+ * Возвращает Date объект или undefined, если дата невалидна.
  */
-export function formatDate(dateStr: string | undefined): string | undefined {
+function parseAndValidateDate(dateStr: string | undefined): Date | undefined {
 	if (!dateStr) return undefined;
 
 	try {
@@ -34,14 +34,42 @@ export function formatDate(dateStr: string | undefined): string | undefined {
 		if (isNaN(date.getTime())) {
 			return undefined;
 		}
-		return date.toLocaleDateString("ru-RU", {
-			day: "2-digit",
-			month: "2-digit",
-			year: "numeric",
-		});
+		return date;
 	} catch {
 		return undefined;
 	}
+}
+
+/**
+ * Обрабатывает ошибку и отправляет сообщение пользователю.
+ */
+export async function handleSermonsError(
+	ctx: MyContext,
+	error: unknown,
+	errorText: string,
+	logContext: string
+): Promise<void> {
+	const errorMessage = error instanceof Error ? error.message : String(error);
+	console.error(`[sermons] ${logContext}:`, errorMessage);
+	await ctx.reply(`${errorText} ${escapeMdV2(errorMessage)}`, {
+		parse_mode: "MarkdownV2",
+		link_preview_options: { is_disabled: true },
+	});
+}
+
+/**
+ * Пробует распарсить дату и отформатировать её к виду ДД.ММ.ГГГГ.
+ * Если дата некорректна — возвращает undefined.
+ */
+export function formatDate(dateStr: string | undefined): string | undefined {
+	const date = parseAndValidateDate(dateStr);
+	if (!date) return undefined;
+
+	return date.toLocaleDateString("ru-RU", {
+		day: "2-digit",
+		month: "2-digit",
+		year: "numeric",
+	});
 }
 
 /**
@@ -142,7 +170,11 @@ export function sortSermons(sermons: Sermon[]): Sermon[] {
 			return a.chapter - b.chapter;
 		}
 		if (a.date && b.date) {
-			return new Date(a.date.replace(/\//g, "-")).getTime() - new Date(b.date.replace(/\//g, "-")).getTime();
+			const dateA = parseAndValidateDate(a.date);
+			const dateB = parseAndValidateDate(b.date);
+			if (dateA && dateB) {
+				return dateA.getTime() - dateB.getTime();
+			}
 		}
 		return 0;
 	});
@@ -179,7 +211,7 @@ export async function generateSermonsState(ctx: MyContext): Promise<NormalizedSe
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : String(error);
 		console.error(`[sermons] Ошибка повторной загрузки проповедей:`, errorMessage);
-		await ctx.reply(`${SERMONS_TEXTS.errorPrefix} ${escapeMdV2(errorMessage)}`, {
+		await ctx.reply(`${SERMONS_TEXTS.errorLoadingSermons} ${escapeMdV2(errorMessage)}`, {
 			parse_mode: "MarkdownV2",
 			link_preview_options: { is_disabled: true },
 		});

@@ -111,7 +111,11 @@ export function parseChapterFromText(text: string | undefined): number[] | undef
 	}
 }
 
-function parseDate(dateStr: string | undefined): string | undefined {
+/**
+ * Нормализует строку даты (заменяет / на -) и проверяет валидность.
+ * Возвращает нормализованную строку или undefined, если дата невалидна.
+ */
+function normalizeDate(dateStr: string | undefined): string | undefined {
 	if (!dateStr) return undefined;
 
 	try {
@@ -120,10 +124,21 @@ function parseDate(dateStr: string | undefined): string | undefined {
 		if (isNaN(date.getTime())) {
 			return undefined;
 		}
-		return dateStr;
+		return normalized;
 	} catch {
 		return undefined;
 	}
+}
+
+/**
+ * Парсит дату из строки и возвращает исходную строку, если она валидна.
+ * Используется для сохранения исходного формата даты из БД.
+ */
+function parseDate(dateStr: string | undefined): string | undefined {
+	if (!dateStr) return undefined;
+
+	const normalized = normalizeDate(dateStr);
+	return normalized ? dateStr : undefined;
 }
 
 /**
@@ -474,42 +489,3 @@ export function buildNormalizedSermonState(sermons: Sermon[]): NormalizedSermonS
 }
 
 
-/**
- * Возвращает список книг, отсортированных по порядку из `BIBLE_BOOK_INDEXES`,
- * а книги без сопоставления — в конце по алфавиту (по исходным названиям из БД).
- */
-export function getSortedBooks(sermons: Sermon[]): string[] {
-	const idxToName: Record<number, string | undefined> = {};
-	const extras: string[] = [];
-
-	for (const sermon of sermons) {
-		const name = sermon.book;
-		if (!name) continue;
-
-		const idx = getBookIndex(name);
-		if (idx) {
-			if (!idxToName[idx]) {
-				idxToName[idx] = name;
-			}
-		} else {
-			extras.push(name);
-		}
-	}
-
-	// Получаем порядок книг из объекта (сортируем по индексам)
-	const canonicalBooks = Object.keys(BIBLE_BOOK_INDEXES).sort(
-		(a, b) => BIBLE_BOOK_INDEXES[a]! - BIBLE_BOOK_INDEXES[b]!
-	);
-
-	const booksInOrder: string[] = [];
-	for (const canonical of canonicalBooks) {
-		const idx = BIBLE_BOOK_INDEXES[canonical];
-		const name = idx ? idxToName[idx] : undefined;
-		if (name) {
-			booksInOrder.push(name);
-		}
-	}
-
-	const booksNotInList = Array.from(new Set(extras)).sort();
-	return [...booksInOrder, ...booksNotInList];
-}
