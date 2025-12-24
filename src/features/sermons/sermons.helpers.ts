@@ -108,7 +108,7 @@ export async function formatSermonList(sermons: Sermon[], preachersById: Record<
 		// Показываем только если есть хотя бы одна платформа
 		const hasAnyMedia = sermon.media.yandex || sermon.media.youtube || sermon.media.vk || sermon.media.podster_fm;
 		if (hasAnyMedia) {
-			text += `🎧 *Слушайте проповедь*\n`;
+			text += `🎧 *Слушайте проповедь*\n\n`;
 		}
 
 		// 5. Иконка Яндекс + Яндекс (ссылка)
@@ -118,7 +118,13 @@ export async function formatSermonList(sermons: Sermon[], preachersById: Record<
 			text += `🎵 [${linkText}](${url})\n`;
 		}
 		
-		text += "\n";
+		// Добавляем разделитель между проповедями, если их несколько
+		// Используем разделитель из 10 символов для баланса между мобильными и десктопом
+		if (sermons.length > 1 && i < sermons.length - 1) {
+			text += "\n━━━━━━━━━━\n\n";
+		} else {
+			text += "\n";
+		}
 	}
 
 	return text;
