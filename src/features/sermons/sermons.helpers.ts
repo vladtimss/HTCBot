@@ -1,0 +1,384 @@
+/**
+ * features/sermons/sermons.helpers.ts
+ * --------------------------
+ * Вспомогательные функции для раздела "Проповеди":
+ * - форматирование данных для отображения
+ * - генерация состояния в сессии
+ * - работа с кешем проповедников
+ */
+
+import { MyContext } from "../../types/grammy-context";
+import { SERMONS_TEXTS } from "./sermons.texts";
+import { escapeMdV2, escapeUrlV2 } from "../../utils/text";
+import {
+	getAllSermonsWithSomeMedia,
+	getPreacherNameById,
+	findValidPreacherId,
+	buildNormalizedSermonState,
+	NormalizedSermonState,
+	NormalizedBook,
+} from "./sermons.util";
+import { withProgressMessages } from "../../utils/loading";
+import { Sermon } from "../../types/buildin";
+
+/**
+ * Нормализует строку даты (заменяет / на -) и проверяет валидность.
+ * Возвращает Date объект или undefined, если дата невалидна.
+ */
+function parseAndValidateDate(dateStr: string | undefined): Date | undefined {
+	if (!dateStr) return undefined;
+
+	try {
+		const normalized = dateStr.replace(/\//g, "-");
+		const date = new Date(normalized);
+		if (isNaN(date.getTime())) {
+			return undefined;
+		}
+		return date;
+	} catch {
+		return undefined;
+	}
+}
+
+/**
+ * Обрабатывает ошибку и отправляет сообщение пользователю.
+ */
+export async function handleSermonsError(
+	ctx: MyContext,
+	error: unknown,
+	errorText: string,
+	logContext: string
+): Promise<void> {
+	const errorMessage = error instanceof Error ? error.message : String(error);
+	console.error(`[sermons] ${logContext}:`, errorMessage);
+	await ctx.reply(`${errorText} ${escapeMdV2(errorMessage)}`, {
+		parse_mode: "MarkdownV2",
+		link_preview_options: { is_disabled: true },
+	});
+}
+
+/**
+ * Пробует распарсить дату и отформатировать её к виду ДД.ММ.ГГГГ.
+ * Если дата некорректна — возвращает undefined.
+ */
+export function formatDate(dateStr: string | undefined): string | undefined {
+	const date = parseAndValidateDate(dateStr);
+	if (!date) return undefined;
+
+	return date.toLocaleDateString("ru-RU", {
+		day: "2-digit",
+		month: "2-digit",
+		year: "numeric",
+	});
+}
+
+/**
+ * Формирует текстовый список проповедей для выбранной книги,
+ * используя кеш имён проповедников из `preachersById`.
+ * 
+ * Формат каждой проповеди:
+ * 1. 📌 Название
+ * 2. 📖 Текст проповеди
+ * 3. 📅 дата - Имя автора
+ * 4. 🎧 Слушайте проповедь
+ * 5. 🎵 Яндекс (ссылка)
+ */
+export async function formatSermonList(sermons: Sermon[], preachersById: Record<string, string>): Promise<string> {
+	if (sermons.length === 0) {
+		return SERMONS_TEXTS.notFoundInBook;
+	}
+
+	let text = "";
+
+	for (let i = 0; i < sermons.length; i++) {
+		const sermon = sermons[i];
+		// Получаем проповедника: сначала из sermon.preacher, затем из кэша по ID
+		const preacher = sermon.preacher || (sermon.preacherId ? preachersById[sermon.preacherId] : undefined);
+		
+		// Отладочный вывод для диагностики
+		if (sermon.preacherId && !preacher) {
+			console.log(`[sermons] Проповедник не найден для проповеди "${sermon.title}":`, {
+				preacherId: sermon.preacherId,
+				hasPreacherInSermon: !!sermon.preacher,
+				hasPreacherInCache: !!preachersById[sermon.preacherId],
+				cacheKeys: Object.keys(preachersById),
+			});
+		}
+
+		// 1. Иконка + Название (жирным)
+		const title = escapeMdV2(sermon.title || SERMONS_TEXTS.fields.defaultTitle);
+		text += `✨ *${title}*\n\n`;
+
+		// 2. Иконка с Библией/книгой + Текст проповеди
+		if (sermon.sermonText) {
+			text += `📖 ${escapeMdV2(sermon.sermonText)}\n`;
+		}
+
+		// 3. Иконка даты/автора + дата - Имя и Фамилия автора
+		const formattedDate = formatDate(sermon.date);
+		if (formattedDate || preacher) {
+			const datePart = formattedDate ? escapeMdV2(formattedDate) : "";
+			const preacherPart = preacher ? escapeMdV2(preacher) : "";
+			
+			// Всегда показываем дату и проповедника вместе, если оба есть
+			if (datePart && preacherPart) {
+				text += `📅 ${datePart} \\- ${preacherPart}\n\n`;
+			} else if (datePart) {
+				// Если есть только дата, показываем её
+				text += `📅 ${datePart}\n\n`;
+			} else if (preacherPart) {
+				// Если есть только проповедник, показываем его
+				text += `📅 ${preacherPart}\n\n`;
+			}
+		}
+
+		// 4. Иконка подкастов + "Слушайте проповедь" (жирным)
+		// Показываем только если есть хотя бы одна платформа
+		const hasAnyMedia = sermon.media.yandex || sermon.media.youtube || sermon.media.vk || sermon.media.podster_fm;
+		if (hasAnyMedia) {
+			text += `🎧 *Слушайте проповедь*\n\n`;
+		}
+
+		// 5. Иконка Яндекс + Яндекс (ссылка)
+		if (sermon.media.yandex) {
+			const url = escapeUrlV2(sermon.media.yandex);
+			const linkText = escapeMdV2("Яндекс");
+			text += `🎵 [${linkText}](${url})\n`;
+		}
+		
+		// Добавляем разделитель между проповедями, если их несколько
+		// Используем разделитель из 10 символов для баланса между мобильными и десктопом
+		if (sermons.length > 1 && i < sermons.length - 1) {
+			text += "\n━━━━━━━━━━━━━\n\n";
+		} else {
+			text += "\n";
+		}
+	}
+
+	return text;
+}
+
+/**
+ * Сортирует проповеди:
+ * - сначала по главе (если у обеих есть номер главы)
+ * - затем по стиху внутри главы (если у обеих есть стих)
+ * - затем по дате (если у обеих есть дата)
+ * - иначе — сохраняет относительный порядок
+ */
+export function sortSermons(sermons: Sermon[]): Sermon[] {
+	return sermons.slice().sort((a: Sermon, b: Sermon) => {
+		// Сначала сортируем по главе
+		if (a.chapter && b.chapter) {
+			const chapterDiff = a.chapter - b.chapter;
+			if (chapterDiff !== 0) {
+				return chapterDiff;
+			}
+			// Если главы одинаковые, сортируем по стиху
+			if (a.verse !== undefined && b.verse !== undefined) {
+				return a.verse - b.verse;
+			}
+			// Если у одной есть стих, а у другой нет - проповеди со стихом идут первыми
+			if (a.verse !== undefined && b.verse === undefined) {
+				return -1;
+			}
+			if (a.verse === undefined && b.verse !== undefined) {
+				return 1;
+			}
+		} else if (a.chapter && !b.chapter) {
+			return -1; // Проповеди с главой идут первыми
+		} else if (!a.chapter && b.chapter) {
+			return 1;
+		}
+
+		// Если главы нет или они одинаковые, сортируем по дате
+		if (a.date && b.date) {
+			const dateA = parseAndValidateDate(a.date);
+			const dateB = parseAndValidateDate(b.date);
+			if (dateA && dateB) {
+				return dateA.getTime() - dateB.getTime();
+			}
+		}
+		return 0;
+	});
+}
+
+/**
+ * Строит (или пересобирает) нормализованное состояние проповедей в сессии.
+ * Если в сессии уже есть данные — возвращает их, иначе загружает заново.
+ */
+export async function generateSermonsState(ctx: MyContext): Promise<NormalizedSermonState | undefined> {
+	if (ctx.session.sermonsState) {
+		return ctx.session.sermonsState;
+	}
+
+	try {
+		const { result: sermons } = await withProgressMessages(
+			ctx,
+			() => getAllSermonsWithSomeMedia(),
+			{
+				firstMessageText: SERMONS_TEXTS.progressFirst,
+				secondMessageText: SERMONS_TEXTS.progressSecond.replace(/\./g, "\\."),
+				parseMode: "MarkdownV2",
+			}
+		);
+
+		if (sermons.length === 0) {
+			await ctx.reply(SERMONS_TEXTS.noMediaFound);
+			return;
+		}
+
+		const state = buildNormalizedSermonState(sermons);
+		ctx.session.sermonsState = state;
+		return state;
+	} catch (error) {
+		const errorMessage = error instanceof Error ? error.message : String(error);
+		console.error(`[sermons] Ошибка повторной загрузки проповедей:`, errorMessage);
+		await ctx.reply(`${SERMONS_TEXTS.errorLoadingSermons} ${escapeMdV2(errorMessage)}`, {
+			parse_mode: "MarkdownV2",
+			link_preview_options: { is_disabled: true },
+		});
+		return;
+	}
+}
+
+/**
+ * Строит/обновляет кеш проповедников в сессии и,
+ * при необходимости, догружает имена для проповедей из списка.
+ */
+export async function generatePreachersCache(ctx: MyContext, sermons: Sermon[]): Promise<Record<string, string>> {
+	const preachersById = ctx.session.preachersById ?? (ctx.session.preachersById = {});
+
+	// Для каждой проповеди проверяем всех проповедников
+	for (const sermon of sermons) {
+		// Если проповедник уже есть в sermon.preacher, используем его
+		if (sermon.preacher) {
+			// Если есть preacherId, сохраняем его в кэш для будущего использования
+			if (sermon.preacherId && !preachersById[sermon.preacherId]) {
+				preachersById[sermon.preacherId] = sermon.preacher;
+			}
+			continue;
+		}
+
+		// Если проповедника нет, проверяем все relation IDs
+		const idsToCheck = sermon.preacherIds && sermon.preacherIds.length > 0 
+			? sermon.preacherIds 
+			: (sermon.preacherId ? [sermon.preacherId] : []);
+
+		if (idsToCheck.length === 0) {
+			continue;
+		}
+
+		// Сначала проверяем кэш - может быть один из IDs уже загружен
+		let foundInCache = false;
+		for (const id of idsToCheck) {
+			if (preachersById[id]) {
+				// Нашли в кэше, обновляем preacherId в sermon
+				(sermon as any).preacherId = id;
+				foundInCache = true;
+				break;
+			}
+		}
+
+		if (foundInCache) {
+			continue;
+		}
+
+		// Если не нашли в кэше, проверяем все IDs и находим правильный
+		const validId = await findValidPreacherId(idsToCheck);
+		if (validId) {
+			const name = await getPreacherNameById(validId);
+			if (name) {
+				preachersById[validId] = name;
+				// Обновляем preacherId в sermon для будущего использования
+				(sermon as any).preacherId = validId;
+			} else {
+				// Логируем, если не удалось загрузить проповедника
+				console.log(`[sermons] Не удалось загрузить проповедника для проповеди "${sermon.title}", проверены IDs:`, idsToCheck);
+			}
+		}
+	}
+
+	return preachersById;
+}
+
+/**
+ * Получает объект книги (NormalizedBook) по индексу книги в списке.
+ * Возвращает undefined, если книга не найдена.
+ */
+export function getBookByIndex(
+	state: NormalizedSermonState,
+	bookIndex: number
+): { book: string; bookRec: NormalizedBook } | undefined {
+	const books = state.books.allNames;
+	const book = books[bookIndex];
+
+	if (!book) {
+		return undefined;
+	}
+
+	const bookIdx = state.books.byName[book];
+	const bookRec = bookIdx ? state.books.byIndex[bookIdx] : undefined;
+
+	if (!bookRec) {
+		return undefined;
+	}
+
+	return { book, bookRec };
+}
+
+/**
+ * Извлекает список глав из объекта книги (NormalizedBook).
+ * Возвращает отсортированный массив номеров глав.
+ */
+export function getChaptersFromBook(bookRec: NormalizedBook): number[] {
+	return Object.keys(bookRec.byChapter)
+		.map((ch) => parseInt(ch, 10))
+		.filter((ch) => !isNaN(ch))
+		.sort((a, b) => a - b);
+}
+
+/**
+ * Получает список проповедей для книги и опционально для конкретной главы.
+ * Если chapterNumber не указан, возвращает все проповеди книги.
+ */
+export function getSermonsByBookAndChapter(
+	state: NormalizedSermonState,
+	bookRec: NormalizedBook,
+	chapterNumber?: number
+): Sermon[] {
+	let sermonIds: string[];
+
+	if (chapterNumber !== undefined) {
+		// Получаем проповеди для конкретной главы
+		sermonIds = bookRec.byChapter[chapterNumber] ?? [];
+	} else {
+		// Получаем все проповеди книги
+		sermonIds = bookRec.sermonIds ?? [];
+	}
+
+	return sermonIds.map((id) => state.sermons.byId[id]!).filter((sermon) => sermon !== undefined);
+}
+
+/**
+ * Получает список проповедей для указанной серии.
+ * Возвращает пустой массив, если серия не найдена.
+ */
+export function getSermonsBySeries(
+	state: NormalizedSermonState,
+	seriesName: string
+): Sermon[] {
+	const sermonIds = state.series.byName[seriesName] ?? [];
+	return sermonIds.map((id) => state.sermons.byId[id]!).filter((sermon) => sermon !== undefined);
+}
+
+/**
+ * Фильтрует список серий, исключая пустые и "НЕТ" серии.
+ * Возвращает отсортированный массив валидных названий серий.
+ */
+export function getValidSeries(state: NormalizedSermonState): string[] {
+	return state.series.allNames.filter((seriesName) => {
+		const trimmed = seriesName.trim();
+		return trimmed.length > 0 && trimmed.toUpperCase() !== "НЕТ";
+	});
+}
+

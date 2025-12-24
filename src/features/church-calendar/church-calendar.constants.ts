@@ -27,5 +27,4 @@ export const CALENDAR_BUTTON_LABELS = {
 	CAL_FAMILY: "👨‍👩‍👧 Отцы и дети / Сёстры",
 	CAL_FAMILY_NEXT: "📅 Следующая встреча",
 	CAL_FAMILY_ALL: "📑 Все встречи",
-	SERMONS_PODCASTS: "🎧 Подкасты",
 } as const;
