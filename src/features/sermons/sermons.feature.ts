@@ -9,7 +9,7 @@ import { COMMON } from "../../services/texts";
 import { fmt } from "@grammyjs/parse-mode";
 import { replyFormatted } from "../../utils/format-helpers";
 import { getAllSermonsWithSomeMedia, buildNormalizedSermonState } from "./sermons.util";
-import { withProgressMessages } from "../../utils/loading";
+import { withProgressMessages, withLoading } from "../../utils/loading";
 import {
 	formatSermonList,
 	generateSermonsState,
@@ -197,44 +197,41 @@ export function registerSermons(bot: Bot<MyContext>) {
 
 		const { book, bookRec } = bookData;
 
-		// Явно показываем сообщение о подготовке списка и гарантированно его удаляем
-		const loadingMsg = await ctx.reply(SERMONS_TEXTS.prepareBookList, {
-			link_preview_options: { is_disabled: true },
-		});
+		// Используем withLoading с задержкой - сообщение покажется только если операция длится дольше 500ms
+		await withLoading(
+			ctx,
+			async () => {
+				const sermonsByChapter = getSermonsByBookAndChapter(state, bookRec, chapterNumber);
+				const sortedSermons = sortSermons(sermonsByChapter);
 
-		try {
-			const sermonsByChapter = getSermonsByBookAndChapter(state, bookRec, chapterNumber);
-			const sortedSermons = sortSermons(sermonsByChapter);
+				if (sortedSermons.length === 0) {
+					const chapters = getChaptersFromBook(bookRec);
+					await ctx.reply(SERMONS_TEXTS.notFoundInBook, {
+						link_preview_options: { is_disabled: true },
+						reply_markup: inlineChaptersMenu(chapters, bookIndex),
+					});
+					return;
+				}
 
-			if (sortedSermons.length === 0) {
+				const preachersById = await generatePreachersCache(ctx, sortedSermons);
+				const text = await formatSermonList(sortedSermons, preachersById);
+
 				const chapters = getChaptersFromBook(bookRec);
-				await ctx.reply(SERMONS_TEXTS.notFoundInBook, {
+
+				await ctx.reply(text, {
+					parse_mode: "MarkdownV2",
 					link_preview_options: { is_disabled: true },
 					reply_markup: inlineChaptersMenu(chapters, bookIndex),
 				});
-				return;
+			},
+			{
+				text: SERMONS_TEXTS.prepareBookList,
+				delayMs: 500, // Показываем сообщение только если операция длится дольше 500ms
 			}
-
-			const preachersById = await generatePreachersCache(ctx, sortedSermons);
-			const text = await formatSermonList(sortedSermons, preachersById);
-
-			const chapters = getChaptersFromBook(bookRec);
-
-			await ctx.reply(text, {
-				parse_mode: "MarkdownV2",
-				link_preview_options: { is_disabled: true },
-				reply_markup: inlineChaptersMenu(chapters, bookIndex),
-			});
-		} catch (error) {
+		).catch((error) => {
 			const errorMessage = error instanceof Error ? error.message : String(error);
 			console.error(`[sermons] Ошибка получения проповедей для книги ${book}, глава ${chapterNumber}:`, errorMessage);
-			await ctx.reply(`❌ Ошибка при загрузке проповедей: ${errorMessage}`);
-		} finally {
-			try {
-				await ctx.api.deleteMessage(loadingMsg.chat.id, loadingMsg.message_id);
-			} catch {
-				// Игнорируем ошибки удаления
-			}
-		}
+			return ctx.reply(`❌ Ошибка при загрузке проповедей: ${errorMessage}`);
+		});
 	});
 }

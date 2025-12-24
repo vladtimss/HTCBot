@@ -121,7 +121,7 @@ export async function formatSermonList(sermons: Sermon[], preachersById: Record<
 		// Добавляем разделитель между проповедями, если их несколько
 		// Используем разделитель из 10 символов для баланса между мобильными и десктопом
 		if (sermons.length > 1 && i < sermons.length - 1) {
-			text += "\n━━━━━━━━━━\n\n";
+			text += "\n━━━━━━━━━━━━━\n\n";
 		} else {
 			text += "\n";
 		}
