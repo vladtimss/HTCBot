@@ -89,10 +89,37 @@ function getBookIndex(bookName: string | undefined): number | undefined {
 	return undefined;
 }
 
-export function parseChapterFromText(text: string | undefined): number[] | undefined {
-	if (!text) return;
+/**
+ * Парсит главу и стих из текста.
+ * Поддерживает форматы: "18:1", "18:1-5", "18:1,3-5", ".18:1", " 18:1" и т.д.
+ * Возвращает объект с главой и начальным стихом (для сортировки).
+ */
+export function parseChapterAndVerseFromText(text: string | undefined): { chapter: number; verse?: number } | undefined {
+	if (!text) {
+		return undefined;
+	}
 
 	const cleanText = text.trim();
+	
+	// Паттерн для поиска "глава:стих" или "глава:стих-стих"
+	// Примеры: "18:1", "18:1-5", ".18:1", " 18:1", "18:1,3-5"
+	const verseMatch = cleanText.match(/(\d+):(\d+)(?:-(\d+))?/);
+
+	if (verseMatch) {
+		const chapter = parseInt(verseMatch[1], 10);
+		const verse = parseInt(verseMatch[2], 10);
+		const isValidChapter = !isNaN(chapter) && chapter > 0;
+		const isValidVerse = !isNaN(verse) && verse > 0;
+		
+		if (isValidChapter && isValidVerse) {
+			return { chapter, verse };
+		}
+		if (isValidChapter) {
+			return { chapter };
+		}
+	}
+
+	// Если не нашли формат "глава:стих", пробуем найти только главу
 	const chapterPatterns = [
 		/\.(\d+)[:.]/,      // точка перед числом, затем двоеточие или точка (например, ".18:" или ".18.")
 		/\s(\d+)[:.]/,      // пробел перед числом, затем двоеточие или точка (например, " 18:" или " 18.")
@@ -102,13 +129,26 @@ export function parseChapterFromText(text: string | undefined): number[] | undef
 
 	for (const pattern of chapterPatterns) {
 		const match = cleanText.match(pattern);
-		if (match) {
-			const chapter = parseInt(match[1], 10);
-			if (!isNaN(chapter) && chapter > 0) {
-				return [chapter];
-			}
+		if (!match) {
+			continue;
+		}
+		
+		const chapter = parseInt(match[1], 10);
+		if (!isNaN(chapter) && chapter > 0) {
+			return { chapter };
 		}
 	}
+
+	return undefined;
+}
+
+/**
+ * Парсит только главу из текста (для обратной совместимости).
+ * @deprecated Используйте parseChapterAndVerseFromText для получения и главы, и стиха.
+ */
+export function parseChapterFromText(text: string | undefined): number[] | undefined {
+	const result = parseChapterAndVerseFromText(text);
+	return result ? [result.chapter] : undefined;
 }
 
 /**
@@ -239,8 +279,10 @@ function extractSermonProperties(record: BuildinDatabaseRecord): Sermon {
 	const sermonText = extractRichText(properties[SERMON_FIELDS.SERMON_TEXT] as BuildinRichTextProperty | undefined);
 	const series = extractSelect(properties[SERMON_FIELDS.SERIES] as BuildinSelectProperty | undefined);
 
-	// Парсим главу из текста проповеди
-	const chapter = parseChapterFromText(sermonText)?.[0];
+	// Парсим главу и стих из текста проповеди
+	const chapterAndVerse = parseChapterAndVerseFromText(sermonText);
+	const chapter = chapterAndVerse?.chapter;
+	const verse = chapterAndVerse?.verse;
 
 	// Извлекаем проповедника: relation ID и/или имя (select/rich_text)
 	const preacherField = properties[SERMON_FIELDS.PREACHER] as
@@ -281,6 +323,7 @@ function extractSermonProperties(record: BuildinDatabaseRecord): Sermon {
 		title,
 		book,
 		chapter,
+		verse,
 		sermonText,
 		series,
 		preacherId,

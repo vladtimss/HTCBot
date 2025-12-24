@@ -161,14 +161,36 @@ export async function formatSermonList(sermons: Sermon[], preachersById: Record<
 /**
  * Сортирует проповеди:
  * - сначала по главе (если у обеих есть номер главы)
+ * - затем по стиху внутри главы (если у обеих есть стих)
  * - затем по дате (если у обеих есть дата)
  * - иначе — сохраняет относительный порядок
  */
 export function sortSermons(sermons: Sermon[]): Sermon[] {
 	return sermons.slice().sort((a: Sermon, b: Sermon) => {
+		// Сначала сортируем по главе
 		if (a.chapter && b.chapter) {
-			return a.chapter - b.chapter;
+			const chapterDiff = a.chapter - b.chapter;
+			if (chapterDiff !== 0) {
+				return chapterDiff;
+			}
+			// Если главы одинаковые, сортируем по стиху
+			if (a.verse !== undefined && b.verse !== undefined) {
+				return a.verse - b.verse;
+			}
+			// Если у одной есть стих, а у другой нет - проповеди со стихом идут первыми
+			if (a.verse !== undefined && b.verse === undefined) {
+				return -1;
+			}
+			if (a.verse === undefined && b.verse !== undefined) {
+				return 1;
+			}
+		} else if (a.chapter && !b.chapter) {
+			return -1; // Проповеди с главой идут первыми
+		} else if (!a.chapter && b.chapter) {
+			return 1;
 		}
+
+		// Если главы нет или они одинаковые, сортируем по дате
 		if (a.date && b.date) {
 			const dateA = parseAndValidateDate(a.date);
 			const dateB = parseAndValidateDate(b.date);

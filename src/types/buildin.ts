@@ -232,6 +232,8 @@ export type Sermon = {
 	title?: string;
 	book?: string;
 	chapter?: number;
+	/** Начальный стих для сортировки (например, 1 из "18:1" или "18:1-5") */
+	verse?: number;
 	sermonText?: string;
 	series?: string;
 	/** ID проповедника (из relation), если доступен. Первый из relations. */
