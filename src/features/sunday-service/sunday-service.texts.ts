@@ -4,7 +4,7 @@
  * Тексты для раздела "Воскресное богослужение"
  */
 
-import { fmt, bold, italic, link } from "@grammyjs/parse-mode";
+import { fmt, bold, link, blockquote } from "@grammyjs/parse-mode";
 import { env } from "../../config/env";
 
 // ============================================================================
@@ -16,12 +16,12 @@ const sundayTextsText = fmt`✨ ${bold()}Богослужение проходи
 🕚 ${bold()}Начало в 11:00${bold()}
 
 📍 ${bold()}Адрес:${bold()}
-> Чароитовая улица, 1к5
-> район Троицк, Москва
+${blockquote}Физическая улица, 8, Троицк, Москва${blockquote}
 
-${italic()}Вход справа от подъезда 1 и слева от ателье${italic()}
+🌍 ${link(env.YANDEX_MAP_URL)}Открыть в Яндекс.Картах${link(env.YANDEX_MAP_URL)}
 
-🌍 ${link(env.YANDEX_MAP_URL)}Открыть в Яндекс.Картах${link(env.YANDEX_MAP_URL)}`;
+📢 ${bold()}Подпишитесь на наш канал, чтобы быть в курсе жизни церкви:${bold()}
+${link("https://t.me/troitskchurch")}Церковь Святой Троицы${link("https://t.me/troitskchurch")}`;
 
 // ============================================================================
 // Основной объект (inline тексты)
