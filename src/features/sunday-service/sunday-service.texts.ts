@@ -18,7 +18,10 @@ const sundayTextsText = fmt`✨ ${bold()}Богослужение проходи
 📍 ${bold()}Адрес:${bold()}
 ${blockquote}Физическая улица, 8, Троицк, Москва${blockquote}
 
-🌍 ${link(env.YANDEX_MAP_URL)}Открыть в Яндекс.Картах${link(env.YANDEX_MAP_URL)}`;
+🌍 ${link(env.YANDEX_MAP_URL)}Открыть в Яндекс.Картах${link(env.YANDEX_MAP_URL)}
+
+📢 ${bold()}Подпишитесь на наш канал, чтобы быть в курсе жизни церкви:${bold()}
+${link("https://t.me/troitskchurch")}Церковь Святой Троицы${link("https://t.me/troitskchurch")}`;
 
 // ============================================================================
 // Основной объект (inline тексты)
