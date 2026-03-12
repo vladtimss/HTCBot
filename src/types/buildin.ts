@@ -218,6 +218,18 @@ export type Meeting = {
 	raw: BuildinDatabaseRecord; // Вся оригинальная страница
 };
 
+/** Конспект ЛМГ, нормализованный для работы бота */
+export type LmgNote = {
+	id: string;
+	title: string;
+	book?: string;
+	chapter?: number;
+	text?: string;
+	groupGoal?: string;
+	date?: string;
+	file?: BuildinFile;
+};
+
 /** Медиа-платформы для проповедей */
 export type SermonMedia = {
 	yandex?: string;
