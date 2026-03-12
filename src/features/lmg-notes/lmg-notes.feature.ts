@@ -19,7 +19,7 @@ import {
 	BuildinDateProperty,
 	BuildinFilesProperty,
 } from "../../types/buildin";
-import { requirePrivileged } from "../../utils/guards";
+import { requireLmgLeader } from "../../utils/guards";
 import {
 	normalizeDate,
 	fetchFileAsInput,
@@ -102,7 +102,7 @@ function formatLmgNoteText(note: LmgNote): string {
 export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 	// Открыть раздел "Конспекты ЛМГ"
 	bot.hears(SMALL_GROUPS_BUTTON_LABELS.LMG_NOTES, async (ctx) => {
-		if (!requirePrivileged(ctx)) return;
+		if (!requireLmgLeader(ctx)) return;
 
 		ctx.session.menuStack.push("lmg-notes");
 		ctx.session.lastSection = "lmg-notes";
@@ -115,7 +115,7 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 
 	// 2) Конспект с прошлой встречи — получить PDF из поля "Конспект"
 	bot.hears(SMALL_GROUPS_BUTTON_LABELS.LMG_NOTES_PREV, async (ctx) => {
-		if (!requirePrivileged(ctx)) return;
+		if (!requireLmgLeader(ctx)) return;
 
 		try {
 			const { result, loadingMsg } = await withLoadingAndMsg(
@@ -177,7 +177,7 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 
 	// 3) Поиск конспектов по книгам Библии
 	bot.hears(SMALL_GROUPS_BUTTON_LABELS.LMG_NOTES_BY_BOOK, async (ctx) => {
-		if (!requirePrivileged(ctx)) return;
+		if (!requireLmgLeader(ctx)) return;
 
 		ctx.session.menuStack.push("lmg-notes-books");
 		ctx.session.lastSection = "lmg-notes-books";
@@ -207,7 +207,7 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 
 	// Выбор книги
 	bot.callbackQuery(/^lmg:book:(\d+)$/, async (ctx) => {
-		if (!requirePrivileged(ctx)) return;
+		if (!requireLmgLeader(ctx)) return;
 		const bookIndex = parseInt(ctx.match[1], 10);
 		await ctx.answerCallbackQuery();
 
@@ -255,7 +255,7 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 
 	// Возврат к списку книг
 	bot.callbackQuery(/^lmg:books$/, async (ctx) => {
-		if (!requirePrivileged(ctx)) return;
+		if (!requireLmgLeader(ctx)) return;
 		await ctx.answerCallbackQuery();
 
 		const state = await generateLmgNotesState(ctx);
@@ -272,7 +272,7 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 
 	// Выбор главы
 	bot.callbackQuery(/^lmg:book:(\d+):chapter:(\d+)$/, async (ctx) => {
-		if (!requirePrivileged(ctx)) return;
+		if (!requireLmgLeader(ctx)) return;
 		const bookIndex = parseInt(ctx.match[1], 10);
 		const chapterNumber = parseInt(ctx.match[2], 10);
 		await ctx.answerCallbackQuery();
@@ -325,7 +325,7 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 
 	// Загрузка конкретного конспекта по кнопке "ПОЛУЧИТЬ КОНСПЕКТ"
 	bot.callbackQuery(/^lmg:note:(.+)$/, async (ctx) => {
-		if (!requirePrivileged(ctx)) return;
+		if (!requireLmgLeader(ctx)) return;
 		const noteId = ctx.match[1];
 		await ctx.answerCallbackQuery();
 
