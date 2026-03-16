@@ -5,7 +5,7 @@
  */
 
 import { InputFile }                        from "grammy";
-import { getAllDatabaseRecords }            from "../../services/buildin";
+import { getAllDatabaseRecords, getPage }   from "../../services/buildin";
 import {
 	BuildinDatabaseRecord,
 	BuildinTitleProperty,
@@ -190,6 +190,17 @@ export async function getAllLmgNotes(): Promise<LmgNote[]> {
 		page_size: 100,
 	});
 	return records.map(extractLmgNote);
+}
+
+/**
+ * Получает актуальный файл конспекта для указанной страницы (по ID страницы Buildin).
+ * Используется, чтобы не полагаться на потенциально протухший URL из кеша.
+ */
+export async function getFreshLmgNoteFile(noteId: string): Promise<BuildinFile | undefined> {
+	const page = await getPage(noteId);
+	const filesProp = page.properties?.["Конспект"] as BuildinFilesProperty | undefined;
+	const files: BuildinFile[] = filesProp?.files ?? [];
+	return files[0];
 }
 
 /**
