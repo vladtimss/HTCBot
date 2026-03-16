@@ -361,39 +361,45 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 
 		const { bookRec } = bookData;
 
-		await withLoading(
-			ctx,
-			async () => {
-				const notes = sortLmgNotesByDateDesc(
-					getLmgNotesByBookAndChapter(state, bookRec, chapterNumber)
-				);
+		try {
+			const { loadingMsg } = await withLoadingAndMsg(
+				ctx,
+				async () => {
+					const notes = sortLmgNotesByDateDesc(
+						getLmgNotesByBookAndChapter(state, bookRec, chapterNumber)
+					);
 
-				if (notes.length === 0) {
-					const chapters = getLmgChaptersFromBook(bookRec);
-					await ctx.reply("❌ В этой главе конспекты не найдены.", {
-						reply_markup: inlineLmgChaptersMenu(chapters, bookIndex),
-					});
-					return;
-				}
+					if (notes.length === 0) {
+						const chapters = getLmgChaptersFromBook(bookRec);
+						await ctx.reply("❌ В этой главе конспекты не найдены.", {
+							reply_markup: inlineLmgChaptersMenu(chapters, bookIndex),
+						});
+						return;
+					}
 
-				for (const note of notes) {
-					const text = formatLmgNoteText(note);
-					await ctx.reply(text, {
-						parse_mode: "MarkdownV2",
-						reply_markup: inlineLmgNoteDownloadMenu(note.id, `lmg:book:${bookIndex}`),
-						link_preview_options: { is_disabled: true },
-					});
+					for (const note of notes) {
+						const text = formatLmgNoteText(note);
+						await ctx.reply(text, {
+							parse_mode: "MarkdownV2",
+							reply_markup: inlineLmgNoteDownloadMenu(note.id, `lmg:book:${bookIndex}`),
+							link_preview_options: { is_disabled: true },
+						});
+					}
+				},
+				{
+					text: "⏳ Формирую список конспектов…",
+					delayMs: 500,
 				}
-			},
-			{
-				text: "⏳ Формирую список конспектов…",
-				delayMs: 500,
+			);
+
+			if (loadingMsg) {
+				await ctx.api.deleteMessage(loadingMsg.chat.id, loadingMsg.message_id).catch(() => {});
 			}
-		).catch(async (error) => {
+		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
 			console.error("[lmg-notes] error handling chapter selection:", message);
 			await ctx.reply(`❌ Ошибка получения конспектов для главы: ${message}`);
-		});
+		}
 	});
 
 	// Загрузка конкретного конспекта по кнопке "ПОЛУЧИТЬ КОНСПЕКТ"
