@@ -30,6 +30,8 @@ export interface SessionData {
 	lmgNotes?: LmgNote[];
 	/** Нормализованное состояние конспектов ЛМГ (книги/главы) */
 	lmgNotesState?: NormalizedLmgNotesState;
+	/** Время последней активности в разделе конспектов ЛМГ (ms since epoch) */
+	lmgNotesLastActivityAt?: number;
 }
 
 /** Данные о доступе пользователя */

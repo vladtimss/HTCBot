@@ -31,6 +31,7 @@ import {
 	formatMeetingDateWithWeekday,
 	getBookShortName,
 	sortLmgNotesByDateDesc,
+	getFreshLmgNoteFile,
 } from "./lmg-notes.util";
 import { fmt } from "@grammyjs/parse-mode";
 import { escapeMdV2 } from "../../utils/text";
@@ -40,6 +41,39 @@ import { escapeMdV2 } from "../../utils/text";
  * URL: https://buildin.ai/htchurch/d8ddec27-c395-4c7c-a229-850d579ef7b3
  */
 const LMG_NOTES_DATABASE_ID = "d8ddec27-c395-4c7c-a229-850d579ef7b3";
+
+/** Через сколько миллисекунд считаем, что раздел конспектов "протух" без активности */
+const LMG_NOTES_SESSION_TTL_MS = 15 * 60 * 1000; // 15 минут
+
+function touchLmgNotesActivity(ctx: MyContext) {
+	ctx.session.lmgNotesLastActivityAt = Date.now();
+}
+
+function isLmgNotesSessionExpired(ctx: MyContext): boolean {
+	const last = ctx.session.lmgNotesLastActivityAt ?? 0;
+	if (!last) return false;
+	return Date.now() - last > LMG_NOTES_SESSION_TTL_MS;
+}
+
+async function restartLmgNotesFlow(ctx: MyContext) {
+	// Сбрасываем состояние раздела
+	ctx.session.lmgNotes = undefined;
+	ctx.session.lmgNotesState = undefined;
+
+	await ctx.reply(
+		"Вы давно не заходили в раздел конспектов. Чтобы получить свежие данные и ничего не потерять, давайте начнём сначала.",
+		{ link_preview_options: { is_disabled: true } }
+	);
+
+	// Возвращаем пользователя в корень раздела конспектов
+	ctx.session.menuStack.push("lmg-notes");
+	ctx.session.lastSection = "lmg-notes";
+
+	await ctx.reply(SMALL_GROUPS_TEXTS.lmgNotesIntro.text, {
+		entities: SMALL_GROUPS_TEXTS.lmgNotesIntro.entities,
+		reply_markup: replyLmgNotesMenu(),
+	});
+}
 
 /**
  * Строит или возвращает из сессии нормализованное состояние конспектов ЛМГ.
@@ -103,6 +137,7 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 	// Открыть раздел "Конспекты ЛМГ"
 	bot.hears(SMALL_GROUPS_BUTTON_LABELS.LMG_NOTES, async (ctx) => {
 		if (!requireLmgLeader(ctx)) return;
+		touchLmgNotesActivity(ctx);
 
 		ctx.session.menuStack.push("lmg-notes");
 		ctx.session.lastSection = "lmg-notes";
@@ -116,6 +151,11 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 	// 2) Конспект с прошлой встречи — получить PDF из поля "Конспект"
 	bot.hears(SMALL_GROUPS_BUTTON_LABELS.LMG_NOTES_PREV, async (ctx) => {
 		if (!requireLmgLeader(ctx)) return;
+		if (isLmgNotesSessionExpired(ctx)) {
+			await restartLmgNotesFlow(ctx);
+			return;
+		}
+		touchLmgNotesActivity(ctx);
 
 		try {
 			const { result, loadingMsg } = await withLoadingAndMsg(
@@ -178,15 +218,33 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 	// 3) Поиск конспектов по книгам Библии
 	bot.hears(SMALL_GROUPS_BUTTON_LABELS.LMG_NOTES_BY_BOOK, async (ctx) => {
 		if (!requireLmgLeader(ctx)) return;
+		touchLmgNotesActivity(ctx);
 
 		ctx.session.menuStack.push("lmg-notes-books");
 		ctx.session.lastSection = "lmg-notes-books";
 
 		try {
-			const state = await generateLmgNotesState(ctx);
-			if (!state) return;
+			// По аналогии с sermons: при входе в режим "по книгам" всегда
+			// заново загружаем и нормализуем все конспекты.
+			const { result: notes } = await withProgressMessages(
+				ctx,
+				() => getAllLmgNotes(),
+				{
+					firstMessageText: "⏳ Загружаю конспекты ЛМГ…",
+					secondMessageText: "⌛ Немного подождите, идёт подготовка списка…",
+					parseMode: "MarkdownV2",
+				}
+			);
 
-			const books = state.books.allNames || [];
+			if (notes.length === 0) {
+				await ctx.reply("❌ В базе нет конспектов ЛМГ.");
+				return;
+			}
+
+			ctx.session.lmgNotes = notes;
+			ctx.session.lmgNotesState = buildNormalizedLmgNotesState(notes);
+
+			const books = ctx.session.lmgNotesState?.books.allNames || [];
 			if (books.length === 0) {
 				await ctx.reply("❌ Не удалось найти книги в базе конспектов ЛМГ.");
 				return;
@@ -208,6 +266,11 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 	// Выбор книги
 	bot.callbackQuery(/^lmg:book:(\d+)$/, async (ctx) => {
 		if (!requireLmgLeader(ctx)) return;
+		if (isLmgNotesSessionExpired(ctx)) {
+			await restartLmgNotesFlow(ctx);
+			return;
+		}
+		touchLmgNotesActivity(ctx);
 		const bookIndex = parseInt(ctx.match[1], 10);
 		await ctx.answerCallbackQuery();
 
@@ -257,6 +320,11 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 	bot.callbackQuery(/^lmg:books$/, async (ctx) => {
 		if (!requireLmgLeader(ctx)) return;
 		await ctx.answerCallbackQuery();
+		if (isLmgNotesSessionExpired(ctx)) {
+			await restartLmgNotesFlow(ctx);
+			return;
+		}
+		touchLmgNotesActivity(ctx);
 
 		const state = await generateLmgNotesState(ctx);
 		if (!state) return;
@@ -276,6 +344,11 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 		const bookIndex = parseInt(ctx.match[1], 10);
 		const chapterNumber = parseInt(ctx.match[2], 10);
 		await ctx.answerCallbackQuery();
+		if (isLmgNotesSessionExpired(ctx)) {
+			await restartLmgNotesFlow(ctx);
+			return;
+		}
+		touchLmgNotesActivity(ctx);
 
 		const state = await generateLmgNotesState(ctx);
 		if (!state) return;
@@ -328,6 +401,11 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 		if (!requireLmgLeader(ctx)) return;
 		const noteId = ctx.match[1];
 		await ctx.answerCallbackQuery();
+		if (isLmgNotesSessionExpired(ctx)) {
+			await restartLmgNotesFlow(ctx);
+			return;
+		}
+		touchLmgNotesActivity(ctx);
 
 		const state = await generateLmgNotesState(ctx);
 		if (!state) return;
@@ -338,21 +416,23 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 			return;
 		}
 
-		const file = note.file;
-		if (!file) {
-			await ctx.reply("❌ У этой встречи нет файла конспекта.");
-			return;
-		}
-
-		const fileUrl = file.file?.url ?? file.external?.url;
-		const fileName = file.name ?? `Конспект_${noteId}.pdf`;
-
-		if (!fileUrl) {
-			await ctx.reply("❌ Не удалось получить ссылку на файл конспекта.");
-			return;
-		}
-
 		try {
+			// ВАЖНО: не полагаемся на потенциально протухший URL из кеша,
+			// а каждый раз берём свежий файл со страницы в Buildin.
+			const freshFile = await getFreshLmgNoteFile(noteId);
+			if (!freshFile) {
+				await ctx.reply("❌ У этой встречи нет файла конспекта.");
+				return;
+			}
+
+			const fileUrl = freshFile.file?.url ?? freshFile.external?.url;
+			const fileName = freshFile.name ?? `Конспект_${noteId}.pdf`;
+
+			if (!fileUrl) {
+				await ctx.reply("❌ Не удалось получить ссылку на файл конспекта.");
+				return;
+			}
+
 			const { result: inputFile, loadingMsg } = await withLoadingAndMsg(
 				ctx,
 				() => fetchFileAsInput(fileUrl, fileName),
