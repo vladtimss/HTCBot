@@ -13,6 +13,7 @@ import { MAIN_TEXTS } from "../main-menu/main-menu.texts";
 import { renderAboutRoot } from "../about-htc/about-htc.feature";
 import { renderCalendarRoot } from "../church-calendar/church-calendar.feature";
 import { renderGroupsRoot } from "../small-groups/small-groups.feature";
+import { renderPresbyterianCouncilRoot } from "../presbyterian-council/presbyterian-council.feature";
 
 /**
  * 📌 Глобальный обработчик кнопки «⬅️ Назад»
@@ -51,11 +52,19 @@ export function registerBackButton(bot: Bot<MyContext>) {
 				await renderCalendarRoot(ctx);
 				break;
 
-			case "groups":
-				await renderGroupsRoot(ctx);
-				break;
+		case "groups":
+			await renderGroupsRoot(ctx);
+			break;
 
-			default:
+		case "presbyterian-council":
+			await renderPresbyterianCouncilRoot(ctx);
+			break;
+
+		case "pc-agenda":
+			await renderPresbyterianCouncilRoot(ctx);
+			break;
+
+		default:
 				// если не знаем что это → кидаем в главное меню
 				await ctx.reply(MAIN_TEXTS.title.text, {
 					entities: MAIN_TEXTS.title.entities,

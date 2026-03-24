@@ -139,7 +139,7 @@ function formatAgendaRecord(record: BuildinDatabaseRecord, index: number): strin
 
 export async function renderPresbyterianCouncilRoot(ctx: MyContext) {
 	ctx.session.lastSection = "presbyterian-council";
-	ctx.session.menuStack = ["presbyterian-council"];
+	ctx.session.menuStack = ["main", "presbyterian-council"];
 
 	await ctx.reply(PRESBYTERIAN_COUNCIL_TEXTS.title.text, {
 		entities: PRESBYTERIAN_COUNCIL_TEXTS.title.entities,
