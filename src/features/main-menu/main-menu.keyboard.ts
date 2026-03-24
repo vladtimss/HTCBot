@@ -10,12 +10,18 @@ import { MyContext } from "../../types/grammy-context";
 
 /**
  * Главное меню зависит от прав:
+ * - у членов Пресвитерского совета есть кнопка "Пресвитерский совет" (первой строкой на всю ширину)
  * - у привилегированных пользователей есть кнопка "Церковный календарь"
  */
 export function replyMainKeyboard(ctx: MyContext) {
-	const kb = new Keyboard()
-		.text(MENU_LABELS.MAIN_SUNDAY) // ⛪ Воскресное богослужение
-		.text(MENU_LABELS.MAIN_SERMONS) // 🎧 Проповеди
+	const kb = new Keyboard();
+
+	if (ctx.access.isPresbyterianCouncil) {
+		kb.text(MENU_LABELS.MAIN_PRESBYTERIAN_COUNCIL).row(); // 🏛 Пресвитерский совет — вся строка
+	}
+
+	kb.text(MENU_LABELS.MAIN_SUNDAY) // ⛪ Воскресное богослужение
+		.text(MENU_LABELS.MAIN_SERMONS) // 🎙️ Проповеди
 		.row()
 		.text(MENU_LABELS.MAIN_GROUPS); // 👥 Малые группы
 

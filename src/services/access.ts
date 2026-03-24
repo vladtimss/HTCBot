@@ -24,6 +24,16 @@ export function isHTChurchMember(ctx: MyContext): boolean {
 }
 
 /**
+ * Проверяет, является ли пользователь членом Пресвитерского совета.
+ * Основано на списке PRESBYTERIAN_COUNCIL_USERNAMES.
+ */
+export function isPresbyterianCouncilMember(ctx: MyContext): boolean {
+	const uname = normalizeUsername(ctx.from?.username);
+	if (!uname) return false;
+	return env.PRESBYTERIAN_COUNCIL_USERNAMES.includes(uname);
+}
+
+/**
  * Проверяет, является ли пользователь лидером ЛМГ.
  * Основано на env.LEADERS (LEADERS_JSON_BASE64), поле tgUserName.
  */

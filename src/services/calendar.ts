@@ -9,9 +9,10 @@
 
 import { createDAVClient, DAVCalendar, DAVObject } from "tsdav";
 import ICAL from "ical.js";
-import { compareAsc, isAfter, isBefore, isSameYear } from "date-fns";
+import { compareAsc, isAfter, isBefore, isSameYear, startOfDay } from "date-fns";
 import { env } from "../config/env";
 import { escapeMdV2 } from "../utils/text";
+import { logger } from "../utils/logger";
 
 export type HolidayEventResult =
 	| { status: "future"; event: CalendarEvent } // событие ещё впереди
@@ -29,6 +30,9 @@ export interface CalendarEvent {
 
 type TSDavClient = Awaited<ReturnType<typeof createDAVClient>>;
 let cached: { client: TSDavClient; calendar: DAVCalendar } | null = null;
+
+/** Кэш для пасторского календаря */
+let pastorsCached: { client: TSDavClient; calendar: DAVCalendar } | null = null;
 
 /**
  * Создаём клиент CalDAV и ищем нужный календарь.
@@ -63,6 +67,83 @@ export async function fetchCalendarObjects(): Promise<DAVObject[]> {
 	const objs = await client.fetchCalendarObjects({ calendar });
 	return (objs ?? []) as DAVObject[];
 }
+
+/**
+ * Получить клиент и объект пасторского календаря (с кэшем).
+ *
+ * Алгоритм:
+ * 1. Пытаемся найти календарь через fetchCalendars() по точному URL.
+ * 2. Если не нашли (URL не совпал / не в списке) — конструируем объект прямо из URL.
+ *    tsdav отправляет REPORT-запрос на calendar.url, так что объект нужен только с url.
+ */
+export async function getPastorsCalendar(): Promise<{ client: TSDavClient; calendar: DAVCalendar }> {
+	if (pastorsCached) return pastorsCached;
+
+	if (!env.HTC_PASTORS_CALENDAR_URL) {
+		throw new Error("HTC_PASTORS_CALENDAR_URL is not configured");
+	}
+
+	const { client } = await getCalendar();
+
+	// Ищем в списке (обход нескольких возможных вариантов URL)
+	const allCalendars = await client.fetchCalendars();
+	const pastorsUrl = env.HTC_PASTORS_CALENDAR_URL;
+	const found = allCalendars.find(
+		(c) => c.url === pastorsUrl || c.url === pastorsUrl.replace(/\/$/, "") || c.url === pastorsUrl + "/"
+	);
+
+	// Если не нашли — конструируем напрямую из URL (tsdav использует calendar.url для REPORT)
+	const calendar: DAVCalendar = found ?? ({ url: pastorsUrl } as DAVCalendar);
+
+	pastorsCached = { client, calendar };
+	return pastorsCached;
+}
+
+/**
+ * Загрузить все объекты из пасторского календаря.
+ */
+export async function fetchPastorsCalendarObjects(): Promise<DAVObject[]> {
+	const { client, calendar } = await getPastorsCalendar();
+	const objs = await client.fetchCalendarObjects({ calendar });
+	return (objs ?? []) as DAVObject[];
+}
+
+/**
+ * Найти ближайшее событие по названию в пасторском календаре.
+ *
+ * «Ближайшее» = первое, которое начинается сегодня или позже.
+ * Используем startOfDay(today) чтобы включать текущий день целиком
+ * (событие в 20:00 сегодня — это тоже «ближайшее», даже если уже начало).
+ */
+export async function fetchNextPastorsEventByTitle(
+	title: string,
+): Promise<CalendarEvent | null> {
+	const objs = await fetchPastorsCalendarObjects();
+	const allEvents = objs.flatMap(parseDavObjectToEvents);
+
+	logger.info("[calendar/pastors] Всего событий в пасторском календаре: %d", allEvents.length);
+
+	const todayStart = startOfDay(new Date());
+
+	// Лог всех событий, которые хоть как-то совпадают по названию (без фильтра по дате)
+	const titleMatches = allEvents.filter((e) =>
+		e.title.toLowerCase().includes(title.toLowerCase())
+	);
+	logger.info(
+		{ titleMatches: titleMatches.map((e) => ({ title: e.title, startsAt: e.startsAt })) },
+		"[calendar/pastors] События по названию '%s' (без фильтра по дате)",
+		title
+	);
+
+	const filtered = titleMatches
+		.filter((e) => !isBefore(e.startsAt, todayStart))
+		.sort((a, b) => compareAsc(a.startsAt, b.startsAt));
+
+	logger.info("[calendar/pastors] После фильтра 'сегодня или позже': %d", filtered.length);
+
+	return filtered[0] ?? null;
+}
+
 
 /**
  * Превращаем DAVObject → список CalendarEvent

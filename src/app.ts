@@ -28,6 +28,8 @@ import { registerBackButton } from "./features/global-back-button-navigation/glo
 import { registerSermons } from "./features/sermons/sermons.feature";
 import { registerAboutHTC } from "./features/about-htc/about-htc.feature";
 import { registerLmgNotesFeature } from "./features/lmg-notes/lmg-notes.feature";
+import { registerPresbyterianCouncil } from "./features/presbyterian-council/presbyterian-council.feature";
+import { PRESBYTERIAN_COUNCIL_BUTTON_LABELS } from "./features/presbyterian-council/presbyterian-council.constants";
 
 /** Создание инстанса бота */
 const bot = new Bot<MyContext>(env.BOT_TOKEN);
@@ -71,6 +73,7 @@ registerSunday(bot); // Воскресное богослужение
 registerAboutHTC(bot); // Раздел "О нас"
 registerSmallGroups(bot); // Малые группы
 registerLmgNotesFeature(bot);
+registerPresbyterianCouncil(bot); // Пресвитерский совет
 registerChurchCalendar(bot); // Церковный календарь
 registerSermons(bot); // Проповеди
 registerBackButton(bot); // Кнопка "Назад"
@@ -86,6 +89,7 @@ bot.on("message", async (ctx) => {
 	const known = new Set<string>([
 		MENU_LABELS.MAIN_SUNDAY,
 		MENU_LABELS.MAIN_GROUPS,
+		MENU_LABELS.MAIN_PRESBYTERIAN_COUNCIL,
 		CALENDAR_BUTTON_LABELS.CAL_NEXT3,
 		MENU_LABELS.MAIN_ABOUT,
 		NAVIGATION_LABELS.NAV_MAIN,
@@ -93,6 +97,8 @@ bot.on("message", async (ctx) => {
 		ABOUT_BUTTON_LABELS.ABOUT_CHANNEL,
 		ABOUT_BUTTON_LABELS.ABOUT_BELIEF,
 		ABOUT_BUTTON_LABELS.ABOUT_HISTORY,
+		PRESBYTERIAN_COUNCIL_BUTTON_LABELS.PC_AGENDA,
+		PRESBYTERIAN_COUNCIL_BUTTON_LABELS.PC_AGENDA_NEXT,
 	]);
 
 	// Если пришёл неизвестный текст — возвращаем пользователя в главное меню

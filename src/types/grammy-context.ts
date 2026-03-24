@@ -37,6 +37,7 @@ export interface SessionData {
 /** Данные о доступе пользователя */
 export interface AccessData {
 	isPrivileged: boolean;
+	isPresbyterianCouncil: boolean;
 	username?: string;
 	telegramId?: number;
 }

@@ -54,6 +54,7 @@ export const env = {
 	CALDAV_USERNAME: required("CALDAV_USERNAME"),
 	CALDAV_PASSWORD: required("CALDAV_PASSWORD"),
 	HTC_COMMON_CALENDAR_URL: required("HTC_COMMON_CALENDAR_URL"),
+	HTC_PASTORS_CALENDAR_URL: optional("HTC_PASTORS_CALENDAR_URL", ""),
 	SERMONS_PODSTER_URL: required("SERMONS_PODSTER_URL"),
 	SERMONS_YANDEX_URL: required("SERMONS_YANDEX_URL"),
 
@@ -67,6 +68,7 @@ export const env = {
 
 	// 👥 Списки и структуры
 	AUTHORIZED_USERNAMES: parseUsernames(process.env.AUTHORIZED_USERNAMES),
+	PRESBYTERIAN_COUNCIL_USERNAMES: parseUsernames(process.env.PRESBYTERIAN_COUNCIL_USERNAMES),
 
 	// ✅ Конфиденциальные структуры в base64-JSON
 	//   Пример генерации см. scripts/encode-env.ts
