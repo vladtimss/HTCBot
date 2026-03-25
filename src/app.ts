@@ -99,6 +99,7 @@ bot.on("message", async (ctx) => {
 		ABOUT_BUTTON_LABELS.ABOUT_HISTORY,
 		PRESBYTERIAN_COUNCIL_BUTTON_LABELS.PC_AGENDA,
 		PRESBYTERIAN_COUNCIL_BUTTON_LABELS.PC_AGENDA_NEXT,
+		PRESBYTERIAN_COUNCIL_BUTTON_LABELS.PC_AGENDA_ALL_DATES,
 	]);
 
 	// Если пришёл неизвестный текст — возвращаем пользователя в главное меню

@@ -137,15 +137,19 @@
 			}
 
 			col.col-author {
-				width: 170px;
+				width: 156px;
 			}
 
 			col.col-topics {
-				width: 280px;
+				width: 224px;
+			}
+
+			col.col-status {
+				width: 118px;
 			}
 
 			col.col-timing {
-				width: 82px;
+				width: 72px;
 			}
 
 			thead th {
@@ -251,6 +255,24 @@
 				white-space: nowrap;
 			}
 
+			.status {
+				text-align: center;
+			}
+
+			.status-badge {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				padding: 3px 8px;
+				border-radius: 999px;
+				border: 1px solid transparent;
+				font-size: 10px;
+				font-weight: 700;
+				line-height: 1.2;
+				max-width: 100%;
+				white-space: nowrap;
+			}
+
 			.timing {
 				text-align: center;
 				font-size: 13px;
@@ -285,6 +307,7 @@
 							<col class="col-question" />
 							<col class="col-author" />
 							<col class="col-topics" />
+							<col class="col-status" />
 							<col class="col-timing" />
 						</colgroup>
 						<thead>
@@ -293,6 +316,7 @@
 								<th>Вопрос</th>
 								<th>Автор</th>
 								<th>Тема</th>
+								<th>Статус</th>
 								<th>Время</th>
 							</tr>
 						</thead>
@@ -302,6 +326,7 @@
 								<td><div class="question-title">Аналитика служений: семейное, женское, мужское, детское</div></td>
 								<td class="author"><span class="author-mark" style="--author-bg:rgba(96, 165, 250, 0.20);--author-text:#0f4da8;">Влад Тимофеев</span></td>
 								<td><div class="badge-list"><span class="badge" style="background:#ffe4f1;color:#9d174d;border-color:#f9a8d4;"><span class="badge-label">Забота о людях</span></span><span class="badge" style="background:#dcfce7;color:#166534;border-color:#86efac;"><span class="badge-label">Команда</span></span></div></td>
+								<td class="status"><span class="status-badge" style="background:#dbeafe;color:#1d4ed8;border-color:#93c5fd;">На повестку</span></td>
 								<td class="timing">30</td>
 							</tr>
 							<tr>
@@ -309,6 +334,7 @@
 								<td><div class="question-title">Музыкальное служение на апрель: состав, ротация и координация</div></td>
 								<td class="author"><span class="author-mark" style="--author-bg:rgba(196, 181, 253, 0.24);--author-text:#6d28d9;">Дима Левин</span></td>
 								<td><div class="badge-list"><span class="badge" style="background:#ede9fe;color:#5b21b6;border-color:#c4b5fd;"><span class="badge-label">Музыкальное</span></span><span class="badge" style="background:#dcfce7;color:#166534;border-color:#86efac;"><span class="badge-label">Команда</span></span></div></td>
+								<td class="status"><span class="status-badge" style="background:#ffedd5;color:#9a3412;border-color:#fdba74;">В работе</span></td>
 								<td class="timing">20</td>
 							</tr>
 							<tr>
@@ -316,6 +342,7 @@
 								<td><div class="question-title">Бюджет на летние мероприятия и распределение затрат между направлениями</div></td>
 								<td class="author"><span class="author-mark" style="--author-bg:rgba(134, 239, 172, 0.24);--author-text:#166534;">Вадим Гыра</span></td>
 								<td><div class="badge-list"><span class="badge" style="background:#e0f2fe;color:#075985;border-color:#93c5fd;"><span class="badge-label">Финансы</span></span><span class="badge" style="background:#fef3c7;color:#92400e;border-color:#fcd34d;"><span class="badge-label">Миссия</span></span></div></td>
+								<td class="status"><span class="status-badge" style="background:#fee2e2;color:#991b1b;border-color:#fca5a5;">Отложен</span></td>
 								<td class="timing">15</td>
 							</tr>
 							<tr>
@@ -323,6 +350,7 @@
 								<td><div class="question-title">Координация пасторского сопровождения новых семей и закрепление ответственных</div></td>
 								<td class="author"><span class="author-mark" style="--author-bg:rgba(96, 165, 250, 0.20);--author-text:#0f4da8;">Влад Тимофеев</span></td>
 								<td><div class="badge-list"><span class="badge" style="background:#ffe4f1;color:#9d174d;border-color:#f9a8d4;"><span class="badge-label">Забота о людях</span></span></div></td>
+								<td class="status"><span class="status-badge" style="background:#e5e7eb;color:#374151;border-color:#cbd5e1;">Решен</span></td>
 								<td class="timing">25</td>
 							</tr>
 						</tbody>

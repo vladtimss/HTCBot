@@ -1,7 +1,7 @@
 /**
  * features/presbyterian-council/presbyterian-council.constants.ts
  * --------------------------
- * Константы кнопок раздела "Пресвитерский совет"
+ * Константы раздела "Пресвитерский совет".
  */
 
 export const PRESBYTERIAN_COUNCIL_BUTTON_LABELS = {
@@ -9,6 +9,8 @@ export const PRESBYTERIAN_COUNCIL_BUTTON_LABELS = {
 	PC_AGENDA: "📋 Повестка на совет",
 	/** Ближайшая повестка */
 	PC_AGENDA_NEXT: "📅 Ближайшая повестка",
+	/** Исторический просмотр всех вопросов по датам обсуждения */
+	PC_AGENDA_ALL_DATES: "🗂 Все вопросы по датам",
 } as const;
 
 /** ID базы данных повестки пресвитерского совета в Buildin */
