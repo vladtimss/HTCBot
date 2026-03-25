@@ -4,15 +4,17 @@
  * Логика раздела "Пресвитерский совет"
  */
 
-import { Bot } from "grammy";
+import { Bot, InputFile } from "grammy";
 import { format } from "date-fns";
+import os from "os";
+import puppeteer from "puppeteer";
 import { MyContext } from "../../types/grammy-context";
 import { MENU_LABELS } from "../../constants/button-lables";
 import { requirePresbyterianCouncil } from "../../utils/guards";
 import { logger } from "../../utils/logger";
 import { getAllDatabaseRecords } from "../../services/buildin";
 import { fetchNextPastorsEventByTitle } from "../../services/calendar";
-import { startSpinner } from "../../utils/loading";
+import { formatSpinnerText, startSpinner } from "../../utils/loading";
 import { escapeMdV2 } from "../../utils/text";
 import { BuildinDatabaseRecord } from "../../types/buildin";
 import {
@@ -26,6 +28,7 @@ import {
 	replyPCAgendaMenu,
 } from "./presbyterian-council.keyboard";
 import { PRESBYTERIAN_COUNCIL_TEXTS } from "./presbyterian-council.texts";
+import { AgendaPdfRow, buildAgendaPdfHtml } from "./presbyterian-council.util";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Типы свойств конкретной базы данных повестки
@@ -33,7 +36,7 @@ import { PRESBYTERIAN_COUNCIL_TEXTS } from "./presbyterian-council.texts";
 
 interface AgendaProperties {
 	title?: { title: Array<{ plain_text?: string; text?: { content: string } }> };
-	Тема?: { multi_select: Array<{ name: string }> };
+	Тема?: { multi_select: Array<{ name: string; color?: string }> };
 	Комментарий?: { rich_text: Array<{ plain_text?: string; text?: { content: string } }> };
 	"Дата обсуждения"?: { date: { start: string } | null };
 	Тип?: { select: { name: string } | null };
@@ -176,6 +179,46 @@ function buildAgendaMessages(
 	return messages;
 }
 
+function buildAgendaPdfRows(agendaItems: BuildinDatabaseRecord[]): AgendaPdfRow[] {
+	return agendaItems.map((record, index) => {
+		const props = getAgendaProps(record);
+		return {
+			index: index + 1,
+			title: extractPlainText(props.title?.title) || "Без названия",
+			author: resolveAuthorLabel(record.created_by?.id) || "Не указан",
+			topics: (props.Тема?.multi_select ?? []).map((topic) => ({
+				name: topic.name,
+				color: topic.color,
+			})),
+			timing: props.Тайминг?.select?.name ?? "-",
+		};
+	});
+}
+
+async function renderAgendaPdf(dateLabel: string, agendaItems: BuildinDatabaseRecord[]): Promise<Buffer> {
+	const html = buildAgendaPdfHtml(dateLabel, buildAgendaPdfRows(agendaItems));
+	const browser = await puppeteer.launch({
+		headless: true,
+		executablePath: os.platform() === "linux" ? "/usr/bin/chromium-browser" : undefined,
+		args: ["--no-sandbox", "--disable-setuid-sandbox"],
+	});
+
+	try {
+		const page = await browser.newPage();
+		await page.setContent(html, { waitUntil: "networkidle0" });
+		return Buffer.from(
+			await page.pdf({
+				format: "A4",
+				printBackground: true,
+				scale: 0.9,
+				margin: { top: "6mm", bottom: "6mm", left: "4mm", right: "4mm" },
+			})
+		);
+	} finally {
+		await browser.close().catch(() => {});
+	}
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Рендер корня
 // ─────────────────────────────────────────────────────────────────────────────
@@ -219,10 +262,10 @@ export function registerPresbyterianCouncil(bot: Bot<MyContext>) {
 		if (!requirePresbyterianCouncil(ctx)) return;
 
 		// Фаза 1: ищем ближайший совет в календаре
-		// Сообщение отправляется БЕЗ эмодзи — спиннер добавит часы сам
+		// Сразу отправляем первый кадр спиннера, чтобы сообщение не "моргало"
 		const calendarText = PRESBYTERIAN_COUNCIL_TEXTS.agendaLoadingCalendar;
-		const loadingMsg = await ctx.reply(calendarText);
-		const spinner = startSpinner(ctx, loadingMsg.chat.id, loadingMsg.message_id, calendarText);
+		const loadingMsg = await ctx.reply(formatSpinnerText(calendarText, 0));
+		const spinner = startSpinner(ctx, loadingMsg.chat.id, loadingMsg.message_id, calendarText, 300, false);
 
 		try {
 			logger.info({ PC_CALENDAR_EVENT_TITLES }, "[PC] Ищем событие в пасторском календаре");
@@ -250,21 +293,6 @@ export function registerPresbyterianCouncil(bot: Bot<MyContext>) {
 			});
 			logger.info("[PC] Всего записей из Buildin: %d", allRecords.length);
 
-			allRecords.forEach((r) => {
-				const props = r.properties as Record<string, any>;
-				const rawDate = props["Дата обсуждения"]?.date?.start ?? null;
-				logger.info(
-					{
-						rawDate,
-						parsed: rawDate ? parseBuildinDate(rawDate) : null,
-						status: props["Статус"]?.select?.name ?? null,
-						createdBy: r.created_by?.id ?? null,
-						title: (props["title"]?.title ?? []).map((t: any) => t.plain_text).join(""),
-					},
-					"[PC] Buildin запись"
-				);
-			});
-
 			const onAgendaRecords = allRecords.filter((r) => {
 				const props = r.properties as AgendaProperties;
 				return props["Статус"]?.select?.name === PC_AGENDA_STATUS;
@@ -281,16 +309,29 @@ export function registerPresbyterianCouncil(bot: Bot<MyContext>) {
 				return;
 			}
 
-			spinner.stop();
-			await ctx.api.deleteMessage(loadingMsg.chat.id, loadingMsg.message_id).catch(() => {});
+			try {
+				const pdfBuffer = await renderAgendaPdf(dateLabel, agendaItems);
 
-			// Отправляем всё одним сообщением (или несколькими, если очень длинное)
-			const parts = buildAgendaMessages(agendaItems, dateLabel);
-			for (const part of parts) {
-				await ctx.reply(part, {
-					parse_mode: "MarkdownV2",
-					link_preview_options: { is_disabled: true },
+				spinner.stop();
+				await ctx.api.deleteMessage(loadingMsg.chat.id, loadingMsg.message_id).catch(() => {});
+
+				const filename = `Повестка_совета_${dateLabel.replace(/\./g, "-")}.pdf`;
+				await ctx.replyWithDocument(new InputFile(pdfBuffer, filename), {
+					caption: `📋 Повестка на совет ${dateLabel}`,
 				});
+			} catch (pdfErr) {
+				logger.error({ err: pdfErr }, "[PC] Не удалось сформировать PDF, отправляем текстом");
+
+				spinner.stop();
+				await ctx.api.deleteMessage(loadingMsg.chat.id, loadingMsg.message_id).catch(() => {});
+
+				const parts = buildAgendaMessages(agendaItems, dateLabel);
+				for (const part of parts) {
+					await ctx.reply(part, {
+						parse_mode: "MarkdownV2",
+						link_preview_options: { is_disabled: true },
+					});
+				}
 			}
 		} catch (err) {
 			spinner.stop();

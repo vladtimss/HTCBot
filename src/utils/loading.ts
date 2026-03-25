@@ -292,12 +292,18 @@ export interface SpinnerControl {
 /** Кадры анимации — вращающиеся часы */
 const SPINNER_FRAMES = ["🕐", "🕑", "🕒", "🕓", "🕔", "🕕", "🕖", "🕗", "🕘", "🕙", "🕚", "🕛"] as const;
 
+/** Собрать текст текущего кадра спиннера */
+export function formatSpinnerText(text: string, frame = 0): string {
+	return `${SPINNER_FRAMES[frame]} ${text}`;
+}
+
 /**
  * Запустить анимированный спиннер на уже отправленном сообщении.
- * Сразу редактирует сообщение первым кадром, затем каждые `intervalMs` мс
- * меняет кадр (🕐 → 🕑 → ... → 🕛 → 🕐).
+ * При необходимости сначала редактирует сообщение первым кадром, затем каждые
+ * `intervalMs` мс меняет кадр (🕐 → 🕑 → ... → 🕛 → 🕐).
  *
- * Сообщение нужно отправить заранее БЕЗ эмодзи — спиннер добавит его сам.
+ * Сообщение можно либо отправить заранее без эмодзи, либо сразу с первым кадром
+ * через `formatSpinnerText(..., 0)` и передать `renderFirstFrame = false`.
  *
  * @param ctx         - контекст бота
  * @param chatId      - ID чата
@@ -310,19 +316,19 @@ export function startSpinner(
 	chatId: number,
 	messageId: number,
 	initialText: string,
-	intervalMs = 300
+	intervalMs = 300,
+	renderFirstFrame = true
 ): SpinnerControl {
 	let frame = 0;
 	let text = initialText;
 
-	// Немедленно показываем первый кадр
-	void ctx.api.editMessageText(chatId, messageId, `${SPINNER_FRAMES[0]} ${text}`).catch(() => {});
+	if (renderFirstFrame) {
+		void ctx.api.editMessageText(chatId, messageId, formatSpinnerText(text, 0)).catch(() => {});
+	}
 
 	const intervalId = setInterval(async () => {
 		frame = (frame + 1) % SPINNER_FRAMES.length;
-		await ctx.api
-			.editMessageText(chatId, messageId, `${SPINNER_FRAMES[frame]} ${text}`)
-			.catch(() => {});
+		await ctx.api.editMessageText(chatId, messageId, formatSpinnerText(text, frame)).catch(() => {});
 	}, intervalMs);
 
 	return {
