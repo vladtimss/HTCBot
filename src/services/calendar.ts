@@ -12,7 +12,6 @@ import ICAL from "ical.js";
 import { compareAsc, isAfter, isBefore, isSameYear, startOfDay } from "date-fns";
 import { env } from "../config/env";
 import { escapeMdV2 } from "../utils/text";
-import { logger } from "../utils/logger";
 
 export type HolidayEventResult =
 	| { status: "future"; event: CalendarEvent } // событие ещё впереди
@@ -121,24 +120,16 @@ export async function fetchNextPastorsEventByTitle(
 	const objs = await fetchPastorsCalendarObjects();
 	const allEvents = objs.flatMap(parseDavObjectToEvents);
 
-	logger.info("[calendar/pastors] Всего событий в пасторском календаре: %d", allEvents.length);
-
 	const titleList = Array.isArray(titles) ? titles : [titles];
 	const todayStart = startOfDay(new Date());
 
 	const titleMatches = allEvents.filter((e) =>
 		titleList.some((t) => e.title.toLowerCase().includes((t as string).toLowerCase()))
 	);
-	logger.info(
-		{ titleMatches: titleMatches.map((e) => ({ title: e.title, startsAt: e.startsAt })) },
-		"[calendar/pastors] Совпадения по названиям (без фильтра по дате)"
-	);
 
 	const filtered = titleMatches
 		.filter((e) => !isBefore(e.startsAt, todayStart))
 		.sort((a, b) => compareAsc(a.startsAt, b.startsAt));
-
-	logger.info("[calendar/pastors] После фильтра 'сегодня или позже': %d", filtered.length);
 
 	return filtered[0] ?? null;
 }

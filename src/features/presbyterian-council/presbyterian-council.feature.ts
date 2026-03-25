@@ -268,9 +268,7 @@ export function registerPresbyterianCouncil(bot: Bot<MyContext>) {
 		const spinner = startSpinner(ctx, loadingMsg.chat.id, loadingMsg.message_id, calendarText, 300, false);
 
 		try {
-			logger.info({ PC_CALENDAR_EVENT_TITLES }, "[PC] Ищем событие в пасторском календаре");
 			const councilEvent = await fetchNextPastorsEventByTitle(PC_CALENDAR_EVENT_TITLES);
-			logger.info({ councilEvent }, "[PC] Результат поиска события в календаре");
 
 			if (!councilEvent) {
 				spinner.stop();
@@ -281,26 +279,21 @@ export function registerPresbyterianCouncil(bot: Bot<MyContext>) {
 
 			const councilDate = councilEvent.startsAt;
 			const dateLabel = format(councilDate, "dd.MM.yyyy");
-			logger.info("[PC] Дата заседания: %s", dateLabel);
 
 			// Фаза 2: обновляем текст спиннера под загрузку повестки
 			const dbText = PRESBYTERIAN_COUNCIL_TEXTS.agendaLoadingDb(dateLabel);
 			spinner.setText(dbText);
 
-			logger.info("[PC] Запрашиваем базу Buildin: %s (page_size + start_cursor, без server-side filter)", PC_AGENDA_DATABASE_ID);
 			const allRecords = await getAllDatabaseRecords(PC_AGENDA_DATABASE_ID, {
 				page_size: 100,
 			});
-			logger.info("[PC] Всего записей из Buildin: %d", allRecords.length);
 
 			const onAgendaRecords = allRecords.filter((r) => {
 				const props = r.properties as AgendaProperties;
 				return props["Статус"]?.select?.name === PC_AGENDA_STATUS;
 			});
-			logger.info("[PC] Записей со статусом '%s': %d", PC_AGENDA_STATUS, onAgendaRecords.length);
 
 			const agendaItems = onAgendaRecords.filter((r) => recordMatchesDate(r, councilDate));
-			logger.info("[PC] Из них с датой %s: %d", dateLabel, agendaItems.length);
 
 			if (agendaItems.length === 0) {
 				spinner.stop();
