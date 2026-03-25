@@ -1,7 +1,7 @@
 // src/middleware/auth.ts
 import { session } from "grammy";
 import { MyContext, SessionData } from "../types/grammy-context";
-import { isHTChurchMember }       from "../services/access";
+import { isHTChurchMember, isPresbyterianCouncilMember } from "../services/access";
 
 /**
  * Начальное состояние сессии пользователя.
@@ -21,6 +21,7 @@ export function authMiddleware() {
 	return async (ctx: MyContext, next: () => Promise<void>) => {
 		ctx.access = {
 			isPrivileged: isHTChurchMember(ctx),
+			isPresbyterianCouncil: isPresbyterianCouncilMember(ctx),
 			username: ctx.from?.username,
 			telegramId: ctx.from?.id,
 		};

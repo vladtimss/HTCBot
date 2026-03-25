@@ -24,6 +24,12 @@ export type BuildinTextContent = {
 	};
 };
 
+/** Ссылка на пользователя из системных полей */
+export type BuildinUserRef = {
+	object: "user";
+	id: string;
+};
+
 /** Свойство типа Title */
 export type BuildinTitleProperty = {
 	id: string;
@@ -134,10 +140,13 @@ export type BuildinParent = {
 
 /** Запись из базы данных (страница в базе) */
 export type BuildinDatabaseRecord = {
+	object: "page";
 	id: string;
 	properties: Record<string, BuildinProperty>;
 	created_time: string;
+	created_by: BuildinUserRef;
 	last_edited_time: string;
+	last_edited_by: BuildinUserRef;
 	parent: {
 		type: "database_id";
 		database_id: string;
@@ -148,9 +157,12 @@ export type BuildinDatabaseRecord = {
 
 /** Ответ на запрос к базе данных */
 export type BuildinDatabaseQueryResponse = {
+	object?: "list";
 	results: BuildinDatabaseRecord[];
 	next_cursor?: string | null;
 	has_more: boolean;
+	type?: "page";
+	page?: Record<string, never>;
 };
 
 // ============================================================================
@@ -159,10 +171,13 @@ export type BuildinDatabaseQueryResponse = {
 
 /** Страница в Buildin */
 export type BuildinPage = {
+	object?: "page";
 	id: string;
 	properties: Record<string, BuildinProperty>;
 	created_time: string;
+	created_by?: BuildinUserRef;
 	last_edited_time: string;
+	last_edited_by?: BuildinUserRef;
 	parent: BuildinParent;
 	url: string;
 	archived: boolean;

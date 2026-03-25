@@ -12,16 +12,57 @@ import type { ParseMode } from "../constants/parse-mode";
 
 /** Опции показа сообщения об ожидании */
 export interface LoadingOptions {
-	text?: string; // текст сообщения (по умолчанию: "⏳ Загружаю…")
+	text?: string; // текст сообщения (спиннер добавляется автоматически)
 	delayMs?: number; // задержка перед показом (мс)
 	parseMode?: ParseMode; // режим парсинга текста
 }
 
 /** Состояние загрузки */
 interface LoadingState {
-	timer: ReturnType<typeof setTimeout>;
+	timer?: ReturnType<typeof setTimeout>;
 	loadingMsg: Message.TextMessage | undefined;
+	spinner: SpinnerControl | undefined;
 	shown: boolean;
+}
+
+interface SpinnerMessageOptions {
+	parseMode?: ParseMode;
+	intervalMs?: number;
+}
+
+function sleep(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function removeLoadingMessage(
+	ctx: MyContext,
+	msg: Message.TextMessage | undefined,
+	fallbackText?: string
+): Promise<void> {
+	if (!msg) {
+		return;
+	}
+
+	for (let attempt = 0; attempt < 3; attempt++) {
+		try {
+			await ctx.api.deleteMessage(msg.chat.id, msg.message_id);
+			return;
+		} catch {
+			if (attempt < 2) {
+				await sleep(120);
+			}
+		}
+	}
+
+	if (!fallbackText) {
+		return;
+	}
+
+	try {
+		await ctx.api.editMessageText(msg.chat.id, msg.message_id, fallbackText);
+	} catch {
+		// Игнорируем ошибки редактирования
+	}
 }
 
 /**
@@ -34,18 +75,18 @@ function createLoadingTimer(
 	parseMode?: ParseMode
 ): LoadingState {
 	const state: LoadingState = {
-		timer: undefined!,
+		timer: undefined,
 		loadingMsg: undefined,
+		spinner: undefined,
 		shown: false,
 	};
 
 	state.timer = setTimeout(async () => {
 		try {
+			const { message, spinner } = await replyWithSpinner(ctx, text, { parseMode });
 			state.shown = true;
-			state.loadingMsg = await ctx.reply(text, {
-				parse_mode: parseMode,
-				link_preview_options: { is_disabled: true },
-			});
+			state.loadingMsg = message;
+			state.spinner = spinner;
 		} catch {
 			// Игнорируем ошибки отправки
 		}
@@ -59,21 +100,9 @@ function createLoadingTimer(
  */
 async function handleLoadingError(ctx: MyContext, state: LoadingState): Promise<void> {
 	if (state.timer) clearTimeout(state.timer);
+	state.spinner?.stop();
 	if (state.shown && state.loadingMsg) {
-		try {
-			await ctx.api.deleteMessage(state.loadingMsg.chat.id, state.loadingMsg.message_id);
-		} catch {
-			// Если удалить нельзя — пробуем заменить текст
-			try {
-				await ctx.api.editMessageText(
-					state.loadingMsg.chat.id,
-					state.loadingMsg.message_id,
-					"⚠️ Не удалось загрузить данные"
-				);
-			} catch {
-				// Игнорируем ошибки редактирования
-			}
-		}
+		await removeLoadingMessage(ctx, state.loadingMsg, "⚠️ Не удалось загрузить данные");
 	}
 }
 
@@ -82,7 +111,7 @@ async function handleLoadingError(ctx: MyContext, state: LoadingState): Promise<
  * После завершения удаляет сообщение загрузки.
  */
 export async function withLoading<T>(ctx: MyContext, task: () => Promise<T>, options: LoadingOptions = {}): Promise<T> {
-	const { text = "⏳ Загружаю…", delayMs = 300, parseMode } = options;
+	const { text = "Загружаю…", delayMs = 300, parseMode } = options;
 	const state = createLoadingTimer(ctx, text, delayMs, parseMode);
 
 	try {
@@ -90,17 +119,9 @@ export async function withLoading<T>(ctx: MyContext, task: () => Promise<T>, opt
 
 		// Операция завершилась → убираем сообщение
 		if (state.timer) clearTimeout(state.timer);
+		state.spinner?.stop();
 		if (state.shown && state.loadingMsg) {
-			try {
-				await ctx.api.deleteMessage(state.loadingMsg.chat.id, state.loadingMsg.message_id);
-			} catch {
-				// Если удалить нельзя → заменяем текст
-				try {
-					await ctx.api.editMessageText(state.loadingMsg.chat.id, state.loadingMsg.message_id, "✅ Готово");
-				} catch {
-					// Игнорируем любые ошибки
-				}
-			}
+			await removeLoadingMessage(ctx, state.loadingMsg, "✅ Готово");
 		}
 
 		return result;
@@ -119,12 +140,13 @@ export async function withLoadingAndMsg<T>(
 	task: () => Promise<T>,
 	options: LoadingOptions = {}
 ): Promise<{ result: T; loadingMsg?: Message.TextMessage }> {
-	const { text = "⏳ Загружаю…", delayMs = 300, parseMode } = options;
+	const { text = "Загружаю…", delayMs = 300, parseMode } = options;
 	const state = createLoadingTimer(ctx, text, delayMs, parseMode);
 
 	try {
 		const result = await task();
 		if (state.timer) clearTimeout(state.timer);
+		state.spinner?.stop();
 		return { result, loadingMsg: state.loadingMsg };
 	} catch (err) {
 		await handleLoadingError(ctx, state);
@@ -143,23 +165,19 @@ export interface ProgressOptions {
 }
 
 type ProgressState = {
-	firstMessage?: Message.TextMessage;
-	secondMessage?: Message.TextMessage;
+	loadingMsg?: Message.TextMessage;
+	spinner?: SpinnerControl;
 	firstMessageTimer?: ReturnType<typeof setTimeout>;
-	secondMessageInterval?: ReturnType<typeof setInterval>;
-	secondMessageDeleteTimer?: ReturnType<typeof setTimeout>;
+	secondMessageTimer?: ReturnType<typeof setTimeout>;
+	currentText: string;
 	isCompleted: boolean;
 };
 
 /**
  * Обёртка для долгих операций с прогресс-индикатором.
- * 
- * Показывает два сообщения:
- * 1. Первое сообщение - показывается сразу (с задержкой firstMessageDelayMs)
- * 2. Второе сообщение - показывается периодически (каждые secondMessageIntervalMs),
- *    автоматически удаляется через secondMessageDurationMs
- * 
- * При завершении операции (успешном или с ошибкой) все сообщения удаляются.
+ *
+ * Показывает единый спиннер и при необходимости обновляет его текст,
+ * если операция затянулась.
  */
 export async function withProgressMessages<T>(
 	ctx: MyContext,
@@ -171,35 +189,17 @@ export async function withProgressMessages<T>(
 		secondMessageText = "",
 		firstMessageDelayMs = 300,
 		secondMessageIntervalMs = 5000,
-		secondMessageDurationMs = 2000,
 		parseMode,
 	} = options;
 
 	// Состояние для отслеживания таймеров и сообщений
-	const state: ProgressState = { isCompleted: false };
-
-	// Безопасная отправка сообщения (игнорирует ошибки)
-	const safeReply = async (text: string, mode?: ParseMode) => {
-		try {
-			return await ctx.reply(text, {
-				parse_mode: mode,
-				link_preview_options: { is_disabled: true },
-			});
-		} catch {
-			return undefined;
-		}
+	const state: ProgressState = {
+		isCompleted: false,
+		currentText: firstMessageText || secondMessageText || "Загружаю…",
 	};
 
-	// Безопасное удаление сообщения (игнорирует ошибки)
 	const safeDelete = async (msg?: Message.TextMessage) => {
-		if (!msg) {
-			return;
-		}
-		try {
-			await ctx.api.deleteMessage(msg.chat.id, msg.message_id);
-		} catch {
-			// Игнорируем ошибки удаления
-		}
+		await removeLoadingMessage(ctx, msg);
 	};
 
 	// Очистка всех таймеров и удаление всех сообщений
@@ -210,69 +210,152 @@ export async function withProgressMessages<T>(
 		if (state.firstMessageTimer) {
 			clearTimeout(state.firstMessageTimer);
 		}
-		if (state.secondMessageInterval) {
-			clearInterval(state.secondMessageInterval);
+		if (state.secondMessageTimer) {
+			clearTimeout(state.secondMessageTimer);
 		}
-		if (state.secondMessageDeleteTimer) {
-			clearTimeout(state.secondMessageDeleteTimer);
-		}
+		state.spinner?.stop();
 
-		// Удаляем все сообщения
-		await safeDelete(state.firstMessage);
-		await safeDelete(state.secondMessage);
+		// Удаляем сообщение лоадера
+		await safeDelete(state.loadingMsg);
 	};
 
-	// Показ второго сообщения с автоматическим удалением через указанное время
-	const showSecondMessage = async () => {
-		// Не показываем, если операция завершена или сообщение уже показано
-		if (state.isCompleted || state.secondMessage) {
-			return;
-		}
-
-		// Отправляем второе сообщение
-		state.secondMessage = await safeReply(secondMessageText, parseMode ?? "MarkdownV2");
-
-		if (!state.secondMessage) {
-			return;
-		}
-
-		// Устанавливаем таймер на автоматическое удаление второго сообщения
-		state.secondMessageDeleteTimer = setTimeout(async () => {
-			if (state.isCompleted) {
-				return;
-			}
-			await safeDelete(state.secondMessage);
-			state.secondMessage = undefined;
-		}, secondMessageDurationMs);
-	};
-
-	// Запускаем таймер для показа первого сообщения
+	// Запускаем таймер для показа первого сообщения со спиннером
 	state.firstMessageTimer = setTimeout(async () => {
 		if (state.isCompleted) {
 			return;
 		}
-		state.firstMessage = await safeReply(firstMessageText, parseMode);
+		try {
+			const { message, spinner } = await replyWithSpinner(ctx, state.currentText, {
+				parseMode,
+			});
+			state.loadingMsg = message;
+			state.spinner = spinner;
+		} catch {
+			// Игнорируем ошибки отправки
+		}
 	}, firstMessageDelayMs);
 
-	// Запускаем таймер для первого показа второго сообщения,
-	// затем запускаем интервал для периодического показа
-	setTimeout(() => {
-		if (state.isCompleted) {
-			return;
-		}
-		// Показываем второе сообщение первый раз
-		void showSecondMessage();
-		// Запускаем интервал для периодического показа второго сообщения
-		state.secondMessageInterval = setInterval(showSecondMessage, secondMessageIntervalMs);
-	}, secondMessageIntervalMs);
+	// Если операция долгая, обновляем текст в том же самом спиннере
+	if (secondMessageText) {
+		state.currentText = firstMessageText || state.currentText;
+		state.secondMessageTimer = setTimeout(() => {
+			if (state.isCompleted) {
+				return;
+			}
+			state.currentText = secondMessageText;
+			state.spinner?.setText(secondMessageText);
+		}, Math.max(firstMessageDelayMs, secondMessageIntervalMs));
+	}
 
 	// Выполняем задачу и очищаем ресурсы
 	try {
 		const result = await task();
 		await cleanup();
-		return { result, firstMessage: state.firstMessage, secondMessage: state.secondMessage };
+		return { result, firstMessage: state.loadingMsg, secondMessage: undefined };
 	} catch (err) {
 		await cleanup();
 		throw err;
 	}
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Spinner (анимированный лоадер через edit message)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Управление анимированным спиннером */
+export interface SpinnerControl {
+	/** Обновить текст подписи (анимация продолжается) */
+	setText(newText: string): void;
+
+	/** Остановить анимацию */
+	stop(): void;
+}
+
+/** Кадры анимации — вращающиеся часы */
+const SPINNER_FRAMES = ["🕐", "🕑", "🕒", "🕓", "🕔", "🕕", "🕖", "🕗", "🕘", "🕙", "🕚", "🕛"] as const;
+
+const LOADER_PREFIX_RE = /^(?:[🕐-🕛]|⏳|⌛\uFE0F?)\s*/u;
+
+/** Нормализовать текст: убираем старые loader-эмодзи, спиннер добавляется автоматически */
+function normalizeLoadingText(text: string): string {
+	return text.replace(LOADER_PREFIX_RE, "");
+}
+
+/** Собрать текст текущего кадра спиннера */
+export function formatSpinnerText(text: string, frame = 0): string {
+	const normalizedText = normalizeLoadingText(text);
+	return `${SPINNER_FRAMES[frame]} ${normalizedText}`;
+}
+
+/** Отправить сообщение со спиннером и сразу запустить анимацию */
+export async function replyWithSpinner(
+	ctx: MyContext,
+	text: string,
+	options: SpinnerMessageOptions = {}
+): Promise<{ message: Message.TextMessage; spinner: SpinnerControl }> {
+	const { parseMode, intervalMs = 300 } = options;
+	const normalizedText = normalizeLoadingText(text);
+	const message = await ctx.reply(formatSpinnerText(normalizedText, 0), {
+		parse_mode: parseMode,
+		link_preview_options: { is_disabled: true },
+	});
+	const spinner = startSpinner(ctx, message.chat.id, message.message_id, normalizedText, intervalMs, false, parseMode);
+	return { message, spinner };
+}
+
+/**
+ * Запустить анимированный спиннер на уже отправленном сообщении.
+ * При необходимости сначала редактирует сообщение первым кадром, затем каждые
+ * `intervalMs` мс меняет кадр (🕐 → 🕑 → ... → 🕛 → 🕐).
+ *
+ * Сообщение можно либо отправить заранее без эмодзи, либо сразу с первым кадром
+ * через `formatSpinnerText(..., 0)` и передать `renderFirstFrame = false`.
+ *
+ * @param ctx         - контекст бота
+ * @param chatId      - ID чата
+ * @param messageId   - ID сообщения, которое редактируем
+ * @param initialText - текст без эмодзи (добавляется автоматически)
+ * @param intervalMs  - интервал смены кадра (по умолчанию 300 мс)
+ * @param renderFirstFrame
+ * @param parseMode
+ */
+export function startSpinner(
+	ctx: MyContext,
+	chatId: number,
+	messageId: number,
+	initialText: string,
+	intervalMs = 300,
+	renderFirstFrame = true,
+	parseMode?: ParseMode
+): SpinnerControl {
+	let frame = 0;
+	let text = normalizeLoadingText(initialText);
+
+	if (renderFirstFrame) {
+		void ctx.api
+				.editMessageText(chatId, messageId, formatSpinnerText(text, 0), {
+					parse_mode: parseMode,
+					link_preview_options: { is_disabled: true },
+				})
+				.catch(() => {});
+	}
+
+	const intervalId = setInterval(async () => {
+		frame = (frame + 1) % SPINNER_FRAMES.length;
+		await ctx.api
+				 .editMessageText(chatId, messageId, formatSpinnerText(text, frame), {
+					 parse_mode: parseMode,
+					 link_preview_options: { is_disabled: true },
+				 })
+				 .catch(() => {});
+	}, intervalMs);
+
+	return {
+		setText(newText: string) {
+			text = normalizeLoadingText(newText);
+		},
+		stop() {
+			clearInterval(intervalId);
+		},
+	};
 }

@@ -42,3 +42,19 @@ export function requireLmgLeader(ctx: MyContext): boolean {
 
 	return false;
 }
+
+/**
+ * Проверяет, является ли пользователь членом Пресвитерского совета.
+ * Если нет — мягко перекидывает в главное меню.
+ */
+export function requirePresbyterianCouncil(ctx: MyContext): boolean {
+	if (ctx.access?.isPresbyterianCouncil) return true;
+
+	// Сброс меню → главное
+	ctx.session.menuStack = ["main"];
+	ctx.session.lastSection = "main";
+
+	ctx.reply(COMMON.mainMenuTitle, { reply_markup: replyMainKeyboard(ctx) });
+
+	return false;
+}

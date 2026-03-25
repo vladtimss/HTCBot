@@ -10,6 +10,7 @@ import { Context, SessionFlavor } from "grammy";
 import { LmgNote, Sermon } from "./buildin";
 import type { NormalizedSermonState } from "../features/sermons/sermons.util";
 import type { NormalizedLmgNotesState } from "../features/lmg-notes/lmg-notes.util";
+import type { NormalizedPresbyterianCouncilAgendaState } from "../features/presbyterian-council/presbyterian-council.state";
 
 /** Данные сессии для навигации */
 export interface SessionData {
@@ -32,11 +33,15 @@ export interface SessionData {
 	lmgNotesState?: NormalizedLmgNotesState;
 	/** Время последней активности в разделе конспектов ЛМГ (ms since epoch) */
 	lmgNotesLastActivityAt?: number;
+
+	/** Нормализованное состояние вопросов пресвитерского совета по датам */
+	pcAgendaState?: NormalizedPresbyterianCouncilAgendaState;
 }
 
 /** Данные о доступе пользователя */
 export interface AccessData {
 	isPrivileged: boolean;
+	isPresbyterianCouncil: boolean;
 	username?: string;
 	telegramId?: number;
 }
