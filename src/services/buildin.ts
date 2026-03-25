@@ -124,3 +124,4 @@ export async function getPage(pageId: string): Promise<BuildinPage> {
 	return apiFetch<BuildinPage>(`/pages/${pageId}`, { method: "GET" });
 }
 
+

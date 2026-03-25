@@ -12,12 +12,13 @@ import { requirePresbyterianCouncil } from "../../utils/guards";
 import { logger } from "../../utils/logger";
 import { getAllDatabaseRecords } from "../../services/buildin";
 import { fetchNextPastorsEventByTitle } from "../../services/calendar";
+import { startSpinner } from "../../utils/loading";
 import { escapeMdV2 } from "../../utils/text";
 import { BuildinDatabaseRecord } from "../../types/buildin";
 import {
 	PRESBYTERIAN_COUNCIL_BUTTON_LABELS,
 	PC_AGENDA_DATABASE_ID,
-	PC_CALENDAR_EVENT_TITLE,
+	PC_CALENDAR_EVENT_TITLES,
 	PC_AGENDA_STATUS,
 } from "./presbyterian-council.constants";
 import {
@@ -41,6 +42,13 @@ interface AgendaProperties {
 	"Дедлайн задачи"?: { date: { start: string } | null };
 }
 
+const AUTHOR_NAMES_BY_ID: Record<string, string> = {
+	"59bf20ad-946a-45d4-aaff-d7b8a01bc186": "Дима Левин",
+	"ad3a53ab-9901-4598-9792-c8bfb361b9e7": "Влад Тимофеев",
+	"3f22e238-7a9d-4016-b2c8-ba810e083104": "Влад Тимофеев",
+	"c3c13655-5ca6-4c59-b195-abd0958a74c0": "Вадим Гыра",
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Хелперы
 // ─────────────────────────────────────────────────────────────────────────────
@@ -54,6 +62,11 @@ function extractPlainText(
 
 function getAgendaProps(record: BuildinDatabaseRecord): AgendaProperties {
 	return record.properties as unknown as AgendaProperties;
+}
+
+function resolveAuthorLabel(authorId: string | undefined): string {
+	if (!authorId) return "";
+	return AUTHOR_NAMES_BY_ID[authorId] ?? authorId;
 }
 
 /**
@@ -114,23 +127,53 @@ function formatAgendaRecord(record: BuildinDatabaseRecord, index: number): strin
 	const props = getAgendaProps(record);
 
 	const titleText = extractPlainText(props.title?.title);
+	const authorLabel = resolveAuthorLabel(record.created_by?.id);
 	const topics = (props.Тема?.multi_select ?? []).map((t) => t.name).join(", ");
 	const comment = extractPlainText(props.Комментарий?.rich_text);
 	const type = props.Тип?.select?.name ?? "";
 	const timing = props.Тайминг?.select?.name ?? "";
 	const deadline = formatDeadline(props["Дедлайн задачи"]?.date?.start);
 
-	const lines: string[] = [
-		`*${index}\\. ${escapeMdV2(titleText || "Без названия")}*`,
-	];
+	const lines: string[] = [`*${index} \\- ${escapeMdV2(titleText || "Без названия")}*`];
 
-	if (type) lines.push(`🏷 *Тип:* ${escapeMdV2(type)}`);
-	if (topics) lines.push(`🔖 *Тема:* ${escapeMdV2(topics)}`);
-	if (comment) lines.push(`💬 *Комментарий:* ${escapeMdV2(comment)}`);
-	if (timing) lines.push(`⏱ *Тайминг:* ${escapeMdV2(timing)} мин`);
-	if (deadline) lines.push(`⏰ *Дедлайн:* ${escapeMdV2(deadline)}`);
+	if (authorLabel) lines.push(`Автор \\- ${escapeMdV2(authorLabel)}`);
+	if (topics) lines.push(`Тема \\- ${escapeMdV2(topics)}`);
+	if (timing) lines.push(`Тайминг \\- ${escapeMdV2(timing)} мин`);
+	if (type) lines.push(`Тип \\- ${escapeMdV2(type)}`);
+	if (comment) lines.push(`Комментарий \\- ${escapeMdV2(comment)}`);
+	if (deadline) lines.push(`Дедлайн \\- ${escapeMdV2(deadline)}`);
 
 	return lines.join("\n");
+}
+
+/**
+ * Собрать все вопросы повестки в одно сообщение (или несколько, если > 4000 символов).
+ */
+function buildAgendaMessages(
+	agendaItems: BuildinDatabaseRecord[],
+	dateLabel: string
+): string[] {
+	const SEPARATOR = "\n\n━━━━━━━━━━━━━━━━━━━━\n";
+	const MAX_LEN = 4000;
+
+	const header = `*📋 Повестка на совет ${escapeMdV2(dateLabel)}*\n*Вопросов: ${agendaItems.length}*`;
+	const blocks = agendaItems.map((r, i) => formatAgendaRecord(r, i + 1));
+
+	const messages: string[] = [];
+	let current = header;
+
+	for (const block of blocks) {
+		const candidate = current + SEPARATOR + block;
+		if (candidate.length > MAX_LEN) {
+			messages.push(current);
+			current = block;
+		} else {
+			current = candidate;
+		}
+	}
+	messages.push(current);
+
+	return messages;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -175,15 +218,19 @@ export function registerPresbyterianCouncil(bot: Bot<MyContext>) {
 	bot.hears(PRESBYTERIAN_COUNCIL_BUTTON_LABELS.PC_AGENDA_NEXT, async (ctx) => {
 		if (!requirePresbyterianCouncil(ctx)) return;
 
-		const loadingMsg = await ctx.reply(PRESBYTERIAN_COUNCIL_TEXTS.agendaLoading);
+		// Фаза 1: ищем ближайший совет в календаре
+		// Сообщение отправляется БЕЗ эмодзи — спиннер добавит часы сам
+		const calendarText = PRESBYTERIAN_COUNCIL_TEXTS.agendaLoadingCalendar;
+		const loadingMsg = await ctx.reply(calendarText);
+		const spinner = startSpinner(ctx, loadingMsg.chat.id, loadingMsg.message_id, calendarText);
 
 		try {
-			// 1. Найти ближайшее заседание совета в пасторском календаре
-			logger.info("[PC] Ищем событие в пасторском календаре: '%s'", PC_CALENDAR_EVENT_TITLE);
-			const councilEvent = await fetchNextPastorsEventByTitle(PC_CALENDAR_EVENT_TITLE);
+			logger.info({ PC_CALENDAR_EVENT_TITLES }, "[PC] Ищем событие в пасторском календаре");
+			const councilEvent = await fetchNextPastorsEventByTitle(PC_CALENDAR_EVENT_TITLES);
 			logger.info({ councilEvent }, "[PC] Результат поиска события в календаре");
 
 			if (!councilEvent) {
+				spinner.stop();
 				await ctx.api.deleteMessage(loadingMsg.chat.id, loadingMsg.message_id).catch(() => {});
 				await ctx.reply(PRESBYTERIAN_COUNCIL_TEXTS.noCouncilEvent);
 				return;
@@ -193,49 +240,60 @@ export function registerPresbyterianCouncil(bot: Bot<MyContext>) {
 			const dateLabel = format(councilDate, "dd.MM.yyyy");
 			logger.info("[PC] Дата заседания: %s", dateLabel);
 
-			// 2. Загрузить записи базы повестки — только со статусом "На повестку", новые первыми
-			logger.info("[PC] Запрашиваем базу Buildin: %s (фильтр: статус='%s')", PC_AGENDA_DATABASE_ID, PC_AGENDA_STATUS);
-			const onAgendaRecords = await getAllDatabaseRecords(PC_AGENDA_DATABASE_ID, {
-				filter: { property: "Статус", select: { equals: PC_AGENDA_STATUS } },
-				sorts: [{ property: "Дата обсуждения", direction: "descending" }],
-			});
-			logger.info("[PC] Записей со статусом '%s': %d", PC_AGENDA_STATUS, onAgendaRecords.length);
+			// Фаза 2: обновляем текст спиннера под загрузку повестки
+			const dbText = PRESBYTERIAN_COUNCIL_TEXTS.agendaLoadingDb(dateLabel);
+			spinner.setText(dbText);
 
-			// Лог всех найденных + результат парсинга даты
-			onAgendaRecords.forEach((r) => {
+			logger.info("[PC] Запрашиваем базу Buildin: %s (page_size + start_cursor, без server-side filter)", PC_AGENDA_DATABASE_ID);
+			const allRecords = await getAllDatabaseRecords(PC_AGENDA_DATABASE_ID, {
+				page_size: 100,
+			});
+			logger.info("[PC] Всего записей из Buildin: %d", allRecords.length);
+
+			allRecords.forEach((r) => {
 				const props = r.properties as Record<string, any>;
 				const rawDate = props["Дата обсуждения"]?.date?.start ?? null;
-				const parsed = rawDate ? parseBuildinDate(rawDate) : null;
 				logger.info(
-					{ rawDate, parsed,
-					  title: (props["title"]?.title ?? []).map((t: any) => t.plain_text).join("") },
-					"[PC] 'На повестку' запись"
+					{
+						rawDate,
+						parsed: rawDate ? parseBuildinDate(rawDate) : null,
+						status: props["Статус"]?.select?.name ?? null,
+						createdBy: r.created_by?.id ?? null,
+						title: (props["title"]?.title ?? []).map((t: any) => t.plain_text).join(""),
+					},
+					"[PC] Buildin запись"
 				);
 			});
 
-			// 3. Отфильтровать по дате заседания (статус уже отфильтрован на сервере)
-			const agendaItems = onAgendaRecords.filter((r) => recordMatchesDate(r, councilDate));
-			logger.info("[PC] Из них с датой %s: %d", format(councilDate, "dd.MM.yyyy"), agendaItems.length);
+			const onAgendaRecords = allRecords.filter((r) => {
+				const props = r.properties as AgendaProperties;
+				return props["Статус"]?.select?.name === PC_AGENDA_STATUS;
+			});
+			logger.info("[PC] Записей со статусом '%s': %d", PC_AGENDA_STATUS, onAgendaRecords.length);
 
-			await ctx.api.deleteMessage(loadingMsg.chat.id, loadingMsg.message_id).catch(() => {});
+			const agendaItems = onAgendaRecords.filter((r) => recordMatchesDate(r, councilDate));
+			logger.info("[PC] Из них с датой %s: %d", dateLabel, agendaItems.length);
 
 			if (agendaItems.length === 0) {
+				spinner.stop();
+				await ctx.api.deleteMessage(loadingMsg.chat.id, loadingMsg.message_id).catch(() => {});
 				await ctx.reply(PRESBYTERIAN_COUNCIL_TEXTS.noAgendaItems);
 				return;
 			}
 
-			// 4. Вывести заголовок и список вопросов
-			const header = `*📋 Повестка на совет ${escapeMdV2(dateLabel)}*\n\n*Вопросов на повестке: ${agendaItems.length}*`;
-			await ctx.reply(header, { parse_mode: "MarkdownV2" });
+			spinner.stop();
+			await ctx.api.deleteMessage(loadingMsg.chat.id, loadingMsg.message_id).catch(() => {});
 
-			for (let i = 0; i < agendaItems.length; i++) {
-				const text = formatAgendaRecord(agendaItems[i], i + 1);
-				await ctx.reply(text, {
+			// Отправляем всё одним сообщением (или несколькими, если очень длинное)
+			const parts = buildAgendaMessages(agendaItems, dateLabel);
+			for (const part of parts) {
+				await ctx.reply(part, {
 					parse_mode: "MarkdownV2",
 					link_preview_options: { is_disabled: true },
 				});
 			}
 		} catch (err) {
+			spinner.stop();
 			await ctx.api.deleteMessage(loadingMsg.chat.id, loadingMsg.message_id).catch(() => {});
 			const message = err instanceof Error ? err.message : String(err);
 			logger.error({ err }, "[PC] Ошибка при загрузке повестки");

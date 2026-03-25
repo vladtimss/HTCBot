@@ -109,30 +109,29 @@ export async function fetchPastorsCalendarObjects(): Promise<DAVObject[]> {
 }
 
 /**
- * Найти ближайшее событие по названию в пасторском календаре.
+ * Найти ближайшее событие по названию (или массиву названий) в пасторском календаре.
  *
  * «Ближайшее» = первое, которое начинается сегодня или позже.
  * Используем startOfDay(today) чтобы включать текущий день целиком
- * (событие в 20:00 сегодня — это тоже «ближайшее», даже если уже начало).
+ * (событие в 20:00 сегодня — это тоже «ближайшее», даже если уже началось).
  */
 export async function fetchNextPastorsEventByTitle(
-	title: string,
+	titles: string | readonly string[],
 ): Promise<CalendarEvent | null> {
 	const objs = await fetchPastorsCalendarObjects();
 	const allEvents = objs.flatMap(parseDavObjectToEvents);
 
 	logger.info("[calendar/pastors] Всего событий в пасторском календаре: %d", allEvents.length);
 
+	const titleList = Array.isArray(titles) ? titles : [titles];
 	const todayStart = startOfDay(new Date());
 
-	// Лог всех событий, которые хоть как-то совпадают по названию (без фильтра по дате)
 	const titleMatches = allEvents.filter((e) =>
-		e.title.toLowerCase().includes(title.toLowerCase())
+		titleList.some((t) => e.title.toLowerCase().includes((t as string).toLowerCase()))
 	);
 	logger.info(
 		{ titleMatches: titleMatches.map((e) => ({ title: e.title, startsAt: e.startsAt })) },
-		"[calendar/pastors] События по названию '%s' (без фильтра по дате)",
-		title
+		"[calendar/pastors] Совпадения по названиям (без фильтра по дате)"
 	);
 
 	const filtered = titleMatches

@@ -276,3 +276,61 @@ export async function withProgressMessages<T>(
 		throw err;
 	}
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Spinner (анимированный лоадер через edit message)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Управление анимированным спиннером */
+export interface SpinnerControl {
+	/** Обновить текст подписи (анимация продолжается) */
+	setText(newText: string): void;
+	/** Остановить анимацию */
+	stop(): void;
+}
+
+/** Кадры анимации — вращающиеся часы */
+const SPINNER_FRAMES = ["🕐", "🕑", "🕒", "🕓", "🕔", "🕕", "🕖", "🕗", "🕘", "🕙", "🕚", "🕛"] as const;
+
+/**
+ * Запустить анимированный спиннер на уже отправленном сообщении.
+ * Сразу редактирует сообщение первым кадром, затем каждые `intervalMs` мс
+ * меняет кадр (🕐 → 🕑 → ... → 🕛 → 🕐).
+ *
+ * Сообщение нужно отправить заранее БЕЗ эмодзи — спиннер добавит его сам.
+ *
+ * @param ctx         - контекст бота
+ * @param chatId      - ID чата
+ * @param messageId   - ID сообщения, которое редактируем
+ * @param initialText - текст без эмодзи (добавляется автоматически)
+ * @param intervalMs  - интервал смены кадра (по умолчанию 300 мс)
+ */
+export function startSpinner(
+	ctx: MyContext,
+	chatId: number,
+	messageId: number,
+	initialText: string,
+	intervalMs = 300
+): SpinnerControl {
+	let frame = 0;
+	let text = initialText;
+
+	// Немедленно показываем первый кадр
+	void ctx.api.editMessageText(chatId, messageId, `${SPINNER_FRAMES[0]} ${text}`).catch(() => {});
+
+	const intervalId = setInterval(async () => {
+		frame = (frame + 1) % SPINNER_FRAMES.length;
+		await ctx.api
+			.editMessageText(chatId, messageId, `${SPINNER_FRAMES[frame]} ${text}`)
+			.catch(() => {});
+	}, intervalMs);
+
+	return {
+		setText(newText: string) {
+			text = newText;
+		},
+		stop() {
+			clearInterval(intervalId);
+		},
+	};
+}
