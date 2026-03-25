@@ -91,7 +91,7 @@ export function registerChurchCalendar(bot: Bot<MyContext>) {
 		if (!requirePrivileged(ctx)) return;
 
 		const events = await withLoading(ctx, () => fetchUpcomingEvents(5), {
-			text: "⏳ Запрашиваю календарь…",
+			text: "Запрашиваю календарь…",
 		});
 
 		if (events.length === 0) {
@@ -122,7 +122,7 @@ ${eventsText}`;
 		if (!requirePrivileged(ctx)) return;
 
 		const ev = await withLoading(ctx, () => fetchNextEventByTitle("лмг"), {
-			text: "⏳ Ищу ближайшую встречу ЛМГ…",
+			text: "Ищу ближайшую встречу ЛМГ…",
 		});
 		if (!ev) return replyFormatted(ctx, CALENDAR_TEXTS.lmgNone);
 		const text = fmt`${CALENDAR_TEXTS.lmgNext}
@@ -138,7 +138,7 @@ ${formatEvent(ev)}`;
 		if (!requirePrivileged(ctx)) return;
 
 		const events = await withLoading(ctx, () => fetchAllFutureEventsByTitle("лмг"), {
-			text: "⏳ Получаю расписание ЛМГ…",
+			text: "Получаю расписание ЛМГ…",
 		});
 		if (events.length === 0) return replyFormatted(ctx, CALENDAR_TEXTS.lmgNoneAll);
 		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: "MarkdownV2" });
@@ -159,7 +159,7 @@ ${formatEvent(ev)}`;
 		if (!requirePrivileged(ctx)) return;
 
 		const ev = await withLoading(ctx, () => fetchNextEventByTitle("молитвенное собрание"), {
-			text: "⏳ Ищу ближайшее молитвенное…",
+			text: "Ищу ближайшее молитвенное…",
 		});
 		if (!ev) return replyFormatted(ctx, CALENDAR_TEXTS.prayersNone);
 		const text = fmt`${CALENDAR_TEXTS.prayersNext}
@@ -175,7 +175,7 @@ ${formatEvent(ev)}`;
 		if (!requirePrivileged(ctx)) return;
 
 		const events = await withLoading(ctx, () => fetchAllFutureEventsByTitle("молитвенное собрание"), {
-			text: "⏳ Получаю список молитвенных…",
+			text: "Получаю список молитвенных…",
 		});
 		if (events.length === 0) return replyFormatted(ctx, CALENDAR_TEXTS.prayersNoneAll);
 		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: "MarkdownV2" });
@@ -196,7 +196,7 @@ ${formatEvent(ev)}`;
 		if (!requirePrivileged(ctx)) return;
 
 		const ev = await withLoading(ctx, () => fetchNextEventByTitle("членское собрание"), {
-			text: "⏳ Ищу ближайшее членское…",
+			text: "Ищу ближайшее членское…",
 		});
 		if (!ev) return replyFormatted(ctx, CALENDAR_TEXTS.membersNone);
 		const text = fmt`${CALENDAR_TEXTS.membersNext}
@@ -212,7 +212,7 @@ ${formatEvent(ev)}`;
 		if (!requirePrivileged(ctx)) return;
 
 		const events = await withLoading(ctx, () => fetchAllFutureEventsByTitle("членское собрание"), {
-			text: "⏳ Получаю список членских…",
+			text: "Получаю список членских…",
 		});
 		if (events.length === 0) return replyFormatted(ctx, CALENDAR_TEXTS.membersNoneAll);
 		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: "MarkdownV2" });
@@ -297,7 +297,7 @@ ${formatEvent(ev)}`;
 		if (!requirePrivileged(ctx)) return;
 
 		const ev = await withLoading(ctx, () => fetchNextEventByTitle("отцы и дети"), {
-			text: "⏳ Ищу ближайшую встречу «Отцы и дети»…",
+			text: "Ищу ближайшую встречу «Отцы и дети»…",
 		});
 		if (!ev) return replyFormatted(ctx, CALENDAR_TEXTS.familyNone);
 		const text = fmt`${CALENDAR_TEXTS.familyNext}
@@ -313,7 +313,7 @@ ${formatEvent(ev)}`;
 		if (!requirePrivileged(ctx)) return;
 
 		const events = await withLoading(ctx, () => fetchAllFutureEventsByTitle("отцы и дети"), {
-			text: "⏳ Получаю расписание «Отцы и дети»…",
+			text: "Получаю расписание «Отцы и дети»…",
 		});
 		if (events.length === 0) return replyFormatted(ctx, CALENDAR_TEXTS.familyNoneAll);
 		await ctx.reply(events.map((e) => formatEvent(e, true)).join("\n\n"), { parse_mode: "MarkdownV2" });
@@ -392,7 +392,7 @@ ${formatEvent(ev)}`;
 		try {
 			// Получаем события (вперед на 365 дней — можно изменить)
 			const events: any[] = await withLoading(ctx, () => fetchUpcomingEvents(365), {
-				text: "⏳ Получаю события календаря…",
+				text: "Получаю события календаря…",
 			});
 
 			if (!Array.isArray(events) || events.length === 0) {

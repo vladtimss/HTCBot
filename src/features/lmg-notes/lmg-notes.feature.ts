@@ -10,7 +10,7 @@ import type { LmgNote } from "../../types/buildin";
 import { SMALL_GROUPS_BUTTON_LABELS } from "../small-groups/small-groups.constants";
 import { SMALL_GROUPS_TEXTS } from "../small-groups/small-groups.texts";
 import { inlineLmgBibleBooksMenu, inlineLmgChaptersMenu, inlineLmgNoteDownloadMenu, replyLmgNotesMenu } from "./lmg-notes.keyboard";
-import { withLoading, withLoadingAndMsg, withProgressMessages } from "../../utils/loading";
+import { withLoading, withProgressMessages } from "../../utils/loading";
 import { queryDatabase } from "../../services/buildin";
 import {
 	BuildinFile,
@@ -87,8 +87,8 @@ async function generateLmgNotesState(ctx: MyContext) {
 		ctx,
 		() => getAllLmgNotes(),
 		{
-			firstMessageText: "⏳ Загружаю конспекты ЛМГ…",
-			secondMessageText: "⌛ Немного подождите, идёт подготовка списка…",
+			firstMessageText: "Загружаю конспекты ЛМГ…",
+			secondMessageText: "Немного подождите, идёт подготовка списка…",
 			parseMode: "MarkdownV2",
 		}
 	);
@@ -158,56 +158,53 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 		touchLmgNotesActivity(ctx);
 
 		try {
-			const { result, loadingMsg } = await withLoadingAndMsg(
+			await withLoading(
 				ctx,
-				() => queryDatabase(LMG_NOTES_DATABASE_ID, { page_size: 100 }),
-				{ text: "⏳ Ищу конспект с последней встречи…" }
+				async () => {
+					const result = await queryDatabase(LMG_NOTES_DATABASE_ID, { page_size: 100 });
+
+					// Мапим страницы и сразу отбрасываем без даты
+					const meetings: Meeting[] = (result.results ?? []).flatMap((page: BuildinDatabaseRecord): Meeting[] => {
+						const dateProperty = page.properties["Дата встречи"] as BuildinDateProperty | undefined;
+						const rawDate = dateProperty?.date?.start ?? null;
+						if (!rawDate) return []; // ⬅️ вместо null возвращаем пустой массив
+						const date = normalizeDate(rawDate);
+						const filesProperty = page.properties["Конспект"] as BuildinFilesProperty | undefined;
+						const files: BuildinFile[] = filesProperty?.files ?? [];
+						return [{ date, files, raw: page }];
+					});
+
+					if (meetings.length === 0) {
+						await ctx.reply("❌ В базе нет встреч с датой.");
+						return;
+					}
+
+					// Сортировка по нормализованной дате
+					meetings.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+					const lastMeeting = meetings[meetings.length - 1];
+
+					if (!lastMeeting.files || lastMeeting.files.length === 0) {
+						await ctx.reply("❌ У последней встречи нет конспекта.");
+						return;
+					}
+
+					const file = lastMeeting.files[0];
+					const fileUrl = file.file?.url ?? file.external?.url;
+					const fileName = file.name ?? `Конспект_${lastMeeting.date}.pdf`;
+
+					if (!fileUrl) {
+						await ctx.reply("❌ Не удалось получить ссылку на файл конспекта.");
+						return;
+					}
+
+					// Скачиваем и отправляем с правильным именем
+					const inputFile = await fetchFileAsInput(fileUrl, fileName);
+					await ctx.replyWithDocument(inputFile, {
+						caption: `📝 Конспект от ${lastMeeting.date}`,
+					});
+				},
+				{ text: "Ищу конспект с последней встречи…", delayMs: 0 }
 			);
-
-			// Мапим страницы и сразу отбрасываем без даты
-			const meetings: Meeting[] = (result.results ?? []).flatMap((page: BuildinDatabaseRecord): Meeting[] => {
-				const dateProperty = page.properties["Дата встречи"] as BuildinDateProperty | undefined;
-				const rawDate = dateProperty?.date?.start ?? null;
-				if (!rawDate) return []; // ⬅️ вместо null возвращаем пустой массив
-				const date = normalizeDate(rawDate);
-				const filesProperty = page.properties["Конспект"] as BuildinFilesProperty | undefined;
-				const files: BuildinFile[] = filesProperty?.files ?? [];
-				return [{ date, files, raw: page }];
-			});
-
-			if (meetings.length === 0) {
-				await ctx.reply("❌ В базе нет встреч с датой.");
-				return;
-			}
-
-			// Сортировка по нормализованной дате
-			meetings.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-			const lastMeeting = meetings[meetings.length - 1];
-
-			if (!lastMeeting.files || lastMeeting.files.length === 0) {
-				await ctx.reply("❌ У последней встречи нет конспекта.");
-				return;
-			}
-
-			const file = lastMeeting.files[0];
-			const fileUrl = file.file?.url ?? file.external?.url;
-			const fileName = file.name ?? `Конспект_${lastMeeting.date}.pdf`;
-
-			if (!fileUrl) {
-				await ctx.reply("❌ Не удалось получить ссылку на файл конспекта.");
-				return;
-			}
-
-			// Скачиваем и отправляем с правильным именем
-			const inputFile = await fetchFileAsInput(fileUrl, fileName);
-			await ctx.replyWithDocument(inputFile, {
-				caption: `📝 Конспект от ${lastMeeting.date}`,
-			});
-
-			// теперь можно убрать лоадер
-			if (loadingMsg) {
-				await ctx.api.deleteMessage(loadingMsg.chat.id, loadingMsg.message_id).catch(() => {});
-			}
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err);
 			console.error("[lmg-notes] getLastConspect error:", message);
@@ -230,8 +227,8 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 				ctx,
 				() => getAllLmgNotes(),
 				{
-					firstMessageText: "⏳ Загружаю конспекты ЛМГ…",
-					secondMessageText: "⌛ Немного подождите, идёт подготовка списка…",
+					firstMessageText: "Загружаю конспекты ЛМГ…",
+					secondMessageText: "Немного подождите, идёт подготовка списка…",
 					parseMode: "MarkdownV2",
 				}
 			);
@@ -362,7 +359,7 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 		const { bookRec } = bookData;
 
 		try {
-			const { loadingMsg } = await withLoadingAndMsg(
+			await withLoading(
 				ctx,
 				async () => {
 					const notes = sortLmgNotesByDateDesc(
@@ -387,14 +384,10 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 					}
 				},
 				{
-					text: "⏳ Формирую список конспектов…",
-					delayMs: 500,
+					text: "Формирую список конспектов…",
+					delayMs: 0,
 				}
 			);
-
-			if (loadingMsg) {
-				await ctx.api.deleteMessage(loadingMsg.chat.id, loadingMsg.message_id).catch(() => {});
-			}
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
 			console.error("[lmg-notes] error handling chapter selection:", message);
@@ -423,39 +416,36 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 		}
 
 		try {
-			// ВАЖНО: не полагаемся на потенциально протухший URL из кеша,
-			// а каждый раз берём свежий файл со страницы в Buildin.
-			const freshFile = await getFreshLmgNoteFile(noteId);
-			if (!freshFile) {
-				await ctx.reply("❌ У этой встречи нет файла конспекта.");
-				return;
-			}
-
-			const fileUrl = freshFile.file?.url ?? freshFile.external?.url;
-			const fileName = freshFile.name ?? `Конспект_${noteId}.pdf`;
-
-			if (!fileUrl) {
-				await ctx.reply("❌ Не удалось получить ссылку на файл конспекта.");
-				return;
-			}
-
-			const { result: inputFile, loadingMsg } = await withLoadingAndMsg(
+			await withLoading(
 				ctx,
-				() => fetchFileAsInput(fileUrl, fileName),
-				{ text: "⏳ Загружаю конспект…" }
+				async () => {
+					// ВАЖНО: не полагаемся на потенциально протухший URL из кеша,
+					// а каждый раз берём свежий файл со страницы в Buildin.
+					const freshFile = await getFreshLmgNoteFile(noteId);
+					if (!freshFile) {
+						await ctx.reply("❌ У этой встречи нет файла конспекта.");
+						return;
+					}
+
+					const fileUrl = freshFile.file?.url ?? freshFile.external?.url;
+					const fileName = freshFile.name ?? `Конспект_${noteId}.pdf`;
+
+					if (!fileUrl) {
+						await ctx.reply("❌ Не удалось получить ссылку на файл конспекта.");
+						return;
+					}
+
+					const inputFile = await fetchFileAsInput(fileUrl, fileName);
+					const caption = note.date
+						? `📝 Конспект от ${formatMeetingDateWithWeekday(note.date) ?? note.date}`
+						: "📝 Конспект ЛМГ";
+
+					await ctx.replyWithDocument(inputFile, {
+						caption,
+					});
+				},
+				{ text: "Загружаю конспект…", delayMs: 0 }
 			);
-
-			const caption = note.date
-				? `📝 Конспект от ${formatMeetingDateWithWeekday(note.date) ?? note.date}`
-				: "📝 Конспект ЛМГ";
-
-			await ctx.replyWithDocument(inputFile, {
-				caption,
-			});
-
-			if (loadingMsg) {
-				await ctx.api.deleteMessage(loadingMsg.chat.id, loadingMsg.message_id).catch(() => {});
-			}
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
 			console.error("[lmg-notes] error sending note file:", message);

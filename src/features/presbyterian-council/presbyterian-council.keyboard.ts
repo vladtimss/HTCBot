@@ -27,5 +27,6 @@ export const replyPCAgendaMenu = new Keyboard()
 	.text(PRESBYTERIAN_COUNCIL_BUTTON_LABELS.PC_AGENDA_NEXT)
 	.row()
 	.text(NAVIGATION_LABELS.NAV_BACK)
+	.text(NAVIGATION_LABELS.NAV_MAIN)
 	.resized()
 	.persistent();

@@ -14,7 +14,7 @@ import { requirePresbyterianCouncil } from "../../utils/guards";
 import { logger } from "../../utils/logger";
 import { getAllDatabaseRecords } from "../../services/buildin";
 import { fetchNextPastorsEventByTitle } from "../../services/calendar";
-import { formatSpinnerText, startSpinner } from "../../utils/loading";
+import { removeLoadingMessage, replyWithSpinner } from "../../utils/loading";
 import { escapeMdV2 } from "../../utils/text";
 import { BuildinDatabaseRecord } from "../../types/buildin";
 import {
@@ -262,17 +262,13 @@ export function registerPresbyterianCouncil(bot: Bot<MyContext>) {
 		if (!requirePresbyterianCouncil(ctx)) return;
 
 		// Фаза 1: ищем ближайший совет в календаре
-		// Сразу отправляем первый кадр спиннера, чтобы сообщение не "моргало"
 		const calendarText = PRESBYTERIAN_COUNCIL_TEXTS.agendaLoadingCalendar;
-		const loadingMsg = await ctx.reply(formatSpinnerText(calendarText, 0));
-		const spinner = startSpinner(ctx, loadingMsg.chat.id, loadingMsg.message_id, calendarText, 300, false);
+		const { message: loadingMsg, spinner } = await replyWithSpinner(ctx, calendarText);
 
 		try {
 			const councilEvent = await fetchNextPastorsEventByTitle(PC_CALENDAR_EVENT_TITLES);
 
 			if (!councilEvent) {
-				spinner.stop();
-				await ctx.api.deleteMessage(loadingMsg.chat.id, loadingMsg.message_id).catch(() => {});
 				await ctx.reply(PRESBYTERIAN_COUNCIL_TEXTS.noCouncilEvent);
 				return;
 			}
@@ -296,8 +292,6 @@ export function registerPresbyterianCouncil(bot: Bot<MyContext>) {
 			const agendaItems = onAgendaRecords.filter((r) => recordMatchesDate(r, councilDate));
 
 			if (agendaItems.length === 0) {
-				spinner.stop();
-				await ctx.api.deleteMessage(loadingMsg.chat.id, loadingMsg.message_id).catch(() => {});
 				await ctx.reply(PRESBYTERIAN_COUNCIL_TEXTS.noAgendaItems);
 				return;
 			}
@@ -305,18 +299,12 @@ export function registerPresbyterianCouncil(bot: Bot<MyContext>) {
 			try {
 				const pdfBuffer = await renderAgendaPdf(dateLabel, agendaItems);
 
-				spinner.stop();
-				await ctx.api.deleteMessage(loadingMsg.chat.id, loadingMsg.message_id).catch(() => {});
-
 				const filename = `Повестка_совета_${dateLabel.replace(/\./g, "-")}.pdf`;
 				await ctx.replyWithDocument(new InputFile(pdfBuffer, filename), {
 					caption: `📋 Повестка на совет ${dateLabel}`,
 				});
 			} catch (pdfErr) {
 				logger.error({ err: pdfErr }, "[PC] Не удалось сформировать PDF, отправляем текстом");
-
-				spinner.stop();
-				await ctx.api.deleteMessage(loadingMsg.chat.id, loadingMsg.message_id).catch(() => {});
 
 				const parts = buildAgendaMessages(agendaItems, dateLabel);
 				for (const part of parts) {
@@ -327,11 +315,12 @@ export function registerPresbyterianCouncil(bot: Bot<MyContext>) {
 				}
 			}
 		} catch (err) {
-			spinner.stop();
-			await ctx.api.deleteMessage(loadingMsg.chat.id, loadingMsg.message_id).catch(() => {});
 			const message = err instanceof Error ? err.message : String(err);
 			logger.error({ err }, "[PC] Ошибка при загрузке повестки");
 			await ctx.reply(`❌ Ошибка при загрузке повестки: ${message}`);
+		} finally {
+			spinner.stop();
+			await removeLoadingMessage(ctx, loadingMsg);
 		}
 	});
 }

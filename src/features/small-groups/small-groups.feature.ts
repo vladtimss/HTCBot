@@ -153,7 +153,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 		if (!requirePrivileged(ctx)) return;
 
 		const nextLm = await withLoading(ctx, () => fetchNextEventByTitle("Встреча ЛМГ"), {
-			text: "⏳ Ищу ближайшую встречу ЛМГ…",
+			text: "Ищу ближайшую встречу ЛМГ…",
 		});
 
 		if (!nextLm) {
@@ -168,7 +168,7 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 		if (!requirePrivileged(ctx)) return;
 
 		const lmEvents = await withLoading(ctx, () => fetchAllFutureEventsByTitle("Встреча ЛМГ"), {
-			text: "⏳ Получаю все будущие встречи ЛМГ…",
+			text: "Получаю все будущие встречи ЛМГ…",
 		});
 
 		if (lmEvents.length === 0) {
