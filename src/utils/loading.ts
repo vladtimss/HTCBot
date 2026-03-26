@@ -293,7 +293,7 @@ export async function replyWithSpinner(
 	text: string,
 	options: SpinnerMessageOptions = {}
 ): Promise<{ message: Message.TextMessage; spinner: SpinnerControl }> {
-	const { parseMode, intervalMs = 300 } = options;
+	const { parseMode, intervalMs = 1000 } = options;
 	const normalizedText = normalizeLoadingText(text);
 	const message = await ctx.reply(formatSpinnerText(normalizedText, 0), {
 		parse_mode: parseMode,
@@ -315,7 +315,7 @@ export async function replyWithSpinner(
  * @param chatId      - ID чата
  * @param messageId   - ID сообщения, которое редактируем
  * @param initialText - текст без эмодзи (добавляется автоматически)
- * @param intervalMs  - интервал смены кадра (по умолчанию 300 мс)
+ * @param intervalMs  - интервал смены кадра (по умолчанию 1000 мс)
  * @param renderFirstFrame
  * @param parseMode
  */
@@ -324,7 +324,7 @@ export function startSpinner(
 	chatId: number,
 	messageId: number,
 	initialText: string,
-	intervalMs = 300,
+	intervalMs = 1000,
 	renderFirstFrame = true,
 	parseMode?: ParseMode
 ): SpinnerControl {
