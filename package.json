@@ -19,6 +19,7 @@
 		"typescript": "5.4.3"
 	},
 	"dependencies": {
+		"@grammyjs/auto-retry": "^2.0.2",
 		"@grammyjs/parse-mode": "^2.2.0",
 		"@types/dav": "1.7.7",
 		"axios": "1.7.9",

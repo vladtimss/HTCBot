@@ -11,6 +11,7 @@
 
 import { MyContext } from "../types/grammy-context";
 import { logger } from "../utils/logger";
+import { isGrammyTooManyRequests, safeReply } from "../utils/telegram-flood";
 
 /**
  * withErrorBoundary
@@ -40,8 +41,11 @@ export function withErrorBoundary() {
 			// Логируем ошибку со всеми деталями
 			logger.error({ err }, "Bot error");
 
+			if (isGrammyTooManyRequests(err)) {
+				return;
+			}
+
 			if (ctx.callbackQuery) {
-				// Если ошибка произошла в inline-кнопке — уведомляем через alert
 				await ctx
 					.answerCallbackQuery({
 						text: "Произошла ошибка. Попробуйте ещё раз.",
@@ -49,8 +53,7 @@ export function withErrorBoundary() {
 					})
 					.catch(() => {});
 			} else {
-				// Если ошибка в текстовом сообщении — отправляем обычный ответ
-				await ctx.reply("Произошла ошибка. Попробуйте ещё раз.").catch(() => {});
+				await safeReply(ctx, "Произошла ошибка. Попробуйте ещё раз.");
 			}
 		}
 	};

@@ -19,6 +19,7 @@ import {
 	NormalizedBook,
 } from "./sermons.util";
 import { withProgressMessages } from "../../utils/loading";
+import { isGrammyTooManyRequests, safeReply } from "../../utils/telegram-flood";
 import { Sermon } from "../../types/buildin";
 
 /**
@@ -51,7 +52,10 @@ export async function handleSermonsError(
 ): Promise<void> {
 	const errorMessage = error instanceof Error ? error.message : String(error);
 	console.error(`[sermons] ${logContext}:`, errorMessage);
-	await ctx.reply(`${errorText} ${escapeMdV2(errorMessage)}`, {
+	if (isGrammyTooManyRequests(error)) {
+		return;
+	}
+	await safeReply(ctx, `${errorText} ${escapeMdV2(errorMessage)}`, {
 		parse_mode: "MarkdownV2",
 		link_preview_options: { is_disabled: true },
 	});
@@ -233,7 +237,10 @@ export async function generateSermonsState(ctx: MyContext): Promise<NormalizedSe
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : String(error);
 		console.error(`[sermons] Ошибка повторной загрузки проповедей:`, errorMessage);
-		await ctx.reply(`${SERMONS_TEXTS.errorLoadingSermons} ${escapeMdV2(errorMessage)}`, {
+		if (isGrammyTooManyRequests(error)) {
+			return;
+		}
+		await safeReply(ctx, `${SERMONS_TEXTS.errorLoadingSermons} ${escapeMdV2(errorMessage)}`, {
 			parse_mode: "MarkdownV2",
 			link_preview_options: { is_disabled: true },
 		});

@@ -8,6 +8,7 @@
  *  - запускаем бота
  */
 
+import { autoRetry } from "@grammyjs/auto-retry";
 import { Bot } from "grammy";
 import { env } from "./config/env";
 import { MyContext } from "./types/grammy-context";
@@ -33,6 +34,16 @@ import { PRESBYTERIAN_COUNCIL_BUTTON_LABELS } from "./features/presbyterian-coun
 
 /** Создание инстанса бота */
 const bot = new Bot<MyContext>(env.BOT_TOKEN);
+/**
+ * Повтор при 429 / 5xx / сетевых сбоях (см. https://grammy.dev/plugins/auto-retry).
+ * maxDelaySeconds: не ждать часы при огромном retry_after — сразу отдаём ошибку наверх.
+ */
+bot.api.config.use(
+	autoRetry({
+		maxDelaySeconds: 90,
+		maxRetryAttempts: 20,
+	})
+);
 
 /* ============
  *  Middleware
