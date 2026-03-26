@@ -33,6 +33,7 @@ import { withLoading } from "../../utils/loading";
 import { buildHtmlForEvents } from "./church-calendar.util";
 import { fmt, bold, code, link, type FormattedString } from "@grammyjs/parse-mode";
 import { replyFormatted } from "../../utils/format-helpers";
+import { safeReply } from "../../utils/telegram-flood";
 import puppeteer from "puppeteer";
 import os from "os";
 
@@ -441,7 +442,7 @@ ${formatEvent(ev)}`;
 			});
 		} catch (err) {
 			console.error("[calendar:view:list] error:", err);
-			await ctx.reply("⚠️ Не удалось сформировать PDF. Попробуйте позже.");
+			await safeReply(ctx, "⚠️ Не удалось сформировать PDF. Попробуйте позже.");
 		} finally {
 			// Убираем сообщение «формирую...»
 			try {

@@ -6,6 +6,7 @@
  * После завершения задача убирает/редактирует сообщение.
  */
 
+import { GrammyError }    from "grammy";
 import type { Message }   from "grammy/types";
 import type { MyContext } from "../types/grammy-context";
 import type { ParseMode } from "../constants/parse-mode";
@@ -330,6 +331,14 @@ export function startSpinner(
 ): SpinnerControl {
 	let frame = 0;
 	let text = normalizeLoadingText(initialText);
+	let intervalId: ReturnType<typeof setInterval> | undefined;
+
+	const stopOnFlood = (e: unknown) => {
+		if (e instanceof GrammyError && e.error_code === 429 && intervalId !== undefined) {
+			clearInterval(intervalId);
+			intervalId = undefined;
+		}
+	};
 
 	if (renderFirstFrame) {
 		void ctx.api
@@ -337,17 +346,17 @@ export function startSpinner(
 					parse_mode: parseMode,
 					link_preview_options: { is_disabled: true },
 				})
-				.catch(() => {});
+				.catch(stopOnFlood);
 	}
 
-	const intervalId = setInterval(async () => {
+	intervalId = setInterval(async () => {
 		frame = (frame + 1) % SPINNER_FRAMES.length;
 		await ctx.api
 				 .editMessageText(chatId, messageId, formatSpinnerText(text, frame), {
 					 parse_mode: parseMode,
 					 link_preview_options: { is_disabled: true },
 				 })
-				 .catch(() => {});
+				 .catch(stopOnFlood);
 	}, intervalMs);
 
 	return {
@@ -355,7 +364,10 @@ export function startSpinner(
 			text = normalizeLoadingText(newText);
 		},
 		stop() {
-			clearInterval(intervalId);
+			if (intervalId !== undefined) {
+				clearInterval(intervalId);
+				intervalId = undefined;
+			}
 		},
 	};
 }

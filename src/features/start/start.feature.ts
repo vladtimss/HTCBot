@@ -11,6 +11,7 @@ import { greet }               from "./start.texts";
 import { env }                 from "../../config/env";
 import { replyMainKeyboard }   from "../main-menu/main-menu.keyboard";
 import { NAVIGATION_LABELS }   from "../../constants/navigation";
+import { safeReply }             from "../../utils/telegram-flood";
 
 /**
  * Регистрирует обработчик команды /start.
@@ -33,13 +34,12 @@ export function registerStart(bot: Bot<MyContext>) {
 				reply_markup: kb,
 			});
 		} catch (e) {
-			await ctx.reply(greeting.text, {
+			await safeReply(ctx, greeting.text, {
 				entities: greeting.entities,
 				reply_markup: kb,
 			});
 		}
 
-		// Отправляем клавиатуру главного меню
-		await ctx.reply(COMMON.mainMenuTitle, { reply_markup: replyMainKeyboard(ctx) });
+		await safeReply(ctx, COMMON.mainMenuTitle, { reply_markup: replyMainKeyboard(ctx) });
 	});
 }

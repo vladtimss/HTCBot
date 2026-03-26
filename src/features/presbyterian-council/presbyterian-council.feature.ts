@@ -21,6 +21,7 @@ import { logger } from "../../utils/logger";
 import { getAllDatabaseRecords } from "../../services/buildin";
 import { fetchNextPastorsEventByTitle } from "../../services/calendar";
 import { removeLoadingMessage, replyWithSpinner, withLoading } from "../../utils/loading";
+import { isGrammyTooManyRequests, safeReply } from "../../utils/telegram-flood";
 import { escapeMdV2 } from "../../utils/text";
 import { BuildinDatabaseRecord } from "../../types/buildin";
 import {
@@ -164,6 +165,22 @@ function buildAgendaMessages(
 	return messages;
 }
 
+/** Отправляет повестку частями сообщений (MarkdownV2). */
+async function sendAgendaAsTextParts(
+	ctx: MyContext,
+	dateLabel: string,
+	agendaItems: BuildinDatabaseRecord[],
+	options: AgendaRenderOptions = {}
+) {
+	const parts = buildAgendaMessages(agendaItems, dateLabel, options);
+	for (const part of parts) {
+		await ctx.reply(part, {
+			parse_mode: "MarkdownV2",
+			link_preview_options: { is_disabled: true },
+		});
+	}
+}
+
 /** Подготавливает строки таблицы PDF из записей Buildin. */
 function buildAgendaPdfRows(
 	agendaItems: BuildinDatabaseRecord[],
@@ -275,29 +292,37 @@ function getAgendaItemsForDateKey(
 	return getPCAgendaRecordsByIds(state, ids);
 }
 
-/** Отправляет PDF, а если PDF не собрался — переключается на текстовый fallback. */
+/**
+ * Отправляет PDF, а если рендер PDF не удался — текстовый fallback.
+ * Ошибку отправки (в т.ч. 429) не смешиваем с ошибкой генерации PDF;
+ * при 429 не делаем fallback-текстом — это лишь усугубляет flood.
+ */
 async function sendAgendaPdfOrFallback(
 	ctx: MyContext,
 	dateLabel: string,
 	agendaItems: BuildinDatabaseRecord[],
 	options: AgendaRenderOptions = {}
 ) {
+	let pdfBuffer: Buffer;
 	try {
-		const pdfBuffer = await renderAgendaPdf(dateLabel, agendaItems, options);
-		const filename = `Повестка_совета_${dateLabel.replace(/\./g, "-")}.pdf`;
+		pdfBuffer = await renderAgendaPdf(dateLabel, agendaItems, options);
+	} catch (pdfErr) {
+		logger.error({ err: pdfErr }, "[PC] Не удалось сформировать PDF, отправляем текстом");
+		await sendAgendaAsTextParts(ctx, dateLabel, agendaItems, options);
+		return;
+	}
+
+	const filename = `Повестка_совета_${dateLabel.replace(/\./g, "-")}.pdf`;
+	try {
 		await ctx.replyWithDocument(new InputFile(pdfBuffer, filename), {
 			caption: `📋 Повестка на совет ${dateLabel}`,
 		});
-	} catch (pdfErr) {
-		logger.error({ err: pdfErr }, "[PC] Не удалось сформировать PDF, отправляем текстом");
-
-		const parts = buildAgendaMessages(agendaItems, dateLabel, options);
-		for (const part of parts) {
-			await ctx.reply(part, {
-				parse_mode: "MarkdownV2",
-				link_preview_options: { is_disabled: true },
-			});
+	} catch (sendErr) {
+		if (isGrammyTooManyRequests(sendErr)) {
+			throw sendErr;
 		}
+		logger.error({ err: sendErr }, "[PC] Не удалось отправить PDF, отправляем текстом");
+		await sendAgendaAsTextParts(ctx, dateLabel, agendaItems, options);
 	}
 }
 
@@ -433,7 +458,10 @@ export function registerPresbyterianCouncil(bot: Bot<MyContext>) {
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err);
 			logger.error({ err }, "[PC] Ошибка при загрузке повестки");
-			await ctx.reply(`❌ Ошибка при загрузке повестки: ${message}`);
+			if (isGrammyTooManyRequests(err)) {
+				return;
+			}
+			await safeReply(ctx, `❌ Ошибка при загрузке повестки: ${message}`);
 		} finally {
 			spinner.stop();
 			await removeLoadingMessage(ctx, loadingMsg);

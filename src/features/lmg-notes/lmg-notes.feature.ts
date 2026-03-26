@@ -34,6 +34,7 @@ import {
 	getFreshLmgNoteFile,
 } from "./lmg-notes.util";
 import { fmt } from "@grammyjs/parse-mode";
+import { safeReply } from "../../utils/telegram-flood";
 import { escapeMdV2 } from "../../utils/text";
 
 /**
@@ -208,7 +209,7 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err);
 			console.error("[lmg-notes] getLastConspect error:", message);
-			await ctx.reply(`❌ Не удалось получить последний конспект: ${message}`);
+			await safeReply(ctx, `❌ Не удалось получить последний конспект: ${message}`);
 		}
 	});
 
@@ -256,7 +257,7 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
 			console.error("[lmg-notes] error loading notes by book:", message);
-			await ctx.reply(`❌ Ошибка загрузки конспектов: ${message}`);
+			await safeReply(ctx, `❌ Ошибка загрузки конспектов: ${message}`);
 		}
 	});
 
@@ -309,7 +310,7 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
 			console.error("[lmg-notes] error handling book selection:", message);
-			await ctx.reply(`❌ Ошибка обработки выбора книги: ${message}`);
+			await safeReply(ctx, `❌ Ошибка обработки выбора книги: ${message}`);
 		}
 	});
 
@@ -391,7 +392,7 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
 			console.error("[lmg-notes] error handling chapter selection:", message);
-			await ctx.reply(`❌ Ошибка получения конспектов для главы: ${message}`);
+			await safeReply(ctx, `❌ Ошибка получения конспектов для главы: ${message}`);
 		}
 	});
 
@@ -449,7 +450,7 @@ export function registerLmgNotesFeature(bot: Bot<MyContext>) {
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
 			console.error("[lmg-notes] error sending note file:", message);
-			await ctx.reply(`❌ Не удалось отправить файл конспекта: ${message}`);
+			await safeReply(ctx, `❌ Не удалось отправить файл конспекта: ${message}`);
 		}
 	});
 }

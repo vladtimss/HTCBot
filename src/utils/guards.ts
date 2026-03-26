@@ -8,6 +8,7 @@
 import { MyContext } from "../types/grammy-context";
 import { replyMainKeyboard } from "../features/main-menu/main-menu.keyboard";
 import { COMMON }        from "../services/texts";
+import { safeReply }     from "./telegram-flood";
 import { isHTChurchLMG } from "../services/access";
 
 /**
@@ -22,7 +23,7 @@ export function requirePrivileged(ctx: MyContext): boolean {
 	ctx.session.menuStack = ["main"];
 	ctx.session.lastSection = "main";
 
-	ctx.reply(COMMON.mainMenuTitle, { reply_markup: replyMainKeyboard(ctx) });
+	void safeReply(ctx, COMMON.mainMenuTitle, { reply_markup: replyMainKeyboard(ctx) });
 
 	return false;
 }
@@ -38,7 +39,7 @@ export function requireLmgLeader(ctx: MyContext): boolean {
 	ctx.session.menuStack = ["main"];
 	ctx.session.lastSection = "main";
 
-	ctx.reply(COMMON.mainMenuTitle, { reply_markup: replyMainKeyboard(ctx) });
+	void safeReply(ctx, COMMON.mainMenuTitle, { reply_markup: replyMainKeyboard(ctx) });
 
 	return false;
 }
@@ -54,7 +55,7 @@ export function requirePresbyterianCouncil(ctx: MyContext): boolean {
 	ctx.session.menuStack = ["main"];
 	ctx.session.lastSection = "main";
 
-	ctx.reply(COMMON.mainMenuTitle, { reply_markup: replyMainKeyboard(ctx) });
+	void safeReply(ctx, COMMON.mainMenuTitle, { reply_markup: replyMainKeyboard(ctx) });
 
 	return false;
 }
