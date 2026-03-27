@@ -10,6 +10,7 @@ import { replyFormatted } from "../../../utils/format-helpers";
 import { requireChurchAccess } from "../../../utils/guards";
 import { createDatabasePage } from "../../../services/buildin";
 import { logger } from "../../../utils/logger";
+import { withLoading } from "../../../utils/loading";
 import { NAVIGATION_LABELS } from "../../../constants/navigation";
 import { CALENDAR_BUTTON_LABELS } from "../church-calendar/church-calendar.constants";
 import {
@@ -138,9 +139,11 @@ export function registerMembersMeeting(bot: Bot<MyContext>) {
 			return;
 		}
 
-		await ctx.reply(MEMBERS_MEETING_TEXTS.addingQuestion);
 		try {
-			await saveMembersQuestion(ctx, draft);
+			await withLoading(ctx, () => saveMembersQuestion(ctx, draft), {
+				text: MEMBERS_MEETING_TEXTS.addingQuestion,
+				delayMs: 0,
+			});
 			ctx.session.membersQuestionDraft = undefined;
 			await ctx.reply(MEMBERS_MEETING_TEXTS.questionAdded, {
 				reply_markup: replyMembersMeetingMenu,
