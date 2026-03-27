@@ -55,6 +55,7 @@ export function buildAccessData(ctx: MyContext): AccessData {
 	const uname = normalizeUsername(username);
 
 	if (
+		!env.IS_PRODUCTION &&
 		env.DEV_ACCESS_ENABLED &&
 		env.DEV_ACCESS_USERNAME &&
 		uname &&
