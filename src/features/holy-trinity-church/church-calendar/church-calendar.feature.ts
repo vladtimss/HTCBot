@@ -1,23 +1,23 @@
 /**
- * features/church-calendar/church-calendar.feature.ts
+ * features/holy-trinity-church/church-calendar/church-calendar.feature.ts
  * --------------------------
  * Логика раздела "Церковный календарь"
  */
 
 import { Bot, InlineKeyboard, InputFile } from "grammy";
-import { MyContext } from "../../types/grammy-context";
+import { MyContext } from "../../../types/grammy-context";
 import {
 	fetchUpcomingEvents,
 	fetchNextEventByTitle,
 	fetchAllFutureEventsByTitle,
 	fetchHolidayEvent,
 	formatEvent,
-} from "../../services/calendar";
-import { MENU_LABELS } from "../../constants/button-lables"; // Глобальные константы главного меню (MAIN_CALENDAR)
+} from "../../../services/calendar";
+import { MENU_LABELS } from "../../../constants/button-lables"; // MAIN_CALENDAR — вход из раздела «Церковь Святой Троицы»
 import { CALENDAR_TEXTS } from "./church-calendar.texts";
 import { CALENDAR_BUTTON_LABELS } from "./church-calendar.constants";
-import { SMALL_GROUPS_BUTTON_LABELS } from "../small-groups/small-groups.constants";
-import { COMMON } from "../../services/texts"; // Глобальный текст, используется во множестве фич
+import { SMALL_GROUPS_BUTTON_LABELS } from "../../small-groups/small-groups.constants";
+import { COMMON } from "../../../services/texts"; // Глобальный текст, используется во множестве фич
 import {
 	replyCalendarMenu,
 	replyCalendarLmgMenu,
@@ -27,13 +27,13 @@ import {
 	replyCalendarFamilyMenu,
 	subscribeKeyboard,
 } from "./church-calendar.keyboard";
-import { requirePrivileged } from "../../utils/guards";
-import { env } from "../../config/env";
-import { withLoading } from "../../utils/loading";
+import { requirePrivileged } from "../../../utils/guards";
+import { env } from "../../../config/env";
+import { withLoading } from "../../../utils/loading";
 import { buildHtmlForEvents } from "./church-calendar.util";
 import { fmt, bold, code, link, type FormattedString } from "@grammyjs/parse-mode";
-import { replyFormatted } from "../../utils/format-helpers";
-import { safeReply } from "../../utils/telegram-flood";
+import { replyFormatted } from "../../../utils/format-helpers";
+import { safeReply } from "../../../utils/telegram-flood";
 import puppeteer from "puppeteer";
 import os from "os";
 
@@ -42,7 +42,7 @@ import os from "os";
  */
 export async function renderCalendarRoot(ctx: MyContext) {
 	ctx.session.lastSection = "calendar";
-	ctx.session.menuStack = ["calendar"];
+	ctx.session.menuStack = ["holy-trinity-church", "calendar"];
 
 	const text = fmt`${CALENDAR_TEXTS.title}${COMMON.useButtonBelow}`;
 

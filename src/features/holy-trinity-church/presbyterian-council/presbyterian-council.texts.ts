@@ -5,7 +5,7 @@
  */
 
 import { fmt, bold } from "@grammyjs/parse-mode";
-import { COMMON } from "../../services/texts";
+import { COMMON }    from "../../../services/texts";
 
 export const PRESBYTERIAN_COUNCIL_TEXTS = {
 	/** Корень раздела. */

@@ -1,5 +1,5 @@
 /**
- * features/church-calendar/church-calendar.constants.ts
+ * features/holy-trinity-church/church-calendar/church-calendar.constants.ts
  * --------------------------
  * Константы кнопок для раздела "Церковный календарь"
  */

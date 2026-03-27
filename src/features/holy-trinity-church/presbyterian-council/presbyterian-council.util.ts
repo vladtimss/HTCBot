@@ -1,5 +1,5 @@
 /**
- * features/presbyterian-council/presbyterian-council.util.ts
+ * features/holy-trinity-church/presbyterian-council/presbyterian-council.util.ts
  * ----------------------------------------------------------
  * Утилиты для генерации PDF повестки пресвитерского совета.
  */
@@ -67,8 +67,8 @@ const STATUS_COLOR_TOKENS: Record<string, ColorToken> = {
 
 /** Возможные пути к HTML-шаблону PDF. */
 const TEMPLATE_CANDIDATES = [
-	resolve(process.cwd(), "src/features/presbyterian-council/layout/agenda-pdf.layout.html"),
-	resolve(process.cwd(), "dist/features/presbyterian-council/layout/agenda-pdf.layout.html"),
+	resolve(process.cwd(), "src/features/holy-trinity-church/presbyterian-council/layout/agenda-pdf.layout.html"),
+	resolve(process.cwd(), "dist/features/holy-trinity-church/presbyterian-council/layout/agenda-pdf.layout.html"),
 ];
 
 /** Экранирует произвольный текст для безопасной вставки в HTML. */

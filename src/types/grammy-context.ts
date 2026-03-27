@@ -9,8 +9,8 @@
 import { Context, SessionFlavor } from "grammy";
 import { LmgNote, Sermon } from "./buildin";
 import type { NormalizedSermonState } from "../features/sermons/sermons.util";
-import type { NormalizedLmgNotesState } from "../features/lmg-notes/lmg-notes.util";
-import type { NormalizedPresbyterianCouncilAgendaState } from "../features/presbyterian-council/presbyterian-council.state";
+import type { NormalizedLmgNotesState }                  from "../features/lmg-notes/lmg-notes.util";
+import type { NormalizedPresbyterianCouncilAgendaState } from "../features/holy-trinity-church/presbyterian-council/presbyterian-council.state";
 
 /** Данные сессии для навигации */
 export interface SessionData {

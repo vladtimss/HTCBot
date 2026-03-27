@@ -11,9 +11,10 @@ import { replyMainKeyboard } from "../main-menu/main-menu.keyboard";
 import { MAIN_TEXTS } from "../main-menu/main-menu.texts";
 
 import { renderAboutRoot } from "../about-htc/about-htc.feature";
-import { renderCalendarRoot } from "../church-calendar/church-calendar.feature";
-import { renderGroupsRoot } from "../small-groups/small-groups.feature";
-import { renderPresbyterianCouncilRoot } from "../presbyterian-council/presbyterian-council.feature";
+import { renderHolyTrinityChurchRoot } from "../holy-trinity-church/holy-trinity-church.feature";
+import { renderCalendarRoot } from "../holy-trinity-church/church-calendar/church-calendar.feature";
+import { renderGroupsRoot }              from "../small-groups/small-groups.feature";
+import { renderPresbyterianCouncilRoot } from "../holy-trinity-church/presbyterian-council/presbyterian-council.feature";
 
 /**
  * 📌 Глобальный обработчик кнопки «⬅️ Назад»
@@ -41,6 +42,10 @@ export function registerBackButton(bot: Bot<MyContext>) {
 		switch (prev) {
 			case "about":
 				await renderAboutRoot(ctx);
+				break;
+
+			case "holy-trinity-church":
+				await renderHolyTrinityChurchRoot(ctx);
 				break;
 
 			case "calendar":

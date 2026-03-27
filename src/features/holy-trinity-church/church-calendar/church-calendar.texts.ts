@@ -1,5 +1,5 @@
 /**
- * features/church-calendar/church-calendar.texts.ts
+ * features/holy-trinity-church/church-calendar/church-calendar.texts.ts
  * --------------------------
  * Тексты для раздела "Церковный календарь"
  */

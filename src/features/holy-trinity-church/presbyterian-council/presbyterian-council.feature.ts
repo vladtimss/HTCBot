@@ -13,30 +13,30 @@
 import { Bot, InputFile } from "grammy";
 import { format } from "date-fns";
 import os from "os";
-import puppeteer from "puppeteer";
-import { MyContext } from "../../types/grammy-context";
-import { MENU_LABELS } from "../../constants/button-lables";
-import { requirePresbyterianCouncil } from "../../utils/guards";
-import { logger } from "../../utils/logger";
-import { getAllDatabaseRecords } from "../../services/buildin";
-import { fetchNextPastorsEventByTitle } from "../../services/calendar";
-import { removeLoadingMessage, replyWithSpinner, withLoading } from "../../utils/loading";
-import { isGrammyTooManyRequests, safeReply } from "../../utils/telegram-flood";
-import { escapeMdV2 } from "../../utils/text";
-import { BuildinDatabaseRecord } from "../../types/buildin";
+import puppeteer                                                   from "puppeteer";
+import { MyContext }                                               from "../../../types/grammy-context";
+import { MENU_LABELS }                                             from "../../../constants/button-lables";
+import { requirePresbyterianCouncil }                              from "../../../utils/guards";
+import { logger }                                                  from "../../../utils/logger";
+import { getAllDatabaseRecords }                                   from "../../../services/buildin";
+import { fetchNextPastorsEventByTitle }                            from "../../../services/calendar";
+import { removeLoadingMessage, replyWithSpinner, withLoading }     from "../../../utils/loading";
+import { isGrammyTooManyRequests, safeReply }                      from "../../../utils/telegram-flood";
+import { escapeMdV2 }                                              from "../../../utils/text";
+import { BuildinDatabaseRecord }                                   from "../../../types/buildin";
 import {
 	PRESBYTERIAN_COUNCIL_BUTTON_LABELS,
 	PC_AGENDA_DATABASE_ID,
 	PC_CALENDAR_EVENT_TITLES,
-} from "./presbyterian-council.constants";
+}                                                                  from "./presbyterian-council.constants";
 import {
 	replyPresbyterianCouncilMenu,
 	replyPCAgendaMenu,
 	inlinePCAgendaYearsMenu,
 	inlinePCAgendaMonthsMenu,
 	inlinePCAgendaDatesMenu,
-} from "./presbyterian-council.keyboard";
-import { PRESBYTERIAN_COUNCIL_TEXTS } from "./presbyterian-council.texts";
+}                                                                  from "./presbyterian-council.keyboard";
+import { PRESBYTERIAN_COUNCIL_TEXTS }                              from "./presbyterian-council.texts";
 import { AgendaPdfBuildOptions, AgendaPdfRow, buildAgendaPdfHtml } from "./presbyterian-council.util";
 import {
 	buildNormalizedPresbyterianCouncilAgendaState,
@@ -47,7 +47,7 @@ import {
 	getPCAgendaRecordsByIds,
 	getPCAgendaDateKey,
 	parsePCAgendaDate,
-} from "./presbyterian-council.state";
+}                                                                  from "./presbyterian-council.state";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Типы свойств конкретной базы данных повестки
@@ -380,7 +380,7 @@ async function replyAgendaDates(ctx: MyContext, year: number, month: number) {
 
 export async function renderPresbyterianCouncilRoot(ctx: MyContext) {
 	ctx.session.lastSection = "presbyterian-council";
-	ctx.session.menuStack = ["main", "presbyterian-council"];
+	ctx.session.menuStack = ["holy-trinity-church", "presbyterian-council"];
 
 	await ctx.reply(PRESBYTERIAN_COUNCIL_TEXTS.title.text, {
 		entities: PRESBYTERIAN_COUNCIL_TEXTS.title.entities,

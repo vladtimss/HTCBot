@@ -23,14 +23,15 @@ import { registerSmallGroups } from "./features/small-groups/small-groups.featur
 import { MENU_LABELS } from "./constants/button-lables";
 import { NAVIGATION_LABELS } from "./constants/navigation";
 import { ABOUT_BUTTON_LABELS } from "./features/about-htc/about-htc.constants";
-import { CALENDAR_BUTTON_LABELS } from "./features/church-calendar/church-calendar.constants";
-import { registerChurchCalendar } from "./features/church-calendar/church-calendar.feature";
+import { CALENDAR_BUTTON_LABELS } from "./features/holy-trinity-church/church-calendar/church-calendar.constants";
+import { registerHolyTrinityChurch } from "./features/holy-trinity-church/holy-trinity-church.feature";
+import { registerChurchCalendar } from "./features/holy-trinity-church/church-calendar/church-calendar.feature";
 import { registerBackButton } from "./features/global-back-button-navigation/global-back-button-navigation.feature";
 import { registerSermons } from "./features/sermons/sermons.feature";
 import { registerAboutHTC } from "./features/about-htc/about-htc.feature";
-import { registerLmgNotesFeature } from "./features/lmg-notes/lmg-notes.feature";
-import { registerPresbyterianCouncil } from "./features/presbyterian-council/presbyterian-council.feature";
-import { PRESBYTERIAN_COUNCIL_BUTTON_LABELS } from "./features/presbyterian-council/presbyterian-council.constants";
+import { registerLmgNotesFeature }            from "./features/lmg-notes/lmg-notes.feature";
+import { registerPresbyterianCouncil }        from "./features/holy-trinity-church/presbyterian-council/presbyterian-council.feature";
+import { PRESBYTERIAN_COUNCIL_BUTTON_LABELS } from "./features/holy-trinity-church/presbyterian-council/presbyterian-council.constants";
 
 /** Создание инстанса бота */
 const bot = new Bot<MyContext>(env.BOT_TOKEN);
@@ -85,6 +86,7 @@ registerAboutHTC(bot); // Раздел "О нас"
 registerSmallGroups(bot); // Малые группы
 registerLmgNotesFeature(bot);
 registerPresbyterianCouncil(bot); // Пресвитерский совет
+registerHolyTrinityChurch(bot); // Церковь Святой Троицы (подразделы)
 registerChurchCalendar(bot); // Церковный календарь
 registerSermons(bot); // Проповеди
 registerBackButton(bot); // Кнопка "Назад"
@@ -101,6 +103,8 @@ bot.on("message", async (ctx) => {
 		MENU_LABELS.MAIN_SUNDAY,
 		MENU_LABELS.MAIN_GROUPS,
 		MENU_LABELS.MAIN_PRESBYTERIAN_COUNCIL,
+		MENU_LABELS.MAIN_HOLY_TRINITY_CHURCH,
+		MENU_LABELS.MAIN_CALENDAR,
 		CALENDAR_BUTTON_LABELS.CAL_NEXT3,
 		MENU_LABELS.MAIN_ABOUT,
 		NAVIGATION_LABELS.NAV_MAIN,

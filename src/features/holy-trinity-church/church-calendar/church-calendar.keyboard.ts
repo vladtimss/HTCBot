@@ -1,13 +1,13 @@
 /**
- * features/church-calendar/church-calendar.keyboard.ts
+ * features/holy-trinity-church/church-calendar/church-calendar.keyboard.ts
  * --------------------------
  * Клавиатуры для раздела "Церковный календарь"
  */
 
 import { InlineKeyboard } from "grammy";
 import { CALENDAR_BUTTON_LABELS } from "./church-calendar.constants";
-import { SMALL_GROUPS_BUTTON_LABELS } from "../small-groups/small-groups.constants";
-import { NAVIGATION_LABELS } from "../../constants/navigation";
+import { SMALL_GROUPS_BUTTON_LABELS } from "../../small-groups/small-groups.constants";
+import { NAVIGATION_LABELS } from "../../../constants/navigation";
 
 export const replyCalendarMenu = {
 	keyboard: [

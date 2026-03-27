@@ -10,25 +10,21 @@ import { MyContext } from "../../types/grammy-context";
 
 /**
  * Главное меню зависит от прав:
- * - у членов Пресвитерского совета есть кнопка "Пресвитерский совет" (первой строкой на всю ширину)
- * - у привилегированных пользователей есть кнопка "Церковный календарь"
+ * - у привилегированных и у членов Пресвитерского совета есть кнопка «Церковь Святой Троицы» (подразделы: календарь, совет)
  */
 export function replyMainKeyboard(ctx: MyContext) {
 	const kb = new Keyboard();
 
-	if (ctx.access.isPresbyterianCouncil) {
-		kb.text(MENU_LABELS.MAIN_PRESBYTERIAN_COUNCIL).row(); // 🏛 Пресвитерский совет — вся строка
+	if (ctx.access.isPrivileged || ctx.access.isPresbyterianCouncil) {
+		kb.text(MENU_LABELS.MAIN_HOLY_TRINITY_CHURCH).row(); // ⛪ Церковь Святой Троицы — первая строка на всю ширину
 	}
 
 	kb.text(MENU_LABELS.MAIN_SUNDAY) // ⛪ Воскресное богослужение
 		.text(MENU_LABELS.MAIN_SERMONS) // 🎙️ Проповеди
 		.row()
-		.text(MENU_LABELS.MAIN_GROUPS); // 👥 Малые группы
+		.text(MENU_LABELS.MAIN_GROUPS) // 👥 Малые группы
+		.text(MENU_LABELS.MAIN_ABOUT); // ℹ️ О нас
 
-	if (ctx.access.isPrivileged) {
-		kb.text(MENU_LABELS.MAIN_CALENDAR); // 📅 Церковный календарь
-	}
-
-	kb.row().text(MENU_LABELS.MAIN_ABOUT).resized().persistent();
+	kb.resized().persistent();
 	return kb;
 }
