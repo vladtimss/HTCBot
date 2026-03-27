@@ -10,8 +10,8 @@
  * - не пересчитывать дерево дат на каждый клик пользователя.
  */
 
-import { BuildinDatabaseRecord } from "../../types/buildin";
-import { PC_AGENDA_STATUS } from "./presbyterian-council.constants";
+import { BuildinDatabaseRecord } from "../../../types/buildin";
+import { PC_AGENDA_STATUS }      from "./presbyterian-council.constants";
 
 /** Минимальный набор полей записи, которые нужны для построения индекса по датам. */
 type AgendaIndexProperties = {

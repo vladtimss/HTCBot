@@ -23,14 +23,19 @@ import { registerSmallGroups } from "./features/small-groups/small-groups.featur
 import { MENU_LABELS } from "./constants/button-lables";
 import { NAVIGATION_LABELS } from "./constants/navigation";
 import { ABOUT_BUTTON_LABELS } from "./features/about-htc/about-htc.constants";
-import { CALENDAR_BUTTON_LABELS } from "./features/church-calendar/church-calendar.constants";
-import { registerChurchCalendar } from "./features/church-calendar/church-calendar.feature";
+import { CALENDAR_BUTTON_LABELS } from "./features/holy-trinity-church/church-calendar/church-calendar.constants";
+import { registerHolyTrinityChurch } from "./features/holy-trinity-church/holy-trinity-church.feature";
+import { registerChurchCalendar } from "./features/holy-trinity-church/church-calendar/church-calendar.feature";
 import { registerBackButton } from "./features/global-back-button-navigation/global-back-button-navigation.feature";
 import { registerSermons } from "./features/sermons/sermons.feature";
 import { registerAboutHTC } from "./features/about-htc/about-htc.feature";
-import { registerLmgNotesFeature } from "./features/lmg-notes/lmg-notes.feature";
-import { registerPresbyterianCouncil } from "./features/presbyterian-council/presbyterian-council.feature";
-import { PRESBYTERIAN_COUNCIL_BUTTON_LABELS } from "./features/presbyterian-council/presbyterian-council.constants";
+import { registerLmgNotesFeature }            from "./features/lmg-notes/lmg-notes.feature";
+import { registerPresbyterianCouncil }        from "./features/holy-trinity-church/presbyterian-council/presbyterian-council.feature";
+import { PRESBYTERIAN_COUNCIL_BUTTON_LABELS } from "./features/holy-trinity-church/presbyterian-council/presbyterian-council.constants";
+import { registerMembersMeeting } from "./features/holy-trinity-church/members-meeting/members-meeting.feature";
+import { MEMBERS_MEETING_BUTTON_LABELS } from "./features/holy-trinity-church/members-meeting/members-meeting.constants";
+import { registerPrayerMeeting } from "./features/holy-trinity-church/prayer-meeting/prayer-meeting.feature";
+import { PRAYER_MEETING_BUTTON_LABELS } from "./features/holy-trinity-church/prayer-meeting/prayer-meeting.constants";
 
 /** Создание инстанса бота */
 const bot = new Bot<MyContext>(env.BOT_TOKEN);
@@ -85,7 +90,10 @@ registerAboutHTC(bot); // Раздел "О нас"
 registerSmallGroups(bot); // Малые группы
 registerLmgNotesFeature(bot);
 registerPresbyterianCouncil(bot); // Пресвитерский совет
+registerHolyTrinityChurch(bot); // Церковь Святой Троицы (подразделы)
 registerChurchCalendar(bot); // Церковный календарь
+registerMembersMeeting(bot); // Членское собрание
+registerPrayerMeeting(bot); // Молитвенное собрание
 registerSermons(bot); // Проповеди
 registerBackButton(bot); // Кнопка "Назад"
 
@@ -95,14 +103,26 @@ registerBackButton(bot); // Кнопка "Назад"
 bot.on("message", async (ctx) => {
 	// Игнорируем все чаты кроме личных
 	if (ctx.chat.type !== "private") return;
+	if (ctx.session.awaitingMembersQuestion && ctx.message.text) return;
+	if (ctx.session.awaitingPrayerNeed && ctx.message.text) return;
 
 	// Известные кнопки главного меню
 	const known = new Set<string>([
 		MENU_LABELS.MAIN_SUNDAY,
 		MENU_LABELS.MAIN_GROUPS,
 		MENU_LABELS.MAIN_PRESBYTERIAN_COUNCIL,
+		MENU_LABELS.MAIN_HOLY_TRINITY_CHURCH,
+		MENU_LABELS.MAIN_CALENDAR,
 		CALENDAR_BUTTON_LABELS.CAL_NEXT3,
+		CALENDAR_BUTTON_LABELS.CAL_MEMBERS_NEXT,
+		CALENDAR_BUTTON_LABELS.CAL_MEMBERS_ALL,
+		CALENDAR_BUTTON_LABELS.CAL_PRAYER_NEXT,
+		CALENDAR_BUTTON_LABELS.CAL_PRAYER_ALL,
 		MENU_LABELS.MAIN_ABOUT,
+		MEMBERS_MEETING_BUTTON_LABELS.MM_ROOT,
+		MEMBERS_MEETING_BUTTON_LABELS.MM_ASK_QUESTION,
+		PRAYER_MEETING_BUTTON_LABELS.PM_ROOT,
+		PRAYER_MEETING_BUTTON_LABELS.PM_SHARE_NEED,
 		NAVIGATION_LABELS.NAV_MAIN,
 		NAVIGATION_LABELS.NAV_BACK,
 		ABOUT_BUTTON_LABELS.ABOUT_CHANNEL,

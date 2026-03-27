@@ -4,14 +4,14 @@
  * Reply- и inline-клавиатуры раздела "Пресвитерский совет".
  */
 
-import { InlineKeyboard, Keyboard } from "grammy";
-import { PRESBYTERIAN_COUNCIL_BUTTON_LABELS } from "./presbyterian-council.constants";
-import { NAVIGATION_LABELS } from "../../constants/navigation";
+import { InlineKeyboard, Keyboard }                                from "grammy";
+import { PRESBYTERIAN_COUNCIL_BUTTON_LABELS }                      from "./presbyterian-council.constants";
+import { NAVIGATION_LABELS }                                       from "../../../constants/navigation";
 import { PresbyterianCouncilAgendaDateNode, getPCAgendaMonthName } from "./presbyterian-council.state";
 
 /**
  * Главное меню раздела "Пресвитерский совет"
- * Кнопка «Назад» возвращает в главное меню (menuStack: ["main"] → ["presbyterian-council"])
+ * Кнопка «Назад» возвращает в раздел «Церковь Святой Троицы» (стек: ["holy-trinity-church", "presbyterian-council"])
  */
 export const replyPresbyterianCouncilMenu = new Keyboard()
 	.text(PRESBYTERIAN_COUNCIL_BUTTON_LABELS.PC_AGENDA)

@@ -1,5 +1,5 @@
 /**
- * features/church-calendar/church-calendar.util.ts
+ * features/holy-trinity-church/church-calendar/church-calendar.util.ts
  * --------------------------
  * Утилиты для генерации PDF из событий календаря
  */

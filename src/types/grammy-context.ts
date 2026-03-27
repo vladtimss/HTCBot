@@ -9,8 +9,8 @@
 import { Context, SessionFlavor } from "grammy";
 import { LmgNote, Sermon } from "./buildin";
 import type { NormalizedSermonState } from "../features/sermons/sermons.util";
-import type { NormalizedLmgNotesState } from "../features/lmg-notes/lmg-notes.util";
-import type { NormalizedPresbyterianCouncilAgendaState } from "../features/presbyterian-council/presbyterian-council.state";
+import type { NormalizedLmgNotesState }                  from "../features/lmg-notes/lmg-notes.util";
+import type { NormalizedPresbyterianCouncilAgendaState } from "../features/holy-trinity-church/presbyterian-council/presbyterian-council.state";
 
 /** Данные сессии для навигации */
 export interface SessionData {
@@ -36,6 +36,16 @@ export interface SessionData {
 
 	/** Нормализованное состояние вопросов пресвитерского совета по датам */
 	pcAgendaState?: NormalizedPresbyterianCouncilAgendaState;
+
+	/** Ожидаем текст вопроса для раздела "Членское собрание" */
+	awaitingMembersQuestion?: boolean;
+	/** Черновик вопроса для подтверждения перед отправкой */
+	membersQuestionDraft?: string;
+
+	/** Ожидаем текст молитвенной нужды для раздела "Молитвенное собрание" */
+	awaitingPrayerNeed?: boolean;
+	/** Черновик молитвенной нужды для подтверждения перед отправкой */
+	prayerNeedDraft?: string;
 }
 
 /** Данные о доступе пользователя */

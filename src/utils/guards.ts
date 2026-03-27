@@ -45,6 +45,20 @@ export function requireLmgLeader(ctx: MyContext): boolean {
 }
 
 /**
+ * Доступ к разделу «Церковь»: привилегированные пользователи и члены Пресвитерского совета.
+ */
+export function requireChurchAccess(ctx: MyContext): boolean {
+	if (ctx.access?.isPrivileged || ctx.access?.isPresbyterianCouncil) return true;
+
+	ctx.session.menuStack = ["main"];
+	ctx.session.lastSection = "main";
+
+	void safeReply(ctx, COMMON.mainMenuTitle, { reply_markup: replyMainKeyboard(ctx) });
+
+	return false;
+}
+
+/**
  * Проверяет, является ли пользователь членом Пресвитерского совета.
  * Если нет — мягко перекидывает в главное меню.
  */

@@ -1,13 +1,15 @@
 /**
- * features/church-calendar/church-calendar.keyboard.ts
+ * features/holy-trinity-church/church-calendar/church-calendar.keyboard.ts
  * --------------------------
  * Клавиатуры для раздела "Церковный календарь"
  */
 
 import { InlineKeyboard } from "grammy";
 import { CALENDAR_BUTTON_LABELS } from "./church-calendar.constants";
-import { SMALL_GROUPS_BUTTON_LABELS } from "../small-groups/small-groups.constants";
-import { NAVIGATION_LABELS } from "../../constants/navigation";
+import { SMALL_GROUPS_BUTTON_LABELS } from "../../small-groups/small-groups.constants";
+import { NAVIGATION_LABELS } from "../../../constants/navigation";
+import { MEMBERS_MEETING_BUTTON_LABELS } from "../members-meeting/members-meeting.constants";
+import { PRAYER_MEETING_BUTTON_LABELS } from "../prayer-meeting/prayer-meeting.constants";
 
 export const replyCalendarMenu = {
 	keyboard: [
@@ -31,6 +33,7 @@ export const replyCalendarLmgMenu = {
 
 export const replyCalendarPrayerMenu = {
 	keyboard: [
+		[PRAYER_MEETING_BUTTON_LABELS.PM_SHARE_NEED],
 		[CALENDAR_BUTTON_LABELS.CAL_PRAYER_NEXT, CALENDAR_BUTTON_LABELS.CAL_PRAYER_ALL],
 		[NAVIGATION_LABELS.NAV_BACK, NAVIGATION_LABELS.NAV_MAIN],
 	],
@@ -39,6 +42,7 @@ export const replyCalendarPrayerMenu = {
 
 export const replyCalendarMembersMenu = {
 	keyboard: [
+		[MEMBERS_MEETING_BUTTON_LABELS.MM_ASK_QUESTION],
 		[CALENDAR_BUTTON_LABELS.CAL_MEMBERS_NEXT, CALENDAR_BUTTON_LABELS.CAL_MEMBERS_ALL],
 		[NAVIGATION_LABELS.NAV_BACK, NAVIGATION_LABELS.NAV_MAIN],
 	],
