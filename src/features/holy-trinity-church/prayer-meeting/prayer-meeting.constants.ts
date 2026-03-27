@@ -12,6 +12,8 @@ export const PRAYER_MEETING_BUTTON_LABELS = {
 export const PRAYER_MEETING_INLINE = {
 	PM_CANCEL: "prayer-meeting:need:cancel",
 	PM_SEND: "prayer-meeting:need:send",
+	PM_PRIVACY_NOT_PUBLIC: "prayer-meeting:need:privacy:not-public",
+	PM_PRIVACY_PUBLIC: "prayer-meeting:need:privacy:public",
 } as const;
 
 export const PRAYER_NEEDS_DATABASE_ID = "89eb1f25-3656-453c-b191-a2a497d66c60";

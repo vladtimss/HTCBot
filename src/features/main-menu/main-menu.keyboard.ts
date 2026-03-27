@@ -24,7 +24,9 @@ export function replyMainKeyboard(ctx: MyContext) {
 		.text(MENU_LABELS.MAIN_SERMONS) // 🎙️ Проповеди
 		.row()
 		.text(MENU_LABELS.MAIN_GROUPS) // 👥 Малые группы
-		.text(MENU_LABELS.MAIN_ABOUT); // ℹ️ О нас
+		.text(MENU_LABELS.MAIN_ABOUT) // ℹ️ О нас
+		.row()
+		.text(MENU_LABELS.MAIN_HTC_WIKI); // 📚 HTC Wiki
 
 	kb.resized().persistent();
 	return kb;
