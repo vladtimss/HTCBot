@@ -19,6 +19,7 @@ import {
 } from "./members-meeting.constants";
 import { MEMBERS_MEETING_TEXTS } from "./members-meeting.texts";
 import { replyMembersMeetingMenu } from "./members-meeting.keyboard";
+import { buildDraftReviewPreviewHtml } from "../shared/draft-preview.util";
 
 export async function renderMembersMeetingRoot(ctx: MyContext) {
 	ctx.session.lastSection = "members-meeting";
@@ -56,26 +57,6 @@ function reviewQuestionKeyboard() {
 	return new InlineKeyboard()
 		.text("❌ Отменить", MEMBERS_MEETING_INLINE.MM_CANCEL)
 		.text("✅ Отправить", MEMBERS_MEETING_INLINE.MM_SEND);
-}
-
-function escapeHtml(text: string): string {
-	return text
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;");
-}
-
-function quoteAsHtml(text: string): string {
-	const escaped = escapeHtml(text);
-	return `<blockquote>${escaped}</blockquote>`;
-}
-
-function buildReviewPreviewHtml(text: string): string {
-	const PREVIEW_LIMIT = 2500;
-	const needsTrim = text.length > PREVIEW_LIMIT;
-	const preview = needsTrim ? `${text.slice(0, PREVIEW_LIMIT)}...` : text;
-	const note = needsTrim ? `${MEMBERS_MEETING_TEXTS.reviewQuestionTrimmedNote}\n\n` : "";
-	return `${MEMBERS_MEETING_TEXTS.reviewQuestionPrompt}\n\n${note}${quoteAsHtml(preview)}`;
 }
 
 export function registerMembersMeeting(bot: Bot<MyContext>) {
@@ -117,7 +98,10 @@ export function registerMembersMeeting(bot: Bot<MyContext>) {
 
 		ctx.session.awaitingMembersQuestion = false;
 		ctx.session.membersQuestionDraft = text;
-		const reviewHtml = buildReviewPreviewHtml(text);
+		const reviewHtml = buildDraftReviewPreviewHtml(text, {
+			prompt: MEMBERS_MEETING_TEXTS.reviewQuestionPrompt,
+			trimmedNote: MEMBERS_MEETING_TEXTS.reviewQuestionTrimmedNote,
+		});
 		try {
 			await ctx.reply(reviewHtml, {
 				parse_mode: "HTML",

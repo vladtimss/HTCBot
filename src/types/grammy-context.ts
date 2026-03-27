@@ -41,6 +41,11 @@ export interface SessionData {
 	awaitingMembersQuestion?: boolean;
 	/** Черновик вопроса для подтверждения перед отправкой */
 	membersQuestionDraft?: string;
+
+	/** Ожидаем текст молитвенной нужды для раздела "Молитвенное собрание" */
+	awaitingPrayerNeed?: boolean;
+	/** Черновик молитвенной нужды для подтверждения перед отправкой */
+	prayerNeedDraft?: string;
 }
 
 /** Данные о доступе пользователя */

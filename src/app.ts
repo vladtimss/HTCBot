@@ -34,6 +34,8 @@ import { registerPresbyterianCouncil }        from "./features/holy-trinity-chur
 import { PRESBYTERIAN_COUNCIL_BUTTON_LABELS } from "./features/holy-trinity-church/presbyterian-council/presbyterian-council.constants";
 import { registerMembersMeeting } from "./features/holy-trinity-church/members-meeting/members-meeting.feature";
 import { MEMBERS_MEETING_BUTTON_LABELS } from "./features/holy-trinity-church/members-meeting/members-meeting.constants";
+import { registerPrayerMeeting } from "./features/holy-trinity-church/prayer-meeting/prayer-meeting.feature";
+import { PRAYER_MEETING_BUTTON_LABELS } from "./features/holy-trinity-church/prayer-meeting/prayer-meeting.constants";
 
 /** Создание инстанса бота */
 const bot = new Bot<MyContext>(env.BOT_TOKEN);
@@ -91,6 +93,7 @@ registerPresbyterianCouncil(bot); // Пресвитерский совет
 registerHolyTrinityChurch(bot); // Церковь Святой Троицы (подразделы)
 registerChurchCalendar(bot); // Церковный календарь
 registerMembersMeeting(bot); // Членское собрание
+registerPrayerMeeting(bot); // Молитвенное собрание
 registerSermons(bot); // Проповеди
 registerBackButton(bot); // Кнопка "Назад"
 
@@ -101,6 +104,7 @@ bot.on("message", async (ctx) => {
 	// Игнорируем все чаты кроме личных
 	if (ctx.chat.type !== "private") return;
 	if (ctx.session.awaitingMembersQuestion && ctx.message.text) return;
+	if (ctx.session.awaitingPrayerNeed && ctx.message.text) return;
 
 	// Известные кнопки главного меню
 	const known = new Set<string>([
@@ -112,9 +116,13 @@ bot.on("message", async (ctx) => {
 		CALENDAR_BUTTON_LABELS.CAL_NEXT3,
 		CALENDAR_BUTTON_LABELS.CAL_MEMBERS_NEXT,
 		CALENDAR_BUTTON_LABELS.CAL_MEMBERS_ALL,
+		CALENDAR_BUTTON_LABELS.CAL_PRAYER_NEXT,
+		CALENDAR_BUTTON_LABELS.CAL_PRAYER_ALL,
 		MENU_LABELS.MAIN_ABOUT,
 		MEMBERS_MEETING_BUTTON_LABELS.MM_ROOT,
 		MEMBERS_MEETING_BUTTON_LABELS.MM_ASK_QUESTION,
+		PRAYER_MEETING_BUTTON_LABELS.PM_ROOT,
+		PRAYER_MEETING_BUTTON_LABELS.PM_SHARE_NEED,
 		NAVIGATION_LABELS.NAV_MAIN,
 		NAVIGATION_LABELS.NAV_BACK,
 		ABOUT_BUTTON_LABELS.ABOUT_CHANNEL,

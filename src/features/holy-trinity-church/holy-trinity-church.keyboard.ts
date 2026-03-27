@@ -9,6 +9,7 @@ import { MENU_LABELS } from "../../constants/button-lables";
 import { NAVIGATION_LABELS } from "../../constants/navigation";
 import { MyContext } from "../../types/grammy-context";
 import { MEMBERS_MEETING_BUTTON_LABELS } from "./members-meeting/members-meeting.constants";
+import { PRAYER_MEETING_BUTTON_LABELS } from "./prayer-meeting/prayer-meeting.constants";
 
 export function replyHolyTrinityChurchKeyboard(ctx: MyContext) {
 	const kb = new Keyboard();
@@ -21,7 +22,9 @@ export function replyHolyTrinityChurchKeyboard(ctx: MyContext) {
 		kb.text(MENU_LABELS.MAIN_CALENDAR).row();
 	}
 	if (ctx.access.isPrivileged) {
-		kb.text(MEMBERS_MEETING_BUTTON_LABELS.MM_ROOT).row();
+		kb.text(MEMBERS_MEETING_BUTTON_LABELS.MM_ROOT)
+			.text(PRAYER_MEETING_BUTTON_LABELS.PM_ROOT)
+			.row();
 	}
 
 	kb.text(NAVIGATION_LABELS.NAV_MAIN).resized().persistent();
