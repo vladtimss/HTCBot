@@ -13,6 +13,7 @@ import { MAIN_TEXTS } from "../main-menu/main-menu.texts";
 import { renderAboutRoot } from "../about-htc/about-htc.feature";
 import { renderHolyTrinityChurchRoot } from "../holy-trinity-church/holy-trinity-church.feature";
 import { renderCalendarRoot } from "../holy-trinity-church/church-calendar/church-calendar.feature";
+import { renderMembersMeetingRoot } from "../holy-trinity-church/members-meeting/members-meeting.feature";
 import { renderGroupsRoot }              from "../small-groups/small-groups.feature";
 import { renderPresbyterianCouncilRoot } from "../holy-trinity-church/presbyterian-council/presbyterian-council.feature";
 
@@ -55,6 +56,10 @@ export function registerBackButton(bot: Bot<MyContext>) {
 			case "holidays":
 			case "family":
 				await renderCalendarRoot(ctx);
+				break;
+
+			case "members-meeting":
+				await renderMembersMeetingRoot(ctx);
 				break;
 
 		case "groups":

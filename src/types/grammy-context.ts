@@ -36,6 +36,11 @@ export interface SessionData {
 
 	/** Нормализованное состояние вопросов пресвитерского совета по датам */
 	pcAgendaState?: NormalizedPresbyterianCouncilAgendaState;
+
+	/** Ожидаем текст вопроса для раздела "Членское собрание" */
+	awaitingMembersQuestion?: boolean;
+	/** Черновик вопроса для подтверждения перед отправкой */
+	membersQuestionDraft?: string;
 }
 
 /** Данные о доступе пользователя */

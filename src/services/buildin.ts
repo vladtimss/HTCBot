@@ -124,4 +124,20 @@ export async function getPage(pageId: string): Promise<BuildinPage> {
 	return apiFetch<BuildinPage>(`/pages/${pageId}`, { method: "GET" });
 }
 
+/**
+ * POST /pages — создать новую запись (страницу) в базе данных.
+ */
+export async function createDatabasePage(
+	databaseId: string,
+	properties: Record<string, unknown>
+): Promise<BuildinPage> {
+	return apiFetch<BuildinPage>("/pages", {
+		method: "POST",
+		body: {
+			parent: { database_id: databaseId },
+			properties,
+		} as unknown as RequestInit["body"],
+	});
+}
+
 
