@@ -39,7 +39,11 @@ function buildAskerLabel(ctx: MyContext): string {
 	return `${username}_${telegramId}`;
 }
 
-async function savePrayerNeed(ctx: MyContext, needText: string): Promise<void> {
+async function savePrayerNeed(
+	ctx: MyContext,
+	needText: string,
+	opts: { notPublic: boolean }
+): Promise<void> {
 	const askerLabel = buildAskerLabel(ctx).slice(0, 180);
 	await createDatabasePage(PRAYER_NEEDS_DATABASE_ID, {
 		"От кого": {
@@ -50,6 +54,10 @@ async function savePrayerNeed(ctx: MyContext, needText: string): Promise<void> {
 			type: "rich_text",
 			rich_text: [{ text: { content: needText } }],
 		},
+		"Не для публичной молитвы": {
+			type: "checkbox",
+			checkbox: opts.notPublic,
+		},
 	});
 }
 
@@ -57,6 +65,13 @@ function reviewNeedKeyboard() {
 	return new InlineKeyboard()
 		.text("❌ Отменить", PRAYER_MEETING_INLINE.PM_CANCEL)
 		.text("✅ Отправить", PRAYER_MEETING_INLINE.PM_SEND);
+}
+
+function privacyKeyboard() {
+	return new InlineKeyboard()
+		.text("Это не для публичной молитвы.", PRAYER_MEETING_INLINE.PM_PRIVACY_NOT_PUBLIC)
+		.row()
+		.text("Да, хочу.", PRAYER_MEETING_INLINE.PM_PRIVACY_PUBLIC);
 }
 
 export function registerPrayerMeeting(bot: Bot<MyContext>) {
@@ -138,8 +153,22 @@ export function registerPrayerMeeting(bot: Bot<MyContext>) {
 			return;
 		}
 
+		await ctx.reply(PRAYER_MEETING_TEXTS.privacyQuestion, {
+			reply_markup: privacyKeyboard(),
+		});
+	});
+
+	async function finalizeSave(ctx: MyContext, opts: { notPublic: boolean }) {
+		const draft = (ctx.session.prayerNeedDraft ?? "").trim();
+		if (!draft) {
+			await ctx.reply(PRAYER_MEETING_TEXTS.noDraftNeed, {
+				reply_markup: replyPrayerMeetingMenu,
+			});
+			return;
+		}
+
 		try {
-			await withLoading(ctx, () => savePrayerNeed(ctx, draft), {
+			await withLoading(ctx, () => savePrayerNeed(ctx, draft, opts), {
 				text: PRAYER_MEETING_TEXTS.addingNeed,
 				delayMs: 0,
 			});
@@ -153,5 +182,15 @@ export function registerPrayerMeeting(bot: Bot<MyContext>) {
 				reply_markup: replyPrayerMeetingMenu,
 			});
 		}
+	}
+
+	bot.callbackQuery(PRAYER_MEETING_INLINE.PM_PRIVACY_NOT_PUBLIC, async (ctx) => {
+		await ctx.answerCallbackQuery().catch(() => {});
+		await finalizeSave(ctx, { notPublic: true });
+	});
+
+	bot.callbackQuery(PRAYER_MEETING_INLINE.PM_PRIVACY_PUBLIC, async (ctx) => {
+		await ctx.answerCallbackQuery().catch(() => {});
+		await finalizeSave(ctx, { notPublic: false });
 	});
 }

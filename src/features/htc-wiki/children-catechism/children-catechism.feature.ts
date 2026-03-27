@@ -14,6 +14,7 @@ import { CHILDREN_CATECHISM_BUTTON_LABELS } from "./children-catechism.constants
 import {
 	inlineChildrenCatechismQuestions,
 	inlineChildrenCatechismTopics,
+	inlineBackToCatechismQuestions,
 	replyChildrenCatechismMenu,
 } from "./children-catechism.keyboard";
 
@@ -21,6 +22,41 @@ type CatechismTopic = {
 	title: string;
 	items: { number: number; q: string; a: string | null; sources: string[] }[];
 };
+
+function buildIntroSnippet() {
+	const intro = ((catechism as unknown) as { intro?: string[] }).intro ?? [];
+	if (!intro.length) return fmt``;
+
+	const idxContents = intro.findIndex((x) => x.trim().toLowerCase() === "содержание");
+	const useful = (idxContents >= 0 ? intro.slice(0, idxContents) : intro)
+		.map((x) => x.trim())
+		.filter(Boolean);
+
+	const idxPreface = useful.findIndex((x) => x.toLowerCase() === "предисловие");
+	const idxAuthor = useful.findIndex((x) => x.toLowerCase() === "от автора");
+	const idxAuthorName = useful.findIndex((x) => x.toLowerCase() === "кэрин мак-кензи");
+
+	const prefaceBody =
+		idxPreface >= 0
+			? useful.slice(idxPreface + 1, idxAuthor >= 0 ? idxAuthor : idxPreface + 4)
+			: useful.slice(0, 3);
+	const authorBody =
+		idxAuthor >= 0
+			? useful.slice(idxAuthor + 1, idxAuthorName >= 0 ? idxAuthorName : idxAuthor + 5)
+			: [];
+
+	const prefaceText = prefaceBody.filter(Boolean).slice(0, 2).join(" ");
+	const authorText = authorBody.filter(Boolean).slice(0, 3).join(" ");
+
+	return fmt`
+${bold()}Краткое введение${bold()}
+${blockquote}${prefaceText}${blockquote}
+
+${bold()}От автора${bold()}
+${blockquote}${authorText}${blockquote}
+
+${bold()}Автор:${bold()} Кэрин Мак-Кензи`;
+}
 
 function buildIndex(topics: CatechismTopic[]) {
 	const topicByKey = new Map<string, { idx: number; topic: CatechismTopic }>();
@@ -42,7 +78,9 @@ export async function renderChildrenCatechismRoot(ctx: MyContext) {
 	ctx.session.menuStack = ["htc-wiki", "children-catechism"];
 	ctx.session.lastSection = "children-catechism";
 
-	const text = fmt`${bold()}Детский катехизис${bold()}${COMMON.useButtonBelow}`;
+	const text = fmt`${bold()}Детский катехизис${bold()}
+${buildIntroSnippet()}
+${COMMON.useButtonBelow}`;
 	await replyFormatted(ctx, text, { reply_markup: replyChildrenCatechismMenu });
 }
 
@@ -80,12 +118,7 @@ ${bold()}Ответ:${bold()}
 ${italic()}${item.a ?? ""}${italic()}${srcBlock}`;
 
 	await replyFormatted(ctx, text, {
-		reply_markup: inlineChildrenCatechismQuestions(
-			(topicByKey.get(hit.topicKey)?.topic.items ?? []).map((it) => ({
-				id: `${hit.topicKey}_${it.number}`,
-				title: `${it.number}. ${it.q}`,
-			}))
-		),
+		reply_markup: inlineBackToCatechismQuestions(hit.topicKey),
 	});
 }
 

@@ -28,3 +28,7 @@ export function inlineChildrenCatechismQuestions(questions: { id: string; title:
 	return kb;
 }
 
+export function inlineBackToCatechismQuestions(topicKey: string) {
+	return new InlineKeyboard().text("⬅️ Назад", `catechism:t:${topicKey}`);
+}
+
