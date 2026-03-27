@@ -12,7 +12,6 @@ import { NAVIGATION_LABELS } from "../../constants/navigation";
 /** Reply-клавиатура раздела «Проповеди». */
 export const replySermonsMenu = new Keyboard()
 	.text(SERMONS_BUTTON_LABELS.SERMONS_BY_BOOK)
-	.row()
 	.text(SERMONS_BUTTON_LABELS.SERMONS_BY_SERIES)
 	.row()
 	.text(SERMONS_BUTTON_LABELS.SERMONS_PODCASTS)
