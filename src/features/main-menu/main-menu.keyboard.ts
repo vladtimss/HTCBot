@@ -10,12 +10,13 @@ import { MyContext } from "../../types/grammy-context";
 
 /**
  * Главное меню зависит от прав:
- * - у привилегированных и у членов Пресвитерского совета есть кнопка «Церковь Святой Троицы» (подразделы: календарь, совет)
+ * - «Церковь Святой Троицы» — только isPrivileged (пасторы продублированы в AUTHORIZED).
+ * Пресвитерский совет — только внутри раздела «Церковь», см. holy-trinity-church.keyboard.
  */
 export function replyMainKeyboard(ctx: MyContext) {
 	const kb = new Keyboard();
 
-	if (ctx.access.isPrivileged || ctx.access.isPresbyterianCouncil) {
+	if (ctx.access.isPrivileged) {
 		kb.text(MENU_LABELS.MAIN_HOLY_TRINITY_CHURCH).row(); // ⛪ Церковь Святой Троицы — первая строка на всю ширину
 	}
 

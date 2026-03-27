@@ -15,7 +15,7 @@ import { renderHolyTrinityChurchRoot } from "../holy-trinity-church/holy-trinity
 import { renderCalendarRoot } from "../holy-trinity-church/church-calendar/church-calendar.feature";
 import { renderMembersMeetingRoot } from "../holy-trinity-church/members-meeting/members-meeting.feature";
 import { renderPrayerMeetingRoot } from "../holy-trinity-church/prayer-meeting/prayer-meeting.feature";
-import { renderGroupsRoot }              from "../small-groups/small-groups.feature";
+import { renderGroupsRoot } from "../small-groups/small-groups.feature";
 import { renderPresbyterianCouncilRoot } from "../holy-trinity-church/presbyterian-council/presbyterian-council.feature";
 
 /**
@@ -24,7 +24,8 @@ import { renderPresbyterianCouncilRoot } from "../holy-trinity-church/presbyteri
  */
 export function registerBackButton(bot: Bot<MyContext>) {
 	bot.hears(NAVIGATION_LABELS.NAV_BACK, async (ctx) => {
-		// Если стека нет или в нём только один элемент → кидаем в главное меню
+		// Один уровень в стеке (например ["groups"] и корень «Малые группы», или тот же стек после «По дням» с inline) → главное меню.
+		// «По дням» не добавляет уровень навигации: пользователь остаётся в том же разделе, «Назад» выходит в главное.
 		if (!ctx.session.menuStack || ctx.session.menuStack.length <= 1) {
 			await ctx.reply(MAIN_TEXTS.title.text, {
 				entities: MAIN_TEXTS.title.entities,
@@ -34,11 +35,9 @@ export function registerBackButton(bot: Bot<MyContext>) {
 			ctx.session.menuStack = ["main"];
 			return;
 		}
-		console.log(ctx.session.menuStack);
 		// Убираем текущий раздел
 		ctx.session.menuStack.pop();
 		const prev = ctx.session.menuStack[ctx.session.menuStack.length - 1];
-		console.log(prev);
 
 		// Выбираем что отрендерить в зависимости от раздела
 		switch (prev) {

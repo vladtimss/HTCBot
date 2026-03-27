@@ -48,6 +48,31 @@ ${isPrivileged ? SMALL_GROUPS_TEXTS.descriptionForMembers : SMALL_GROUPS_TEXTS.d
 }
 
 /**
+ * Экран выбора дня (только inline-клавиатура).
+ * В стек не кладём отдельный уровень — остаётся ["groups"], иначе «Назад» по reply путается с глубиной inline-цепочки.
+ */
+export async function renderGroupsByDayScreen(ctx: MyContext) {
+	ctx.session.menuStack = ["groups"];
+	ctx.session.lastSection = "groups/byday";
+
+	const chooseDayText = fmt`${bold()}${SMALL_GROUPS_TEXTS.chooseDay}${bold()}`;
+	await replyFormatted(ctx, chooseDayText, {
+		reply_markup: makeWeekdaysKeyboard(),
+	});
+}
+
+/** Экран выбора района — аналогично, только inline. */
+export async function renderGroupsByDistrictScreen(ctx: MyContext) {
+	ctx.session.menuStack = ["groups"];
+	ctx.session.lastSection = "groups/bydistrict";
+
+	const chooseDistrictText = fmt`${bold()}${SMALL_GROUPS_TEXTS.chooseDistrict}${bold()}`;
+	await replyFormatted(ctx, chooseDistrictText, {
+		reply_markup: makeDistrictsKeyboard(),
+	});
+}
+
+/**
  * Регистрирует обработчики для раздела "Малые группы"
  */
 export function registerSmallGroups(bot: Bot<MyContext>) {
@@ -58,32 +83,21 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 
 	// «📅 По дням»
 	bot.hears(SMALL_GROUPS_BUTTON_LABELS.LMG_GROUPS_BY_DAY, async (ctx) => {
-		if (!ctx.session.menuStack) ctx.session.menuStack = ["groups"];
-		ctx.session.menuStack.push("groups/byday");
-		ctx.session.lastSection = "groups/byday";
-
-		const chooseDayText = fmt`${bold()}${SMALL_GROUPS_TEXTS.chooseDay}${bold()}`;
-		await replyFormatted(ctx, chooseDayText, {
-			reply_markup: makeWeekdaysKeyboard(),
-		});
+		await renderGroupsByDayScreen(ctx);
 	});
 
 	// «📍 По районам»
 	bot.hears(SMALL_GROUPS_BUTTON_LABELS.LMG_GROUPS_BY_DISTRICT, async (ctx) => {
-		if (!ctx.session.menuStack) ctx.session.menuStack = ["groups"];
-		ctx.session.menuStack.push("groups/bydistrict");
-		ctx.session.lastSection = "groups/bydistrict";
-
-		const chooseDistrictText = fmt`${bold()}${SMALL_GROUPS_TEXTS.chooseDistrict}${bold()}`;
-		await replyFormatted(ctx, chooseDistrictText, {
-			reply_markup: makeDistrictsKeyboard(),
-		});
+		await renderGroupsByDistrictScreen(ctx);
 	});
 
 	// Выбор дня → список групп
 	bot.callbackQuery(/groups:day:(MON|TUE|WED|THU|FRI|SAT|SUN)/, async (ctx) => {
 		const day = ctx.match![1] as Weekday;
 		await ctx.answerCallbackQuery().catch(() => {});
+
+		ctx.session.menuStack = ["groups"];
+		ctx.session.lastSection = "groups/byday";
 
 		const list = SMALL_GROUPS.filter((g) => g.weekday === day);
 
@@ -107,6 +121,8 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 	// Возврат к списку дней
 	bot.callbackQuery("groups:byday", async (ctx) => {
 		await ctx.answerCallbackQuery().catch(() => {});
+		ctx.session.menuStack = ["groups"];
+		ctx.session.lastSection = "groups/byday";
 		const chooseDayText = fmt`${bold()}${SMALL_GROUPS_TEXTS.chooseDay}${bold()}`;
 		await replyFormatted(ctx, chooseDayText, {
 			reply_markup: makeWeekdaysKeyboard(),
@@ -119,6 +135,9 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 		const districtName = DISTRICT_MAP[districtKey] ?? districtKey;
 
 		await ctx.answerCallbackQuery().catch(() => {});
+
+		ctx.session.menuStack = ["groups"];
+		ctx.session.lastSection = "groups/bydistrict";
 
 		const list = SMALL_GROUPS.filter((g) => g.region === districtKey);
 
@@ -142,6 +161,8 @@ export function registerSmallGroups(bot: Bot<MyContext>) {
 	// Возврат к списку районов
 	bot.callbackQuery("groups:bydistrict", async (ctx) => {
 		await ctx.answerCallbackQuery().catch(() => {});
+		ctx.session.menuStack = ["groups"];
+		ctx.session.lastSection = "groups/bydistrict";
 		const chooseDistrictText = fmt`${bold()}${SMALL_GROUPS_TEXTS.chooseDistrict}${bold()}`;
 		await replyFormatted(ctx, chooseDistrictText, {
 			reply_markup: makeDistrictsKeyboard(),

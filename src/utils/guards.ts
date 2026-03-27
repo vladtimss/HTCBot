@@ -9,7 +9,6 @@ import { MyContext } from "../types/grammy-context";
 import { replyMainKeyboard } from "../features/main-menu/main-menu.keyboard";
 import { COMMON }        from "../services/texts";
 import { safeReply }     from "./telegram-flood";
-import { isHTChurchLMG } from "../services/access";
 
 /**
  * Проверяет, есть ли у пользователя привилегии.
@@ -33,7 +32,7 @@ export function requirePrivileged(ctx: MyContext): boolean {
  * Если нет — мягко перекидывает в главное меню.
  */
 export function requireLmgLeader(ctx: MyContext): boolean {
-	if (isHTChurchLMG(ctx)) return true;
+	if (ctx.access?.isLmgLeader) return true;
 
 	// Сброс меню → главное
 	ctx.session.menuStack = ["main"];
@@ -45,10 +44,10 @@ export function requireLmgLeader(ctx: MyContext): boolean {
 }
 
 /**
- * Доступ к разделу «Церковь»: привилегированные пользователи и члены Пресвитерского совета.
+ * Доступ к разделу «Церковь»: только члены церкви (AUTHORIZED). Пасторы дублируются в списке.
  */
 export function requireChurchAccess(ctx: MyContext): boolean {
-	if (ctx.access?.isPrivileged || ctx.access?.isPresbyterianCouncil) return true;
+	if (ctx.access?.isPrivileged) return true;
 
 	ctx.session.menuStack = ["main"];
 	ctx.session.lastSection = "main";

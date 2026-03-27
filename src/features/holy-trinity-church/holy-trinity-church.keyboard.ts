@@ -14,10 +14,9 @@ import { PRAYER_MEETING_BUTTON_LABELS } from "./prayer-meeting/prayer-meeting.co
 export function replyHolyTrinityChurchKeyboard(ctx: MyContext) {
 	const kb = new Keyboard();
 
+	// Сюда попадают только с isPrivileged (гвард входа); пасторы — в AUTHORIZED и в совете
 	if (ctx.access.isPrivileged && ctx.access.isPresbyterianCouncil) {
 		kb.text(MENU_LABELS.MAIN_PRESBYTERIAN_COUNCIL).text(MENU_LABELS.MAIN_CALENDAR).row();
-	} else if (ctx.access.isPresbyterianCouncil) {
-		kb.text(MENU_LABELS.MAIN_PRESBYTERIAN_COUNCIL).row();
 	} else if (ctx.access.isPrivileged) {
 		kb.text(MENU_LABELS.MAIN_CALENDAR).row();
 	}
