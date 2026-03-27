@@ -37,9 +37,13 @@ import { registerMembersMeeting } from "./features/holy-trinity-church/members-m
 import { MEMBERS_MEETING_BUTTON_LABELS } from "./features/holy-trinity-church/members-meeting/members-meeting.constants";
 import { registerPrayerMeeting } from "./features/holy-trinity-church/prayer-meeting/prayer-meeting.feature";
 import { PRAYER_MEETING_BUTTON_LABELS } from "./features/holy-trinity-church/prayer-meeting/prayer-meeting.constants";
+import { registerHtcWiki } from "./features/htc-wiki/htc-wiki.feature";
+import { HTC_WIKI_BUTTON_LABELS } from "./features/htc-wiki/htc-wiki.constants";
+import { CHILDREN_CATECHISM_BUTTON_LABELS } from "./features/htc-wiki/children-catechism/children-catechism.constants";
 
 /** Создание инстанса бота */
 const bot = new Bot<MyContext>(env.BOT_TOKEN);
+logger.info({ mode: env.IS_PRODUCTION ? "production" : "development" }, "Bot init");
 /**
  * Повтор при 429 / 5xx / сетевых сбоях (см. https://grammy.dev/plugins/auto-retry).
  * maxDelaySeconds: не ждать часы при огромном retry_after — сразу отдаём ошибку наверх.
@@ -96,6 +100,7 @@ registerChurchCalendar(bot); // Церковный календарь
 registerMembersMeeting(bot); // Членское собрание
 registerPrayerMeeting(bot); // Молитвенное собрание
 registerSermons(bot); // Проповеди
+registerHtcWiki(bot); // HTC Wiki
 registerBackButton(bot); // Кнопка "Назад"
 
 /* ===================================
@@ -133,6 +138,9 @@ bot.on("message", async (ctx, next) => {
 		PRESBYTERIAN_COUNCIL_BUTTON_LABELS.PC_AGENDA_NEXT,
 		PRESBYTERIAN_COUNCIL_BUTTON_LABELS.PC_AGENDA_ALL_DATES,
 		...Object.values(SMALL_GROUPS_BUTTON_LABELS),
+		MENU_LABELS.MAIN_HTC_WIKI,
+		...Object.values(HTC_WIKI_BUTTON_LABELS),
+		...Object.values(CHILDREN_CATECHISM_BUTTON_LABELS),
 	]);
 
 	// Если пришёл неизвестный текст — возвращаем пользователя в главное меню
