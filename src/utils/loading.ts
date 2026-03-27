@@ -272,6 +272,9 @@ export interface SpinnerControl {
 	stop(): void;
 }
 
+/** Интервал смены кадра часов по умолчанию (мс) */
+export const DEFAULT_SPINNER_INTERVAL_MS = 3500;
+
 /** Кадры анимации — вращающиеся часы */
 const SPINNER_FRAMES = ["🕐", "🕑", "🕒", "🕓", "🕔", "🕕", "🕖", "🕗", "🕘", "🕙", "🕚", "🕛"] as const;
 
@@ -294,7 +297,7 @@ export async function replyWithSpinner(
 	text: string,
 	options: SpinnerMessageOptions = {}
 ): Promise<{ message: Message.TextMessage; spinner: SpinnerControl }> {
-	const { parseMode, intervalMs = 1000 } = options;
+	const { parseMode, intervalMs = DEFAULT_SPINNER_INTERVAL_MS } = options;
 	const normalizedText = normalizeLoadingText(text);
 	const message = await ctx.reply(formatSpinnerText(normalizedText, 0), {
 		parse_mode: parseMode,
@@ -307,7 +310,7 @@ export async function replyWithSpinner(
 /**
  * Запустить анимированный спиннер на уже отправленном сообщении.
  * При необходимости сначала редактирует сообщение первым кадром, затем каждые
- * `intervalMs` мс меняет кадр (🕐 → 🕑 → ... → 🕛 → 🕐).
+ * `intervalMs` мс меняет кадр (🕐 → 🕑 → ... → 🕛 → 🕐). По умолчанию 3000 мс.
  *
  * Сообщение можно либо отправить заранее без эмодзи, либо сразу с первым кадром
  * через `formatSpinnerText(..., 0)` и передать `renderFirstFrame = false`.
@@ -316,7 +319,7 @@ export async function replyWithSpinner(
  * @param chatId      - ID чата
  * @param messageId   - ID сообщения, которое редактируем
  * @param initialText - текст без эмодзи (добавляется автоматически)
- * @param intervalMs  - интервал смены кадра (по умолчанию 1000 мс)
+ * @param intervalMs  - интервал смены кадра (по умолчанию 3000 мс)
  * @param renderFirstFrame
  * @param parseMode
  */
@@ -325,7 +328,7 @@ export function startSpinner(
 	chatId: number,
 	messageId: number,
 	initialText: string,
-	intervalMs = 1000,
+	intervalMs = DEFAULT_SPINNER_INTERVAL_MS,
 	renderFirstFrame = true,
 	parseMode?: ParseMode
 ): SpinnerControl {
