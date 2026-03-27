@@ -52,8 +52,12 @@ export interface SessionData {
 export interface AccessData {
 	isPrivileged: boolean;
 	isPresbyterianCouncil: boolean;
+	/** Лидер ЛМГ: LMG_USERNAMES ∪ tgUserName из LEADERS_JSON_BASE64 */
+	isLmgLeader: boolean;
 	username?: string;
 	telegramId?: number;
+	/** Если задано — права взяты из DEV_ACCESS_* (симуляция роли) */
+	devAccessSimulatedRole?: "other" | "membership" | "lmg" | "pastor";
 }
 
 /** Контекст бота: Context + Session + Access */

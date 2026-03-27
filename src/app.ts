@@ -20,6 +20,7 @@ import { registerStart } from "./features/start/start.feature";
 import { registerMainMenu, renderMain } from "./features/main-menu/main-menu.feature";
 import { registerSunday } from "./features/sunday-service/sunday-service.feature";
 import { registerSmallGroups } from "./features/small-groups/small-groups.feature";
+import { SMALL_GROUPS_BUTTON_LABELS } from "./features/small-groups/small-groups.constants";
 import { MENU_LABELS } from "./constants/button-lables";
 import { NAVIGATION_LABELS } from "./constants/navigation";
 import { ABOUT_BUTTON_LABELS } from "./features/about-htc/about-htc.constants";
@@ -100,11 +101,11 @@ registerBackButton(bot); // Кнопка "Назад"
 /* ===================================
  *  Общий обработчик сообщений
  * =================================== */
-bot.on("message", async (ctx) => {
+bot.on("message", async (ctx, next) => {
 	// Игнорируем все чаты кроме личных
-	if (ctx.chat.type !== "private") return;
-	if (ctx.session.awaitingMembersQuestion && ctx.message.text) return;
-	if (ctx.session.awaitingPrayerNeed && ctx.message.text) return;
+	if (ctx.chat.type !== "private") return next();
+	if (ctx.session.awaitingMembersQuestion && ctx.message.text) return next();
+	if (ctx.session.awaitingPrayerNeed && ctx.message.text) return next();
 
 	// Известные кнопки главного меню
 	const known = new Set<string>([
@@ -131,12 +132,16 @@ bot.on("message", async (ctx) => {
 		PRESBYTERIAN_COUNCIL_BUTTON_LABELS.PC_AGENDA,
 		PRESBYTERIAN_COUNCIL_BUTTON_LABELS.PC_AGENDA_NEXT,
 		PRESBYTERIAN_COUNCIL_BUTTON_LABELS.PC_AGENDA_ALL_DATES,
+		...Object.values(SMALL_GROUPS_BUTTON_LABELS),
 	]);
 
 	// Если пришёл неизвестный текст — возвращаем пользователя в главное меню
 	if (!ctx.message.text || !known.has(ctx.message.text)) {
 		await renderMain(ctx);
+		return;
 	}
+	// Известная кнопка: отдаём специализированным bot.hears выше по цепочке (если ещё не обработано)
+	await next();
 });
 
 /* ============

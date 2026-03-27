@@ -9,14 +9,18 @@ import { SMALL_GROUPS_BUTTON_LABELS } from "./small-groups.constants";
 import { NAVIGATION_LABELS } from "../../constants/navigation";
 import { MyContext } from "../../types/grammy-context";
 import { WEEKDAYS_PRESENT, WEEKDAY_TITLE, DISTRICTS, DISTRICT_MAP } from "../../data/small-groups";
-import { isHTChurchLMG }                                            from "../../services/access";
 
 /**
  * Клавиатура для раздела малых групп
  */
 export function replyGroupsMenu(ctx: MyContext) {
-	const kb = new Keyboard()
-		.text(SMALL_GROUPS_BUTTON_LABELS.LMG_GROUPS_BY_DAY) // 📅 По дням
+	const kb = new Keyboard();
+
+	if (ctx.access.isPrivileged && ctx.access.isLmgLeader) {
+		kb.text(SMALL_GROUPS_BUTTON_LABELS.LMG_NOTES).row(); // 📝 Конспекты ЛМГ — первая строка на всю ширину
+	}
+
+	kb.text(SMALL_GROUPS_BUTTON_LABELS.LMG_GROUPS_BY_DAY) // 📅 По дням
 		.text(SMALL_GROUPS_BUTTON_LABELS.LMG_GROUPS_BY_DISTRICT) // 📍 По районам
 		.row();
 
@@ -24,11 +28,6 @@ export function replyGroupsMenu(ctx: MyContext) {
 		kb.text(SMALL_GROUPS_BUTTON_LABELS.LMG_CAL_NEXT) // ⏱️ Следующая встреча ЛМГ
 			.text(SMALL_GROUPS_BUTTON_LABELS.LMG_CAL_ALL) // 🗓️ Все встречи ЛМГ
 			.row();
-
-		if (isHTChurchLMG(ctx)) {
-			kb.text(SMALL_GROUPS_BUTTON_LABELS.LMG_NOTES) // "Конспекты ЛМГ"
-				.row();
-		}
 
 		kb.text(SMALL_GROUPS_BUTTON_LABELS.LMG_CAL_TRIP) // 🚌 Выезд ЛМГ
 			.row();

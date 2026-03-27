@@ -2,6 +2,8 @@ import dotenv from "dotenv";
 import { GroupAddress } from "../data/small-groups";
 dotenv.config();
 
+const isProduction = process.env.NODE_ENV === "production";
+
 /** Берём обязательную переменную окружения, иначе бросаем ошибку */
 function required(name: string): string {
 	const v = process.env[name];
@@ -48,8 +50,11 @@ type LeaderData = {
 };
 
 export const env = {
+	/** `NODE_ENV === "production"` — симуляция ролей (DEV_ACCESS_*) всегда выключена */
+	IS_PRODUCTION: isProduction,
+
 	// 🔐 Обязательные переменные
-	BOT_TOKEN: process.env.NODE_ENV === "production" ? required("BOT_TOKEN") : required("DEV_BOT_TOKEN"),
+	BOT_TOKEN: isProduction ? required("BOT_TOKEN") : required("DEV_BOT_TOKEN"),
 	CALDAV_URL: required("CALDAV_URL"),
 	CALDAV_USERNAME: required("CALDAV_USERNAME"),
 	CALDAV_PASSWORD: required("CALDAV_PASSWORD"),
@@ -69,6 +74,19 @@ export const env = {
 	// 👥 Списки и структуры
 	AUTHORIZED_USERNAMES: parseUsernames(process.env.AUTHORIZED_USERNAMES),
 	PRESBYTERIAN_COUNCIL_USERNAMES: parseUsernames(process.env.PRESBYTERIAN_COUNCIL_USERNAMES),
+	/** Лидеры ЛМГ по username (через запятую); дополняет tgUserName из LEADERS_JSON_BASE64 */
+	LMG_USERNAMES: parseUsernames(process.env.LMG_USERNAMES),
+
+	/**
+	 * Симуляция ролей (DEV_ACCESS_*). В production всегда `false`, даже если в .env задано true.
+	 */
+	DEV_ACCESS_ENABLED:
+		!isProduction &&
+		(process.env.DEV_ACCESS_ENABLED === "true" || process.env.DEV_ACCESS_ENABLED === "1"),
+	/** Username без @; должен совпасть с тем, кто тестирует бота */
+	DEV_ACCESS_USERNAME: (process.env.DEV_ACCESS_USERNAME ?? "").replace(/^@/, "").toLowerCase() || undefined,
+	/** other | membership | lmg | pastor */
+	DEV_ACCESS_ROLE: (process.env.DEV_ACCESS_ROLE ?? "").trim().toLowerCase() || undefined,
 
 	// ✅ Конфиденциальные структуры в base64-JSON
 	//   Пример генерации см. scripts/encode-env.ts
